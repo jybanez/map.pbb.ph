@@ -1,0 +1,25 @@
+### Result
+{"rendered":true,"accuracyInitiallyPresent":true,"terrainDisabled":true,"locationUpdate":true,"fallback":{"dotVisible":"visible","personHidden":true},"retry":true,"styleReattachment":true,"teardown":true,"external":[],"errors":[]}
+### Ran Playwright code
+```js
+await (async(page)=>{ page.setDefaultTimeout(15000);
+ const errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{window.__fix={latitude:10.3157,longitude:123.8854,accuracy:20};Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(ok){ok({coords:window.__fix})}}});let l;Object.defineProperty(window,'maplibregl',{get:()=>l,set(v){l=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this}}}})});
+ await page.setViewportSize({width:1200,height:800});await page.goto('https://map.pbb.ph/');
+ const rendered=()=>document.querySelector('[data-marker-id="current-location"]')?.style.visibility==='hidden'&&document.querySelector('.ui-map-location-person-label')?.hidden===false;
+ await page.waitForFunction(rendered,null,{timeout:15000});await page.evaluate(()=>{window.__map.jumpTo({zoom:17,pitch:0,bearing:0})});await page.waitForTimeout(700);await page.screenshot({path:'output/playwright/location-person-desktop.png'});
+ const accuracy=await page.evaluate(()=>JSON.stringify(window.__map.getSource('pbb-accuracy')._data));
+ await page.setViewportSize({width:375,height:740});await page.evaluate(()=>{window.__map.jumpTo({zoom:15,pitch:60,bearing:35})});await page.waitForTimeout(700);await page.screenshot({path:'output/playwright/location-person-mobile.png'});
+ await page.evaluate(()=>{window.__map.setTerrain(null)});await page.waitForFunction(rendered,null,{timeout:15000});
+ await page.evaluate(()=>{window.__fix={latitude:10.316,longitude:123.886,accuracy:25}});await page.getByRole('button',{name:/Locate/}).click();await page.waitForFunction(()=>window.__map.getSource('pbb-accuracy')._data.geometry.coordinates[0][0][0]>123.8858);await page.waitForFunction(rendered,null,{timeout:15000});
+ await page.evaluate(()=>{const m=window.__map;window.__terrainQuery=m.queryTerrainElevation;m.queryTerrainElevation=()=>NaN;m.triggerRepaint()});await page.waitForFunction(()=>document.querySelector('[data-marker-id="current-location"]').style.visibility==='visible');
+ const fallback=await page.evaluate(()=>({dotVisible:getComputedStyle(document.querySelector('[data-marker-id="current-location"]')).visibility,personHidden:document.querySelector('.ui-map-location-person-label').hidden}));
+ await page.evaluate(()=>{window.__map.queryTerrainElevation=window.__terrainQuery});await page.getByRole('button',{name:/Locate/}).click();await page.waitForFunction(rendered,null,{timeout:15000});
+ await page.evaluate(()=>{const m=window.__map,s=m.getStyle();s.layers=s.layers.filter(l=>l.id!=='current-location-person'&&!l.id.startsWith('pbb-accuracy'));delete s.sources['pbb-accuracy'];m.setStyle(s,{diff:false})});await page.waitForFunction(()=>window.__map.getSource('pbb-accuracy')&&document.querySelector('[data-marker-id="current-location"]').style.visibility==='hidden');
+ await page.getByRole('button',{name:'Open map search'}).click();await page.getByRole('textbox',{name:'Search map'}).fill('10.316,123.886');await page.getByRole('menuitem',{name:/Coordinate destination/}).click();await page.waitForFunction(()=>document.querySelector('[data-marker-id="search-destination"]'),null,{timeout:10000});const external=requests.filter(u=>/^https?:/.test(u)&&!u.startsWith('https://map.pbb.ph/')&&!u.startsWith('https://mapserver.pbb.ph/'));if(external.length)throw Error('External assets');if(errors.length)throw Error(errors.join(';'));
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));if(await page.locator('.ui-map-location-person-label').count())throw Error('Person cleanup');
+ return{rendered:true,accuracyInitiallyPresent:!!accuracy,terrainDisabled:true,locationUpdate:true,fallback,retry:true,styleReattachment:true,teardown:true,external,errors};
+}
+)(page);
+```

@@ -1,0 +1,39 @@
+# Direction diagnostics
+
+Alfred9085 accepted revision20261010-direction-panel-removed1 and completed task186 version4. Independent source review and33/33 tests passed; submitted mobile screenshot and browser regression evidence were reviewed without an independent browser rerun. Physical phone confirmation remains unclaimed. Earlier panel-removal review-pending statements are historical.
+
+Owner9079 and Alfred9081 authorize removal of the lower-left Direction options/status panel. Revision20261010-direction-panel-removed1 removes that overlay and its CSS/lifecycle wiring. Automatic correction remains unchanged; approximation provenance stays in the marker accessible description and read-only diagnostics, with upper-left options retained. Earlier persistent-panel requirements below are historical.
+
+Alfred9078 accepted the incremental20261010-direction-welcome2 denied-permission guidance and independently reran33/33 tests. Task185 remains completed. Submitted mocked browser evidence was reviewed, not independently replayed; physical Safari/Android confirmation remains pending. Earlier incremental-review-pending statements are historical.
+
+Alfred9075 accepted task185 at20261010-direction-welcome1 and completed its bounded source/unit and submitted mocked-browser scope. Independent33/33 tests passed; physical Safari/Android confirmation remains pending. The subsequent denied-query guidance change at20261010-direction-welcome2 was submitted separately in9077 and remains pending that incremental review. Earlier full-task review-pending statements are historical.
+
+Task185 revision20261010-direction-welcome1 incorporates9068: canonical welcome explanation with Enable location and direction / Continue browsing, synchronous permission gesture, no open/dismiss permission request, one alert per context and hidden/dispose guards.33 unit tests and trusted-activation browser fixture pass; review and physical confirmation pending. See direction-automatic-start.md.
+
+Task185 revision20261010-direction-auto1 adds automatic startup/resume using supported sensor permission queries or browser-gated passive delivery, with a canonical Enable direction action only when activation is still needed. No automatic permission requests or location-grant inference.33 tests and focused browser fixtures pass; review and physical confirmation pending. See [automatic startup](direction-automatic-start.md). Earlier mandatory-Locate descriptions are historical.
+
+Alfred9062 accepted revision20261010-ground-default1 and completed task184 version4. Independent30/30 tests passed; source and submitted synthetic browser evidence reviewed. Automatic eligible missing-altitude approximation is the accepted default, with no mandatory ground confirmation or enable step. Physical Android/iPhone observations remain pending; earlier review-pending states below are historical.
+
+Owner9055, recorded by Alfred9057, supersedes the former strict-default/session-opt-in/required-ground-confirmation policy. Revision20261010-ground-default1 automatically uses eligible ground-use approximation when altitude is unavailable. Measured correction remains preferred; known-invalid, region, date, accuracy, sampled guard, freshness and permission gates remain. Optional strict choice is session-only; reload restores automatic policy. Physical verification remains pending. Earlier descriptions of strict default/mandatory opt-in below are historical.
+
+Alfred9054 accepted revision20261010-approximate2 and completed tasks182/183 for their bounded implementation/investigation scope. Independent 30/30 unit tests passed; source and submitted synthetic browser evidence reviewed. Physical Android approximate-mode and iPhone measured-mode checks remain pending. Earlier review-pending states below are historical; the original physical cycling cause remains unproven.
+
+Current implementation: owner9032 approval recorded by Alfred9034. Task182 implements PH-region-reference0-v1 at revision20261010-approximate1; strict remains the default. Session opt-in, ground validation and visible/accessibility labeling are verified with synthetic browser fixtures and 27 unit tests. See [implementation and evidence](approximate-direction.md). Alfred review and physical owner observation remain pending; earlier approval-pending states below are historical.
+
+Latest physical evidence9021/9023 isolates missing altitude/altitudeAccuracy after permission was granted and event delivery confirmed. The earlier pending-device descriptions below are historical. The [approximate-mode proposal](approximate-direction-proposal.md) is prepared for owner decision only; no runtime fallback is enabled.
+
+Task179 adds the info button below the map zoom controls. It opens the complete Helper action modal immediately with a busy indication, then reads a local snapshot. Refresh reads another snapshot; header close, Escape and backdrop allow dismissal during initialization. Duplicate openings and late reads after dismissal/context replacement are ignored.
+
+The view lists actionable rejection reasons and classified support fields for event delivery, permission, source reference, screen orientation, location freshness, ellipsoid altitude and accuracy, local correction and renderer status. It exposes no coordinates, heading angles, raw accuracy numbers, raw browser identity or sensor samples. It does not upload, persist or copy diagnostics, request sensor permission, or change the map camera.
+
+The map camera retains its chosen bearing. Automatic compass-follow is a separate feature. A missing cue can have several causes; none is established for the reported Android phone yet. Open the info button on that phone after Locate, gently rotate face-up and Refresh. Report the browser/version and listed rejection reasons. Do not share exact location or sensor readings.
+
+Device evidence: Alfred's authoritative message8994 reports the owner's phone-settings screenshot as TECNO SPARK 10 Pro, model TECNO KI7, Android13, HiOS V12.6.0. This establishes device/OS context only. Message8996 additionally verifies Chrome154.0.8037.127 and the site-information panel showing a secure connection and Location allowed. Motion permission, web sensor delivery, screen orientation and location altitude availability remain unverified; the device model alone does not establish support or identify the failing gate. Alfred accepted task179 at version4 on 2026-10-10 after source/evidence review and an independent 23/23 unit run. The exact physical rejection reason remains pending owner diagnostics.
+
+Existing reference, attitude, accuracy, freshness and magnetic-model gates remain in force. A verified pure correction-function gap now rejects missing/non-finite or negative horizontal accuracy (the location pipeline already rejected these values). No altitude is fabricated.
+
+Validation: 23 unit tests pass, including NOAA WMM reference fields and classified-output privacy/rejection checks. The browser fixture verifies immediate busy opening, missing-altitude reason, accepted simulated Android inputs, mobile modal layout, duplicate-open/dismissal cancellation and no page errors. Existing compass browser regression covers permission denial/retry, neutral fallback, hidden/stale lifecycle, camera independence and unsupported adapters. These are simulated inputs, not physical-phone success. Evidence is in docs/evidence/direction-diagnostics-*.txt and scripts/verify-direction-diagnostics.js.
+
+Accepted by Alfred (task179 version4); physical cause remains pending device observation.
+
+Task180 adds separate classified relative and absolute event-delivery fields. See [demo comparison and owner check](orientation-demo-comparison.md). Relative delivery is diagnostic only and never substitutes for north-referenced direction. Current revision: `20261010-direction-delivery1`.

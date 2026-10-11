@@ -1,0 +1,25 @@
+### Result
+{"checks":[{"width":375,"kind":"invalid","background":"rgb(16, 28, 49)","opacity":"1","right":369,"items":[{"disabled":true,"opacity":"1","color":"rgb(200, 213, 233)","textOpacity":"1"}]},{"width":375,"kind":"poi","background":"rgb(16, 28, 49)","opacity":"1","right":366.90625,"items":[{"disabled":true,"opacity":"1","color":"rgb(200, 213, 233)","textOpacity":"1"},{"disabled":false,"opacity":"1","color":"rgb(215, 224, 244)","textOpacity":"1"}]},{"width":320,"kind":"invalid","background":"rgb(16, 28, 49)","opacity":"1","right":314,"items":[{"disabled":true,"opacity":"1","color":"rgb(200, 213, 233)","textOpacity":"1"}]},{"width":320,"kind":"poi","background":"rgb(16, 28, 49)","opacity":"1","right":314,"items":[{"disabled":true,"opacity":"1","color":"rgb(200, 213, 233)","textOpacity":"1"},{"disabled":false,"opacity":"1","color":"rgb(215, 224, 244)","textOpacity":"1"}]}],"disabledSemanticsPreserved":true,"poiFixture":true,"cssRevision":"20261010-mobile-search2"}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});});
+ await page.setViewportSize({width:375,height:740});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ const input=page.getByRole('textbox',{name:'Search map'}),action=page.getByRole('button',{name:'Open map search'}),menu=page.getByRole('menu',{name:'Map search results'}),checks=[];
+ for(const width of [375,320]){
+  await page.setViewportSize({width,height:740});await action.click();
+  for(const kind of ['invalid','poi']){
+   if(kind==='poi')await page.evaluate(()=>{window.__map.querySourceFeatures=()=>[{geometry:{type:'Point',coordinates:[123.9,10.3]},properties:{name:'7-Eleven'}}];});
+   await input.fill(kind==='invalid'?'91,20':'7-Eleven');await menu.waitFor();await page.waitForTimeout(250);
+   const computed=await menu.evaluate(e=>{const m=getComputedStyle(e),r=e.getBoundingClientRect();return{background:m.backgroundColor,opacity:m.opacity,right:r.right,items:[...e.querySelectorAll('[role="menuitem"]')].map(b=>{const s=getComputedStyle(b),t=getComputedStyle(b.querySelector('.ui-menu-item-label'));return{disabled:b.disabled,opacity:s.opacity,color:t.color,textOpacity:t.opacity};})};});
+   if(computed.background!=='rgb(16, 28, 49)'||computed.opacity!=='1'||computed.items.some(i=>i.opacity!=='1'||i.textOpacity!=='1')||computed.right>width)throw Error(JSON.stringify(computed));
+   if(kind==='invalid'&&computed.items.some(i=>!i.disabled))throw Error('Feedback became active');
+   await page.screenshot({path:`output/playwright/search-${kind}-${width}.png`});checks.push({width,kind,...computed});
+  }
+  await page.getByRole('button',{name:'Dismiss map search'}).click();
+ }
+ return{checks,disabledSemanticsPreserved:true,poiFixture:true,cssRevision:'20261010-mobile-search2'};
+}
+)(page);
+```

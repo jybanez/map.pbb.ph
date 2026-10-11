@@ -1,0 +1,23 @@
+async(page)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(ok){ok({coords:{latitude:10.3157,longitude:123.8854,accuracy:20}});}}});let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});});
+ await page.setViewportSize({width:375,height:740});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ const action=page.getByRole('button',{name:'Open map search'}),input=page.getByRole('textbox',{name:'Search map'});
+ if(await input.isVisible()||await action.getAttribute('aria-expanded')!=='false')throw Error('Initial state');
+ const order=await page.locator('#zoom-control button').evaluateAll(es=>es.map(e=>e.getAttribute('aria-label')||e.title));if(order[0]!=='Open map search')throw Error('Ordering');
+ const zoomBefore=await page.evaluate(()=>window.__map.getZoom());await page.getByRole('button',{name:'Zoom in',exact:true}).click();await page.waitForTimeout(400);if(await page.evaluate(()=>window.__map.getZoom())<=zoomBefore)throw Error('Zoom regression');
+ await page.waitForFunction(()=>window.__map.isSourceLoaded('pbb-poi'));const realPoi=await page.evaluate(()=>{const f=window.__map.querySourceFeatures('pbb-poi',{sourceLayer:'poi'}).find(f=>f.geometry?.type==='Point'&&f.properties?.name);return f?.properties.name;});if(!realPoi)throw Error('No real local POI');
+ await action.click();await input.waitFor();if(!await input.evaluate(e=>e===document.activeElement)||await action.getAttribute('aria-expanded')!=='true'||await action.getAttribute('aria-controls')!=='map-search')throw Error('Reveal accessibility');
+ await input.fill(realPoi);await page.getByRole('menu',{name:'Map search results'}).getByText(realPoi,{exact:false}).first().waitFor();
+ await input.fill('10.3,123.9');await input.press('Escape');if(await input.isVisible()||!await action.evaluate(e=>e===document.activeElement)||await action.getAttribute('aria-expanded')!=='false')throw Error('Escape');
+ await action.click();if(await input.inputValue()!=='10.3,123.9')throw Error('Query lost');await page.getByRole('button',{name:'Dismiss map search'}).click();if(await input.isVisible()||!await action.evaluate(e=>e===document.activeElement))throw Error('Dismiss');
+ await action.click();await input.fill('91,20');await page.getByRole('menu',{name:'Map search results'}).getByText(/^Coordinates/).waitFor();
+ await page.screenshot({path:'output/playwright/mobile-search-control.png'});
+ const mobile=await input.evaluate(e=>({background:getComputedStyle(e).backgroundColor,width:e.getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth}));if(mobile.background!=='rgb(16, 28, 49)'||mobile.overflow)throw Error('Readability');
+ await input.fill('10.3,123.9');await input.press('Enter');if(await input.isVisible())throw Error('Selection dismissal');
+ await page.setViewportSize({width:1440,height:900});await input.waitFor();if(await action.isVisible())throw Error('Desktop action');const desktop=await page.locator('#map-search').evaluate(e=>{const r=e.getBoundingClientRect();return{center:r.x+r.width/2,width:innerWidth};});if(Math.abs(desktop.center-720)>1)throw Error('Desktop center');
+ await page.setViewportSize({width:320,height:740});await action.waitFor();await action.click();const narrow=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,right:document.querySelector('#map-search').getBoundingClientRect().right}));if(narrow.overflow||narrow.right>320)throw Error('320 overflow');
+ const imports=await page.evaluate(()=>performance.getEntriesByType('resource').map(r=>r.name).filter(n=>/ui\.map\.controls|ui\.loader|mobile-search1/.test(n)));if(!imports.some(n=>n.includes('ui.map.controls.js?v=0.21.276')))throw Error('Stale controls');
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));if(await page.locator('#map-search').count())throw Error('Cleanup');if(errors.length)throw Error(errors.join(';'));
+ return{order,mobile,desktop,narrow,realPoi,zoomPreserved:true,revealFocus:true,escapeDismissFocusReturn:true,selectionDismissal:true,imports,cleanup:true,errors};
+}

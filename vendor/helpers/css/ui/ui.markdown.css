@@ -1,0 +1,20 @@
+.ui-markdown { min-width: 0; max-width: 100%; color: var(--ui-text, inherit); overflow-wrap: anywhere; }
+.ui-markdown-content { min-width: 0; max-width: 100%; line-height: 1.5; }
+.ui-markdown-content p, .ui-markdown-plain { white-space: pre-wrap; }
+.ui-markdown-content > :first-child { margin-top: 0; }
+.ui-markdown-content > :last-child { margin-bottom: 0; }
+.ui-markdown a { color: var(--ui-accent, #2465bd); text-decoration: underline; }
+.ui-markdown pre { box-sizing: border-box; max-width: 100%; overflow: auto; white-space: pre; padding: 12px; background: var(--ui-bg-soft, #eee); border-radius: 6px; }
+.ui-markdown code { font-family: ui-monospace, monospace; }
+.ui-markdown :not(pre) > code { overflow-wrap: anywhere; white-space: pre-wrap; }
+.ui-markdown blockquote { margin-inline: 0; padding-inline-start: 14px; border-inline-start: 3px solid var(--ui-border, #aaa); }
+.ui-markdown-content div[role="region"] { max-width: 100%; overflow: auto; }
+.ui-markdown table { border-collapse: collapse; }
+.ui-markdown th, .ui-markdown td { border: 1px solid var(--ui-border, #aaa); padding: 6px 10px; text-align: start; }
+.ui-markdown-content.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--ui-markdown-lines); overflow: hidden; white-space: pre-wrap; }
+.ui-markdown { position: relative; }
+.ui-markdown-measure { position: absolute; inset-inline: 0; top: 0; visibility: hidden; pointer-events: none; }
+.ui-markdown-toggle { font: inherit; color: var(--ui-accent, #2465bd); border: 0; padding: 4px 0; background: transparent; text-decoration: underline; cursor: pointer; }
+.ui-markdown-toggle[hidden] { display: none; }
+.ui-markdown :focus-visible { outline: 2px solid var(--ui-accent, #2465bd); outline-offset: 2px; }
+.ui-markdown-empty, .ui-markdown-notice { color: var(--ui-muted, #777); }

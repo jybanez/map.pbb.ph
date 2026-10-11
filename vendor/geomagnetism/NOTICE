@@ -1,0 +1,12 @@
+geomagnetism 0.2.0, naturalatlas, Brandon Reavis, Apache License 2.0.
+Pinned upstream commit 5cf5cba40d8cadf4220734296bbfe4a7f4351be6.
+PBB modifications: browser ESM conversion, UTC leap-year fraction, preservation
+of zero geodetic coordinates, official 2025-2030 model validity bounds.
+
+WMM2025: NOAA NCEI Geomagnetic Modeling Team and British Geological Survey,
+2024. https://doi.org/10.25921/aqfd-sd83
+US Government material incorporated here is not subject to copyright protection.
+NOAA describes its WMM source code/information as public domain and freely usable.
+https://www.ncei.noaa.gov/products/world-magnetic-model
+Local model does not represent local magnetic anomalies or sensor calibration.
+See provenance.json for exact source URLs/hashes and coefficient verification.

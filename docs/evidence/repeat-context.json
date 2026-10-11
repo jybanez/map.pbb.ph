@@ -1,0 +1,160 @@
+{
+  "date": "2026-10-10",
+  "checks": [
+    {
+      "label": "canvas first",
+      "event": {
+        "x": 180,
+        "y": 180,
+        "trusted": true,
+        "prevented": true,
+        "target": "CANVAS"
+      },
+      "anchor": {
+        "x": 180,
+        "y": 180
+      },
+      "menu": {
+        "x": 180,
+        "y": 180,
+        "width": 192.84375,
+        "height": 117
+      },
+      "coordinate": "10.322794, 123.874025"
+    },
+    {
+      "label": "canvas repeat",
+      "event": {
+        "x": 850,
+        "y": 350,
+        "trusted": true,
+        "prevented": true,
+        "target": "CANVAS"
+      },
+      "anchor": {
+        "x": 850,
+        "y": 350
+      },
+      "menu": {
+        "x": 850,
+        "y": 350,
+        "width": 192.84375,
+        "height": 117
+      },
+      "coordinate": "10.317896, 123.890140"
+    },
+    {
+      "label": "portal",
+      "event": {
+        "x": 880,
+        "y": 375,
+        "trusted": true,
+        "prevented": true,
+        "target": "SPAN"
+      },
+      "anchor": {
+        "x": 850,
+        "y": 350
+      },
+      "menu": {
+        "x": 850,
+        "y": 350,
+        "width": 192.84375,
+        "height": 117
+      },
+      "coordinate": "10.317896, 123.890140"
+    },
+    {
+      "label": "marker",
+      "event": {
+        "x": 640,
+        "y": 434,
+        "trusted": true,
+        "prevented": true,
+        "target": "SPAN"
+      },
+      "anchor": {
+        "x": 640,
+        "y": 434
+      },
+      "menu": {
+        "x": 640,
+        "y": 434,
+        "width": 192.84375,
+        "height": 117
+      },
+      "coordinate": "10.315679, 123.885409"
+    },
+    {
+      "label": "edge",
+      "event": {
+        "x": 1190,
+        "y": 780,
+        "trusted": true,
+        "prevented": true,
+        "target": "CANVAS"
+      },
+      "anchor": {
+        "x": 1190,
+        "y": 780
+      },
+      "menu": {
+        "x": 1079,
+        "y": 675,
+        "width": 192.84375,
+        "height": 117
+      },
+      "coordinate": "10.308396, 123.895097"
+    },
+    {
+      "label": "mobile first",
+      "event": {
+        "x": 80,
+        "y": 200,
+        "trusted": true,
+        "prevented": true,
+        "target": "CANVAS"
+      },
+      "anchor": {
+        "x": 80,
+        "y": 200
+      },
+      "menu": {
+        "x": 80,
+        "y": 200,
+        "width": 192.84375,
+        "height": 117
+      },
+      "coordinate": "10.321833, 123.871933"
+    },
+    {
+      "label": "mobile repeat",
+      "event": {
+        "x": 270,
+        "y": 400,
+        "trusted": true,
+        "prevented": true,
+        "target": "CANVAS"
+      },
+      "anchor": {
+        "x": 270,
+        "y": 400
+      },
+      "menu": {
+        "x": 174,
+        "y": 400,
+        "width": 192.84375,
+        "height": 117
+      },
+      "coordinate": "10.315764, 123.887179"
+    }
+  ],
+  "unrelated": {
+    "x": 100,
+    "y": 30,
+    "trusted": true,
+    "prevented": false,
+    "target": "SPAN"
+  },
+  "method": "Trusted mouse right-button clicks on canvas at distinct points, existing portal, marker and edge."
+}

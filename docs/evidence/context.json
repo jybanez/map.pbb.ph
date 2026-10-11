@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-10",
+  "checks": [
+    {
+      "copy": true,
+      "copyFailure": true,
+      "center": true,
+      "information": true,
+      "immediateBusy": true,
+      "dismissal": true
+    },
+    {
+      "syntheticPoiDedupAndRadius": true,
+      "readError": true
+    }
+  ],
+  "longPress": true,
+  "movementCancelled": true,
+  "multitouchCancelled": true,
+  "edgePlacement": true,
+  "keyboardMenu": true,
+  "cleanup": true,
+  "uncaughtErrors": [],
+  "limitations": "Synthetic touch event gesture checks; real mobile hardware remains unverified."
+}

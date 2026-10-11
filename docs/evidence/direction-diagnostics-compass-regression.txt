@@ -1,0 +1,48 @@
+### Result
+{"correction":-2.061714382370605,"permissionExplicitRetry":true,"geographicMarker":true,"cameraIndependent":true,"screenProjection":true,"invalidStaleNeutral":true,"visibility":true,"altitudeMissingNeutral":true,"movementNoFollow":true,"locationDenialNeutral":true,"androidAdapter":true,"unknownAbsoluteNeutral":true,"optionalModuleFailureFallback":true,"teardown":true,"external":[],"errors":[]}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ page.setDefaultTimeout(15000);const errors=[],external=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url())&&!['map.pbb.ph','mapserver.pbb.ph'].includes(new URL(r.url()).hostname))external.push(r.url());});
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{
+  window.__hidden=false;Object.defineProperty(document,'hidden',{configurable:true,get:()=>window.__hidden});window.__permissionCalls=0;window.__allow=false;window.__fixes=[];window.__clear=[];
+  const mode=sessionStorage.getItem('compass-fixture')||'webkit';window.__mode=mode;
+  if(mode==='android')Object.defineProperty(navigator,'userAgent',{configurable:true,value:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36'});
+  window.DeviceOrientationEvent=mode==='webkit'?{requestPermission(){window.__permissionCalls++;return Promise.resolve(window.__allow?'granted':'denied');}}:{};
+  Object.defineProperty(screen,'orientation',{configurable:true,value:Object.assign(new EventTarget(),{angle:0})});
+  Object.defineProperty(navigator,'geolocation',{configurable:true,value:{watchPosition(ok,fail){window.__fixes.push({ok,fail});return window.__fixes.length;},clearWatch(id){window.__clear.push(id);}}});
+  let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}}}});
+ });
+ const load=async()=>{await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());};
+ const fix=async(altitude=40,lng=123.8854)=>page.evaluate(({altitude,lng})=>window.__fixes.at(-1).ok({timestamp:Date.now(),coords:{latitude:10.3157,longitude:lng,accuracy:20,altitude,altitudeAccuracy:10}}),{altitude,lng});
+ const sensor=(heading=90,extra={})=>page.evaluate(({heading,extra})=>{const type=window.__mode==='android'?'deviceorientationabsolute':'deviceorientation';const ev=new Event(type);Object.assign(ev,{webkitCompassHeading:heading,webkitCompassAccuracy:5,beta:0,gamma:0,...extra});window.dispatchEvent(ev);},{heading,extra});
+ const label=()=>page.locator('.ui-map-location-person-label').getAttribute('aria-label');
+ const neutral=async()=>{if((await label()).includes('device direction'))throw Error('Expected neutral marker');};
+ const angle=async()=>Number((await label()).match(/direction ([\d.]+) degrees/)?.[1]);
+ await load();await fix();await page.waitForFunction(()=>document.querySelector('.ui-map-location-person-label'));await neutral();if(await page.evaluate(()=>window.__permissionCalls)!==0)throw Error('Permission on load');
+ const locate=page.locator('#locate-control button');await locate.click();await page.waitForTimeout(50);if(await page.evaluate(()=>window.__permissionCalls)!==1)throw Error('Missing explicit permission');await sensor();await neutral();
+ await page.evaluate(()=>window.__allow=true);await locate.click();await page.waitForTimeout(50);await sensor();
+ const correction=await page.evaluate(async()=>{const {declination}=await import('/assets/declination.js');return declination({latitude:10.3157,longitude:123.8854,accuracy:20,altitude:40,altitudeAccuracy:10},new Date());});
+ if(Math.abs(await angle()-(90+correction))>.11)throw Error('Corrected marker heading');
+ await page.evaluate(()=>{window.__map.setTerrain(null);window.__map.jumpTo({center:[123.8854,10.3157],zoom:16,pitch:0,bearing:0});});const camera=await page.evaluate(()=>window.__map.getCenter().toArray());
+ await page.evaluate(()=>window.__map.jumpTo({bearing:120,pitch:60}));await sensor();if(Math.abs(await angle()-(90+correction))>.11)throw Error('Camera changes geographic heading');
+ await page.setViewportSize({width:390,height:780});await page.evaluate(()=>{screen.orientation.angle=90;screen.orientation.dispatchEvent(new Event('change'));});await neutral();await sensor();if(Math.abs(await angle()-(180+correction))>.11)throw Error('Landscape projection');
+ await page.screenshot({path:'output/playwright/compass-mobile.png'});
+ await sensor(90,{beta:90});await neutral();await sensor(90,{webkitCompassAccuracy:-1});await neutral();await sensor();await page.waitForTimeout(2150);await neutral();
+ await sensor();await page.evaluate(()=>{window.__hidden=true;document.dispatchEvent(new Event('visibilitychange'));});await neutral();await sensor();await neutral();await page.evaluate(()=>{window.__hidden=false;document.dispatchEvent(new Event('visibilitychange'));});await fix();await sensor();if(!(await label()).includes('device direction'))throw Error('Resume did not restore current heading');
+ await fix(null);await sensor();await neutral();await fix(40,123.886);await sensor();if(!(await label()).includes('device direction'))throw Error('Movement heading');if(JSON.stringify(await page.evaluate(()=>window.__map.getCenter().toArray()))!==JSON.stringify(camera))throw Error('Movement followed camera');
+ await page.evaluate(()=>window.__fixes.at(-1).fail({code:1}));await neutral();await sensor();await neutral();await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));if(await page.locator('.ui-map-location-person-label').count())throw Error('Teardown');
+ await page.evaluate(()=>sessionStorage.setItem('compass-fixture','android'));await load();await fix();await page.waitForFunction(()=>document.querySelector('.ui-map-location-person-label'));await sensor(90,{webkitCompassHeading:undefined,webkitCompassAccuracy:undefined,alpha:270,absolute:true});if(Math.abs(await angle()-(90+correction))>.11)throw Error('Android magnetic adapter');await sensor(90,{webkitCompassHeading:undefined,webkitCompassAccuracy:undefined,alpha:270,absolute:false});await neutral();
+ await page.evaluate(()=>sessionStorage.setItem('compass-fixture','unknown'));await load();await fix();await page.waitForFunction(()=>document.querySelector('.ui-map-location-person-label'));await sensor(90,{webkitCompassHeading:undefined,webkitCompassAccuracy:undefined,alpha:270,absolute:true});await neutral();await page.evaluate(()=>{sessionStorage.removeItem('compass-fixture');window.dispatchEvent(new Event('pagehide'));});
+ await page.route('**/assets/heading.js*',route=>route.abort());await load();await fix();await page.waitForFunction(()=>document.querySelector('.ui-map-location-person-label'));await neutral();if(!await page.evaluate(()=>window.__map.getSource('pbb-accuracy')))throw Error('Optional model failure gated location');await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));
+ if(errors.length||external.length)throw Error(JSON.stringify({errors,external}));return{correction,permissionExplicitRetry:true,geographicMarker:true,cameraIndependent:true,screenProjection:true,invalidStaleNeutral:true,visibility:true,altitudeMissingNeutral:true,movementNoFollow:true,locationDenialNeutral:true,androidAdapter:true,unknownAbsoluteNeutral:true,optionalModuleFailureFallback:true,teardown:true,external,errors};
+}
+)(page);
+```
+### Page
+- Page URL: https://map.pbb.ph/
+- Page Title: PBB Map
+- Console: 1 errors, 0 warnings
+### Events
+- New console entries: .playwright-cli\console-2026-10-10T06-37-29-477Z.log#L1

@@ -1,0 +1,28 @@
+{
+  "component": "ui.checkbox",
+  "componentRevision": "0.21.283",
+  "mainBundleRevision": "0.21.283",
+  "checksumEncoding": "UTF-8 with CRLF normalized to LF",
+  "artifacts": [
+    {
+      "path": "js/ui/ui.loader.js",
+      "sha256": "4eff5e35fd74f55fcabab2cb3991b991d5c4236a9099306be241d9a1e3450974"
+    },
+    {
+      "path": "js/ui/ui.checkbox.js",
+      "sha256": "c5d7a2d2bdca9a1f781d60a27d6380740dcbefb7ede7d72625ede9bbd5c1b8d8"
+    },
+    {
+      "path": "css/ui/ui.checkbox.css",
+      "sha256": "3743598a11706cf52990617a61ea027e6cc4ec5baa195ab2455e1d4a1ab89333"
+    },
+    {
+      "path": "dist/helpers.ui.bundle.min.js",
+      "sha256": "6bd9ff1b52d0d4e289041370ca6e11f564531bebbb4a80ebb0c3f12295bc8bb1"
+    },
+    {
+      "path": "dist/helpers.ui.bundle.min.css",
+      "sha256": "087fb818a933913626c3bbf8c669aa93e4a1912eeb5e5ae4f4aa4efd2c48878b"
+    }
+  ]
+}

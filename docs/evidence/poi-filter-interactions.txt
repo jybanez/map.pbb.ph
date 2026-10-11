@@ -1,0 +1,35 @@
+### Result
+{"mixed":{"native":true,"aria":"mixed"},"focus":"Visibility — subclass alcohol","hidden":{"points":0,"labels":0,"counts":2837},"mobile":{"width":375,"scrollWidth":375,"clientWidth":375},"parity":[{"action":"default","actual":[0,1,2,3,7],"expected":[0,1,2,3,7]},{"action":"hide-unspecified","actual":[3,7],"expected":[3,7]},{"action":"hide-child","actual":[7],"expected":[7]},{"action":"master-off","actual":[],"expected":[]},{"action":"restore","actual":[0,1,2,3,7],"expected":[0,1,2,3,7]}]}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const result={};
+ const row=page.getByRole('row').filter({has:page.getByRole('checkbox',{name:'Visibility — class alcohol_shop',exact:true})});
+ await row.getByRole('button',{name:'Expand row',exact:true}).click();
+ const child=page.getByRole('checkbox',{name:'Visibility — subclass alcohol',exact:true});await child.focus();await child.press('Space');
+ result.mixed=await page.getByRole('checkbox',{name:'Visibility — class alcohol_shop',exact:true}).evaluate(e=>({native:e.indeterminate,aria:e.getAttribute('aria-checked')}));
+ if(!result.mixed.native||result.mixed.aria!=='mixed')throw Error('Mixed parent missing');
+ result.focus=await page.evaluate(()=>document.activeElement.getAttribute('aria-label'));if(result.focus!=='Visibility — subclass alcohol')throw Error('Focus lost');
+ await page.getByRole('checkbox',{name:'Visibility — class alcohol_shop',exact:true}).focus();await page.getByRole('checkbox',{name:'Visibility — class alcohol_shop',exact:true}).press('Space');
+ if(!await child.isChecked())throw Error('Mixed did not select all');
+ await page.getByRole('button',{name:'Hide all',exact:true}).click();await page.waitForFunction(()=>!window.__map.queryRenderedFeatures({layers:['pbb-poi-points','pbb-poi-labels']}).length);
+ result.hidden=await page.evaluate(()=>({points:window.__map.queryRenderedFeatures({layers:['pbb-poi-points']}).length,labels:window.__map.queryRenderedFeatures({layers:['pbb-poi-labels']}).length,counts:window.__poiFilter.state.count(window.__map.querySourceFeatures('pbb-poi',{sourceLayer:'poi'})).reduce((n,r)=>n+r.count,0)}));
+ if(result.hidden.points||result.hidden.labels||!result.hidden.counts)throw Error('Hidden count/layer mismatch');
+ await page.getByRole('button',{name:'Show all',exact:true}).click();
+ await page.setViewportSize({width:375,height:740});await page.screenshot({path:'output/playwright/poi-filter-mobile.png'});
+ result.mobile=await page.getByRole('dialog').evaluate(e=>({width:e.getBoundingClientRect().width,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}));
+ await page.getByRole('button',{name:'Close modal',exact:true}).click();
+ result.parity=await page.evaluate(async()=>{
+ const {createPoiCategories}=await import('/assets/poi-categories.js?v=20261011-poi-filter1');const {config}=await import('/assets/config.js?v=20261011-poi-filter1');const state=createPoiCategories(config.poi.excludedClasses);
+ const fixtures=[{name:'Missing'},{name:'Number',class:42,subclass:false},{name:'Whitespace',class:' \t ',subclass:'\n'},{name:'Named',class:'shop',subclass:'mall'},{name:'Excluded',class:'office'},{name:'',class:'shop'},{name:7,class:'shop'},{name:'Zero',class:'0',subclass:'01'}];
+ const features=fixtures.map((p,i)=>({type:'Feature',properties:{...p,testId:i},geometry:{type:'Point',coordinates:[123.8854+i*.0001,10.3157]}}));const m=window.__map;
+ m.addSource('parity-fixture',{type:'geojson',data:{type:'FeatureCollection',features}});m.addLayer({id:'parity-fixture',type:'circle',source:'parity-fixture',paint:{'circle-opacity':0}});
+ await new Promise(resolve=>{const done=()=>{if(m.isSourceLoaded('parity-fixture')){m.off('sourcedata',done);resolve()}};m.on('sourcedata',done);done()});
+ const cases=[];for(const action of ['default','hide-unspecified','hide-child','master-off','restore']){if(action==='hide-unspecified')state.setClass('',false);if(action==='hide-child')state.setChild('shop','mall',false);if(action==='master-off')state.setMaster(false);if(action==='restore'){state.setMaster(true);state.setAll(true)}
+ const actual=[...new Set(m.querySourceFeatures('parity-fixture',{filter:state.expression()}).map(f=>f.properties.testId))].sort();const expected=features.filter(f=>state.visible(f.properties)).map(f=>f.properties.testId).sort();if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error(action+' parity '+JSON.stringify({actual,expected}));cases.push({action,actual,expected});}
+ m.removeLayer('parity-fixture');m.removeSource('parity-fixture');return cases;
+ });
+ return result;
+}
+)(page);
+```

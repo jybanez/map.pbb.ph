@@ -1,0 +1,19 @@
+### Result
+{"initial":{"maxPitch":85,"pitch":35,"maxZoom":24},"twoD":0,"threeD":60,"reached":85,"clamped":85,"high":{"terrain":{"source":"terrain","exaggeration":1.6},"terrainLoaded":true,"buildings":7,"poi":110,"unnamed":0,"configResources":["https://map.pbb.ph/assets/config.js?v=20261011-pitch85-1"]},"errors":[],"consoleMessages":[],"limit":"Bounded desktop viewport at85; no physical-device or broad performance claim."}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const errors=[],consoleMessages=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))consoleMessages.push({type:m.type(),text:m.text()});});
+ await page.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set:v=>{lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});});
+ await page.setViewportSize({width:1440,height:900});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ const initial=await page.evaluate(()=>({maxPitch:window.__map.getMaxPitch(),pitch:window.__map.getPitch(),maxZoom:window.__map.getMaxZoom()}));if(initial.maxPitch!==85||initial.pitch!==35||initial.maxZoom!==24)throw Error('Pitch defaults mismatch');
+ await page.getByRole('button',{name:'Set pitch 0 degrees',exact:true}).click();await page.waitForFunction(()=>!window.__map.isMoving());const twoD=await page.evaluate(()=>window.__map.getPitch());
+ await page.getByRole('button',{name:'Set pitch 60 degrees',exact:true}).click();await page.waitForFunction(()=>!window.__map.isMoving());const threeD=await page.evaluate(()=>window.__map.getPitch());if(twoD!==0||threeD!==60)throw Error('Presets changed');
+ await page.evaluate(()=>window.__map.jumpTo({center:[123.906,10.317],zoom:16,pitch:85}));await page.waitForFunction(()=>window.__map.loaded());const reached=await page.evaluate(()=>window.__map.getPitch());
+ await page.evaluate(()=>window.__map.setPitch(90));const clamped=await page.evaluate(()=>window.__map.getPitch());if(reached!==85||clamped!==85)throw Error('Pitch reach/clamp failed');
+ const high=await page.evaluate(async()=>{const m=window.__map,s=m.getStyle();const {poiName}=await import('/assets/poi-name.js?v=20261011-pitch85-1');const fs=m.queryRenderedFeatures({layers:['pbb-poi-points','pbb-poi-labels']});const ids=s.layers.filter(l=>l.type==='fill-extrusion').map(l=>l.id);return {terrain:m.getTerrain(),terrainLoaded:m.isSourceLoaded('terrain'),buildings:m.queryRenderedFeatures({layers:ids}).length,poi:fs.length,unnamed:fs.filter(f=>!poiName(f.properties)).length,configResources:performance.getEntriesByType('resource').filter(r=>r.name.includes('/assets/config.js')).map(r=>r.name)};});
+ if(!high.terrain||!high.terrainLoaded||!high.buildings||!high.poi||high.unnamed)throw Error('Bounded high pitch rendering gap '+JSON.stringify(high));
+ await page.screenshot({path:'output/playwright/pitch85-desktop.png'});
+ if(errors.length)throw Error(errors.join(';'));return {initial,twoD,threeD,reached,clamped,high,errors,consoleMessages,limit:'Bounded desktop viewport at85; no physical-device or broad performance claim.'};
+})(page);
+```

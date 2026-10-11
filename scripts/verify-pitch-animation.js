@@ -1,0 +1,12 @@
+async(page)=>{
+ await page.addInitScript(()=>{let l;Object.defineProperty(window,'maplibregl',{get:()=>l,set(v){l=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this}}}});Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(){}}});});
+ const rows=[];
+ for(const reducedMotion of ['no-preference','reduce']){
+ await page.emulateMedia({reducedMotion});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());await page.evaluate(()=>{window.__map.jumpTo({center:[123.8854,10.3157],zoom:15,pitch:0,bearing:27});window.__samples=[];window.__start=performance.now();window.__map.on('pitch',()=>window.__samples.push({ms:performance.now()-window.__start,pitch:window.__map.getPitch()}));});
+ const before=await page.evaluate(()=>({center:window.__map.getCenter().toArray(),zoom:window.__map.getZoom(),bearing:window.__map.getBearing()}));await page.evaluate(()=>window.__start=performance.now());await page.getByRole('button',{name:'Set pitch 60 degrees',exact:true}).click();await page.waitForTimeout(750);const up=await page.evaluate(()=>({samples:window.__samples,pitch:window.__map.getPitch()}));
+ await page.evaluate(()=>{window.__samples=[];window.__start=performance.now()});await page.getByRole('button',{name:'Set pitch 0 degrees',exact:true}).click();await page.waitForTimeout(750);const down=await page.evaluate(()=>({samples:window.__samples,pitch:window.__map.getPitch()}));
+ await page.evaluate(async()=>{const click=p=>document.querySelector('[data-pitch="'+p+'"]').click();click(60);await new Promise(r=>setTimeout(r,90));click(0);await new Promise(r=>setTimeout(r,90));click(60);});await page.waitForTimeout(750);
+ const after=await page.evaluate(()=>({center:window.__map.getCenter().toArray(),zoom:window.__map.getZoom(),bearing:window.__map.getBearing(),pitch:window.__map.getPitch()}));if(up.pitch!==60||down.pitch!==0||after.pitch!==60)throw Error('Targets');if(before.center.some((v,i)=>Math.abs(v-after.center[i])>1e-7)||before.zoom!==after.zoom||before.bearing!==after.bearing)throw Error('Camera changed');
+ if(reducedMotion==='no-preference'&&(!up.samples.some(s=>s.pitch>0&&s.pitch<60)||!down.samples.some(s=>s.pitch>0&&s.pitch<60)))throw Error('No intermediates');if(reducedMotion==='reduce'&&(up.samples.some(s=>s.pitch>0&&s.pitch<60)||down.samples.some(s=>s.pitch>0&&s.pitch<60)))throw Error('Reduced motion animated');rows.push({reducedMotion,before,up,down,after});
+ }return rows;
+}

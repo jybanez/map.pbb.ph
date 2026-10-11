@@ -1,0 +1,32 @@
+.ui-repository-picker { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+.ui-repository-picker-tools { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ui-repository-picker-list { list-style: none; margin: 0; padding: 0; }
+.ui-repository-picker-list { max-height: 40vh; overflow: auto; }
+.ui-repository-picker-list li { border-bottom: 1px solid var(--ui-border, #667085); overflow-wrap: anywhere; }
+.ui-repository-picker-row { display: flex; width: 100%; box-sizing: border-box; min-height: 44px; align-items: center; gap: .75rem; padding: .75rem; border: 0; background: transparent; color: var(--ui-text, #d7e0f4); text-align: start; font: inherit; cursor: pointer; }
+.ui-repository-picker-row:hover:not(:disabled) { background: var(--ui-bg-soft, #182238); }
+.ui-repository-picker-row.is-selected { background: var(--ui-selection-bg, #183558); box-shadow: inset 3px 0 var(--ui-primary, #60a5fa); }
+.ui-repository-picker-row.is-selected:hover:not(:disabled) { background: var(--ui-selection-bg, #183558); }
+.ui-repository-picker-row:disabled { opacity: .5; cursor: not-allowed; }
+.ui-repository-picker-row:focus-visible { outline: 2px solid var(--ui-primary, #60a5fa); outline-offset: -2px; }
+.ui-repository-picker-row .ui-icon { flex: 0 0 20px; width: 20px; height: 20px; }
+.ui-repository-picker-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ui-repository-picker-row .ui-repository-picker-selected-icon[hidden] { display: none; }
+.ui-repository-picker .ui-breadcrumbs { border: 0; border-radius: 0; background: transparent; padding: 0; }
+.ui-repository-picker .ui-breadcrumbs-link, .ui-repository-picker .ui-breadcrumbs-current { padding: .5rem; min-height: 32px; display: inline-flex; align-items: center; font: inherit; overflow-wrap: anywhere; }
+.ui-repository-picker .ui-breadcrumbs-link { color: var(--ui-primary, #60a5fa); text-decoration: underline; text-underline-offset: .2em; }
+.ui-repository-picker .ui-breadcrumbs-link:focus-visible { outline: 2px solid var(--ui-primary, #60a5fa); }
+.ui-repository-picker .ui-breadcrumbs-item, .ui-repository-picker .ui-breadcrumbs-content { min-width: 0; max-width: 100%; }
+.ui-repository-picker .ui-breadcrumbs-current { font-weight: 600; }
+.ui-repository-picker button { white-space: normal; overflow-wrap: anywhere; }
+.ui-repository-picker-header-actions { display: flex; align-items: center; gap: .25rem; }
+.ui-repository-picker-header-actions .ui-button { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: .5rem; border: 0; background: transparent; box-shadow: none; }
+.ui-repository-picker-header-actions .ui-button[hidden] { display: none; }
+.ui-repository-picker-header-actions .ui-button:hover:not(:disabled) { background: var(--ui-bg-soft, #182238); }
+.ui-repository-picker-header-actions .ui-button:focus-visible { outline: 2px solid var(--ui-primary, #60a5fa); outline-offset: -2px; }
+
+/* Full-height mobile modals already provide a bounded, scrollable body.
+   Keep one scroll owner and let short folders use the available space. */
+@media (max-width: 640px) {
+  .ui-repository-picker-list { max-height: none; overflow: visible; }
+}

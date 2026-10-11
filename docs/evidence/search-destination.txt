@@ -1,0 +1,22 @@
+### Result
+{"coordinate":[123.91,10.32],"poi":{"name":"The Church of Jesus Christ of Latter-day Saints","coordinates":[123.90095472335815,10.304083938819275]},"selected":{"coordinates":[123.90095472335815,10.304083938819275],"label":"Search destination: The Church of Jesus Christ of Latter-day Saints — 10.304084, 123.900955","created":1},"currentLocationPreserved":true,"invalidCreatesNone":true,"mobileDismissRetains":true,"cleanup":true,"errors":[]}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(ok){ok({coords:{latitude:10.3157,longitude:123.8854,accuracy:20}});}}});let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map,K=v.Marker;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};window.__markers=[];v.Marker=class extends K{constructor(o){super(o);window.__markers.push(this);}};}});});
+ await page.setViewportSize({width:375,height:740});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded()&&window.__map.getSource('pbb-accuracy'));
+ const input=page.getByRole('textbox',{name:'Search map'}),open=page.getByRole('button',{name:'Open map search'}),destination=page.locator('[data-marker-id="search-destination"]');
+ const original=await page.evaluate(()=>({accuracy:JSON.stringify(window.__map.getSource('pbb-accuracy')._data),location:window.__markers.find(m=>m.getElement().dataset.markerId==='current-location').getLngLat().toArray()}));
+ await open.click();await input.fill('91,20');if(await destination.count())throw Error('Invalid marker');await input.fill('10.32,123.91');await input.press('Enter');await destination.waitFor();
+ const coordinate=await page.evaluate(()=>window.__markers.find(m=>m.getElement().dataset.markerId==='search-destination').getLngLat().toArray());if(Math.abs(coordinate[0]-123.91)>1e-9||Math.abs(coordinate[1]-10.32)>1e-9||await input.isVisible())throw Error('Coordinate marker/mobile');
+ await page.waitForFunction(()=>!window.__map.isMoving());await page.waitForFunction(()=>window.__map.isSourceLoaded('pbb-poi'));
+ const poi=await page.evaluate(()=>{const f=window.__map.querySourceFeatures('pbb-poi',{sourceLayer:'poi'}).find(f=>f.geometry?.type==='Point'&&f.properties?.name);return{name:f.properties.name,coordinates:f.geometry.coordinates};});
+ await open.click();await input.fill(poi.name);await page.getByRole('menu',{name:'Map search results'}).getByText(poi.name,{exact:false}).first().click();await page.waitForFunction(()=>!window.__map.isMoving());
+ const selected=await page.evaluate(()=>{const m=window.__markers.find(m=>m.getElement().dataset.markerId==='search-destination');return{coordinates:m.getLngLat().toArray(),label:m.getElement().getAttribute('aria-label'),created:window.__markers.filter(m=>m.getElement().dataset.markerId==='search-destination').length};});if(selected.created!==1||selected.coordinates.some((v,i)=>Math.abs(v-poi.coordinates[i])>1e-9)||!selected.label.includes(poi.name))throw Error('POI replacement');
+ const after=await page.evaluate(()=>({accuracy:JSON.stringify(window.__map.getSource('pbb-accuracy')._data),location:window.__markers.find(m=>m.getElement().dataset.markerId==='current-location').getLngLat().toArray()}));if(JSON.stringify(original)!==JSON.stringify(after))throw Error('Location changed');await page.screenshot({path:'output/playwright/search-destination-mobile.png'});
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));if(await destination.count())throw Error('Cleanup');if(errors.length)throw Error(errors.join(';'));
+ return{coordinate,poi,selected,currentLocationPreserved:true,invalidCreatesNone:true,mobileDismissRetains:true,cleanup:true,errors};
+}
+)(page);
+```

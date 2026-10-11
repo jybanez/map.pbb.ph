@@ -1,0 +1,154 @@
+
+> pbb-map@1.0.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# Subtest: missing vs partly present invalid altitude provenance never enables invalid fallback
+ok 1 - missing vs partly present invalid altitude provenance never enables invalid fallback
+  ---
+  duration_ms: 2.8623
+  ...
+# Subtest: strict default, rectangle boundaries, date and sampled field guards; reference does not mutate measured fields
+ok 2 - strict default, rectangle boundaries, date and sampled field guards; reference does not mutate measured fields
+  ---
+  duration_ms: 14.3555
+  ...
+# Subtest: session selection lifecycle, measured transitions, hidden/stale neutrality and new controller reset
+ok 3 - session selection lifecycle, measured transitions, hidden/stale neutrality and new controller reset
+  ---
+  duration_ms: 13.2304
+  ...
+# Subtest: pinned local correction runtime and notices match provenance inventory
+ok 4 - pinned local correction runtime and notices match provenance inventory
+  ---
+  duration_ms: 9.1968
+  ...
+# Subtest: WMM2025 matches every NOAA published reference field at epoch and2027.5, surface and100km
+ok 5 - WMM2025 matches every NOAA published reference field at epoch and2027.5, surface and100km
+  ---
+  duration_ms: 7.9691
+  ...
+# Subtest: model rejects date/location/altitude failures, altitude missing and magnetic caution; leapyear UTC fraction
+ok 6 - model rejects date/location/altitude failures, altitude missing and magnetic caution; leapyear UTC fraction
+  ---
+  duration_ms: 2.688
+  ...
+# Subtest: diagnostics identify rejected altitude and omit raw position and sensor values
+ok 7 - diagnostics identify rejected altitude and omit raw position and sensor values
+  ---
+  duration_ms: 4.7929
+  ...
+# Subtest: north reference correction signs and screen/attitude projection, wrap smoothing and unknown source gates
+ok 8 - north reference correction signs and screen/attitude projection, wrap smoothing and unknown source gates
+  ---
+  duration_ms: 4.651
+  ...
+# Subtest: relative Android delivery is diagnostic only, stale and cleaned with listener lifecycle
+ok 9 - relative Android delivery is diagnostic only, stale and cleaned with listener lifecycle
+  ---
+  duration_ms: 20.0138
+  ...
+# Subtest: sensor permission is explicit/single, lifecycle discards late permission and stops hidden/destroyed events
+ok 10 - sensor permission is explicit/single, lifecycle discards late permission and stops hidden/destroyed events
+  ---
+  duration_ms: 1.507
+  ...
+# Subtest: denied/rejected permission retry and invalid readings retain neutral fallback
+ok 11 - denied/rejected permission retry and invalid readings retain neutral fallback
+  ---
+  duration_ms: 3.4828
+  ...
+# Subtest: old cached fix and future timestamp cannot refresh direction validity on Locate
+ok 12 - old cached fix and future timestamp cannot refresh direction validity on Locate
+  ---
+  duration_ms: 3.0743
+  ...
+# Subtest: Apple-like cadence, invalid accuracy/tilt and location transitions classify neutral cycles without fabricating direction
+ok 13 - Apple-like cadence, invalid accuracy/tilt and location transitions classify neutral cycles without fabricating direction
+  ---
+  duration_ms: 13.5665
+  ...
+# Subtest: one watcher updates movement without ongoing camera following; Locate uses latest fix
+ok 14 - one watcher updates movement without ongoing camera following; Locate uses latest fix
+  ---
+  duration_ms: 9.8243
+  ...
+# Subtest: watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+ok 15 - watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+  ---
+  duration_ms: 0.9938
+  ...
+# Subtest: watch transient errors and invalid fixes recover; hidden startup starts only on resume
+ok 16 - watch transient errors and invalid fixes recover; hidden startup starts only on resume
+  ---
+  duration_ms: 0.5213
+  ...
+# Subtest: pending permission never permits duplicate fixes; initial fix respects user camera navigation
+ok 17 - pending permission never permits duplicate fixes; initial fix respects user camera navigation
+  ---
+  duration_ms: 0.625
+  ...
+# Subtest: denial and timeout clear pending; stale callbacks cannot overwrite retry
+ok 18 - denial and timeout clear pending; stale callbacks cannot overwrite retry
+  ---
+  duration_ms: 0.3852
+  ...
+# Subtest: teardown invalidates callbacks and removes the finite watchdog
+ok 19 - teardown invalidates callbacks and removes the finite watchdog
+  ---
+  duration_ms: 0.3453
+  ...
+# Subtest: invalid device values are rejected without leaving busy state
+ok 20 - invalid device values are rejected without leaving busy state
+  ---
+  duration_ms: 1.053
+  ...
+# Subtest: missing geolocation and insecure context are actionable and never request
+ok 21 - missing geolocation and insecure context are actionable and never request
+  ---
+  duration_ms: 0.3509
+  ...
+# Subtest: accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+ok 22 - accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+  ---
+  duration_ms: 6.4152
+  ...
+# Subtest: style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+ok 23 - style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+  ---
+  duration_ms: 11.1799
+  ...
+# Subtest: public MapServer configuration rejects credentials and query tokens
+ok 24 - public MapServer configuration rejects credentials and query tokens
+  ---
+  duration_ms: 3.3307
+  ...
+# Subtest: every pinned public runtime asset matches the snapshot inventory
+ok 25 - every pinned public runtime asset matches the snapshot inventory
+  ---
+  duration_ms: 142.3987
+  ...
+# Subtest: name alone precedes full numeric distance, including equal rounded metre labels
+ok 26 - name alone precedes full numeric distance, including equal rounded metre labels
+  ---
+  duration_ms: 38.025
+  ...
+# Subtest: distance sort occurs before cap; origin updates reorder full result pool
+ok 27 - distance sort occurs before cap; origin updates reorder full result pool
+  ---
+  duration_ms: 0.5747
+  ...
+# Subtest: missing origin and equal distances have deterministic numeric coordinate ties
+ok 28 - missing origin and equal distances have deterministic numeric coordinate ties
+  ---
+  duration_ms: 0.6366
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 842.5787

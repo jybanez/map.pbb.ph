@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-10",
+  "checks": [
+    {
+      "reduced": false,
+      "before": {
+        "center": [
+          123.8854,
+          10.3157
+        ],
+        "zoom": 12,
+        "pitch": 35,
+        "bearing": 23
+      },
+      "captured": [
+        123.950157,
+        10.274553
+      ],
+      "intermediate": {
+        "moving": true,
+        "center": [
+          123.92127173557378,
+          10.292907427980793
+        ]
+      },
+      "after": {
+        "center": [
+          123.95015716552734,
+          10.274552693478554
+        ],
+        "zoom": 12,
+        "pitch": 35,
+        "bearing": 23
+      }
+    },
+    {
+      "reduced": true,
+      "before": {
+        "center": [
+          123.8854,
+          10.3157
+        ],
+        "zoom": 12,
+        "pitch": 35,
+        "bearing": 23
+      },
+      "captured": [
+        123.950157,
+        10.274553
+      ],
+      "intermediate": {
+        "moving": true,
+        "center": [
+          123.9042597788839,
+          10.303716874854516
+        ]
+      },
+      "after": {
+        "center": [
+          123.95015716552734,
+          10.274552693478554
+        ],
+        "zoom": 12,
+        "pitch": 35,
+        "bearing": 23
+      }
+    }
+  ],
+  "served": {
+    "entryVersion": true,
+    "appVersion": true,
+    "contextVersion": true,
+    "override": true,
+    "loaded": true
+  },
+  "method": "Trusted mouse context action, sampled at 250ms and movement completion under both motion settings; current served and loaded versioned import chain verified."
+}

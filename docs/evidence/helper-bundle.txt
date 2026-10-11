@@ -1,0 +1,20 @@
+### Result
+{"helperResources":["https://map.pbb.ph/vendor/helpers/js/ui/ui.loader.js?v=0.21.276","https://map.pbb.ph/vendor/helpers/dist/helpers.ui.bundle.min.css?v=0.21.276","https://map.pbb.ph/vendor/helpers/dist/helpers.ui.bundle.min.js?v=0.21.276"],"canonicalSearch":true,"navbarCentered":true,"zoom":true,"contextMenu":true,"informationModal":true,"cleanup":true,"externalRequests":[],"uncaughtErrors":[]}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});});
+ await page.setViewportSize({width:375,height:740});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ const action=page.getByRole('button',{name:'Open map search'}),input=page.getByRole('textbox',{name:'Search map'});await action.click();await input.fill('91,20');await page.getByRole('menu',{name:'Map search results'}).getByText(/^Coordinates/).waitFor();await input.press('Escape');if(await input.isVisible()||await action.getAttribute('aria-expanded')!=='false')throw Error('Search state');
+ const before=await page.evaluate(()=>window.__map.getZoom());await page.getByRole('button',{name:'Zoom in',exact:true}).click();await page.waitForTimeout(400);if(await page.evaluate(()=>window.__map.getZoom())<=before)throw Error('Zoom');
+ await page.setViewportSize({width:1440,height:900});await input.waitFor();const center=await page.locator('#map-search').evaluate(e=>{const r=e.getBoundingClientRect();return r.left+r.width/2});if(Math.abs(center-720)>1)throw Error('Navbar center');
+ await page.mouse.click(500,350,{button:'right'});const menu=page.getByRole('menu',{name:'Map location actions'});await menu.waitFor();await menu.getByText('Get info',{exact:true}).click();const modal=page.getByRole('dialog',{name:'Location information'});await modal.waitFor();await modal.getByText(/Latitude, longitude/).waitFor();await page.keyboard.press('Escape');
+ const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(r=>r.name));const helper=resources.filter(u=>u.includes('/vendor/helpers/'));
+ if(!helper.some(u=>u.includes('dist/helpers.ui.bundle.min.js?v=0.21.276'))||!helper.some(u=>u.includes('dist/helpers.ui.bundle.min.css?v=0.21.276')))throw Error('Bundle missing');
+ if(helper.some(u=>/\/js\/ui\//.test(u)&&!u.includes('ui.loader.js')))throw Error('Duplicate source modules '+helper.join(','));
+ const external=requests.filter(u=>/^https?:/.test(u)&&!['map.pbb.ph','mapserver.pbb.ph'].includes(new URL(u).hostname));if(external.length||errors.length)throw Error('External/errors');
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));if(await page.locator('#map-search').count())throw Error('Cleanup');return{helperResources:helper,canonicalSearch:true,navbarCentered:true,zoom:true,contextMenu:true,informationModal:true,cleanup:true,externalRequests:external,uncaughtErrors:errors};
+}
+)(page);
+```

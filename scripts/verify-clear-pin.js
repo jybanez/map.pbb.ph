@@ -1,0 +1,27 @@
+async(page)=>{
+ page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(ok){ok({coords:{latitude:10.3157,longitude:123.8854,accuracy:20}})}}});let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const M=v.Map,K=v.Marker;v.Map=class extends M{constructor(o){super(o);window.__map=this}};v.Marker=class extends K{constructor(o){super(o);if(o.element.dataset.markerId==='search-destination')window.__pin=this}}}})});
+ await page.setViewportSize({width:1200,height:800});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded()&&window.__map.getSource('pbb-accuracy'));
+ const input=page.getByRole('textbox',{name:'Search map'}),clear=page.getByRole('button',{name:'Clear map search'}),pin=page.locator('[data-marker-id="search-destination"]'),menu=page.getByRole('menu',{name:'Map location actions'});
+ const select=async value=>{await input.fill(value);await input.press('Enter');await page.keyboard.press('Enter')};
+ const settled=()=>page.waitForFunction(()=>document.querySelector('[data-marker-id="search-destination"]')?.getAttribute('aria-disabled')==='false');
+ const retained=()=>page.evaluate(()=>({dot:!!document.querySelector('[data-marker-id="current-location"]'),accuracy:!!window.__map.getSource('pbb-accuracy'),person:!!document.querySelector('.ui-map-location-person-label')}));
+ const baseline=await retained();
+ const gone=async()=>{if(await pin.count()||await menu.count())throw Error('Destination retained');if(JSON.stringify(await retained())!==JSON.stringify(baseline))throw Error('Location altered')};
+ await select('10.32,123.91');await settled();await pin.click();await menu.waitFor({state:'visible'});
+ await page.evaluate(()=>window.__oldPin=window.__pin.getElement());await clear.click();await gone();await page.evaluate(()=>window.__oldPin.dispatchEvent(new MouseEvent('click',{bubbles:true})));if(await menu.count())throw Error('Removed pin listener');
+ await select('10.33,123.92');await settled();await input.fill('Still nonempty');if(await pin.count()!==1)throw Error('Nonempty edit removes destination');
+ await input.focus();await input.press('Control+a');await input.press('Backspace');await gone();
+ await select('10.34,123.94');await page.waitForTimeout(120);
+ const duringFlight=await pin.evaluate(e=>getComputedStyle(e).visibility==='hidden');if(!duringFlight)throw Error('Not flight');await clear.click();await gone();await page.waitForTimeout(2100);await gone();
+ const camera=await page.evaluate(()=>window.__map.getCenter().toArray());if(Math.abs(camera[0]-123.94)>0.000001||Math.abs(camera[1]-10.34)>0.000001)throw Error('Clear changes camera flight');
+ await select('10.31,123.89');await page.waitForFunction(()=>{const e=document.querySelector('[data-marker-id="search-destination"]');return e&&getComputedStyle(e).visibility==='visible'&&e.querySelector('.ui-map-marker-visual').getAnimations().length>0});
+ await clear.click();await gone();await page.waitForTimeout(900);await gone();
+ await page.setViewportSize({width:375,height:740});await page.getByRole('button',{name:'Open map search'}).click();await select('10.3157,123.8854');await settled();
+ await page.getByRole('button',{name:'Open map search'}).click();await input.press('Escape');if(await pin.count()!==1)throw Error('Dismiss removed destination');
+ await pin.click();await menu.waitFor({state:'visible'});if(!(await menu.innerText()).includes('10.315700, 123.885400'))throw Error('New destination activation');
+ await page.getByRole('button',{name:'Open map search'}).click();await clear.click();await gone();await page.waitForTimeout(300);await page.screenshot({path:'output/playwright/search-cleared-mobile.png'});
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));if(await pin.count()||await menu.count())throw Error('Teardown');if(errors.length)throw Error(errors.join(';'));
+ return{baseline,clearButton:true,deleteToEmpty:true,nonemptyRetained:true,hiddenFlight: duringFlight,flightNoLatePin:true,dropNoLatePin:true,cameraAfterClear:camera,locationPreserved:true,dismissRetains:true,newPinActivation:true,oldHandlerRemoved:true,mobileClear:true,teardown:true,errors};
+}

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "recordedUTC": "2026-10-10T14:23:17.006Z",
+  "values": {
+    "run": "Online dry run",
+    "device": "Synthetic desktop dry run",
+    "routing": "",
+    "coverage": "Candidate only: 123.88–123.89 E, 10.31–10.32 N; display zooms 12–15. Prepared coverage is NOT confirmed.",
+    "cache": "",
+    "network": "",
+    "check0": "Pass",
+    "note0": "",
+    "check1": "Not tested",
+    "note1": "",
+    "check2": "Not tested",
+    "note2": "",
+    "check3": "Not tested",
+    "note3": "",
+    "check4": "Not tested",
+    "note4": "",
+    "check5": "Not tested",
+    "note5": "",
+    "check6": "Not tested",
+    "note6": "",
+    "check7": "Not tested",
+    "note7": "",
+    "evidence": "",
+    "restoration": ""
+  }
+}

@@ -1,0 +1,34 @@
+### Result
+{"busy":true,"cancelled":true,"liveFocus":"Visibility — subclass alcohol","expanded":true,"error":"POI visibility could not update. Close this dialog and reopen the filter to retry. If the map is unavailable, choose Retry map first. Injected transient paint failure","recovery":true,"cameraPreserved":true,"actualMapReplacement":true,"selectionPreserved":true,"singleDialog":1,"masterOff":true,"masterRetainsChoice":true}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const result={};if(!await page.getByRole('dialog').count()){await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();await page.getByRole('columnheader',{name:'Loaded count',exact:true}).waitFor();}
+ await page.getByRole('button',{name:'Close modal',exact:true}).click();
+ await page.evaluate(async()=>{const {uiLoader}=await import('/vendor/helpers/js/ui/ui.loader.js?v=0.21.283');window.__loader=uiLoader;window.__get=uiLoader.get;uiLoader.get=async function(name,...args){if(name==='ui.tree.grid'||name==='ui.checkbox')await new Promise(r=>setTimeout(r,600));return window.__get.call(this,name,...args)}});
+ await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();
+ result.busy=await page.getByRole('dialog').isVisible();await page.getByRole('button',{name:'Close modal',exact:true}).click();await page.waitForTimeout(800);
+ result.cancelled=await page.getByRole('dialog').count()===0||!await page.getByRole('dialog').isVisible();if(!result.cancelled)throw Error('Late dialog revived');
+ await page.evaluate(()=>window.__loader.get=window.__get);
+ await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();await page.getByRole('columnheader',{name:'Loaded count',exact:true}).waitFor();
+ const row=page.getByRole('row').filter({has:page.getByRole('checkbox',{name:'Visibility — class alcohol_shop',exact:true})});await row.getByRole('button',{name:'Expand row',exact:true}).click();
+ const child=page.getByRole('checkbox',{name:'Visibility — subclass alcohol',exact:true});await child.focus();await child.press('Space');
+ const before=await page.evaluate(()=>({center:window.__map.getCenter().toArray(),zoom:window.__map.getZoom(),pitch:window.__map.getPitch(),bearing:window.__map.getBearing()}));
+ await page.evaluate(()=>{const m=window.__map;window.__query=m.querySourceFeatures;m.querySourceFeatures=function(...args){const fs=window.__query.apply(this,args);if(args[0]==='pbb-poi')fs.push({type:'Feature',properties:{name:'Refresh fixture',class:'alcohol_shop',subclass:'beverages'},geometry:{type:'Point',coordinates:[123.88,10.31]}});return fs};m.fire('sourcedata',{sourceId:'pbb-poi'})});
+ await page.waitForTimeout(500);result.liveFocus=await page.evaluate(()=>document.activeElement.getAttribute('aria-label'));result.expanded=await child.isVisible();if(result.liveFocus!=='Visibility — subclass alcohol'||!result.expanded)throw Error('Live refresh focus/expansion');
+ await page.evaluate(()=>window.__map.querySourceFeatures=window.__query);
+ await page.evaluate(()=>{const m=window.__map;window.__paint=m.setPaintProperty;let first=true;m.setPaintProperty=function(...args){if(first){first=false;throw Error('Injected transient paint failure')}return window.__paint.apply(this,args)}});
+ await page.getByRole('button',{name:'Hide all',exact:true}).click();result.error=await page.getByRole('alert').textContent();if(!result.error.includes('reopen'))throw Error('No recovery guidance');
+ await page.getByRole('button',{name:'Close modal',exact:true}).click();await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();await page.getByRole('columnheader',{name:'Loaded count',exact:true}).waitFor();
+ await page.waitForFunction(()=>!window.__map.queryRenderedFeatures({layers:['pbb-poi-points','pbb-poi-labels']}).length);result.recovery=true;
+ await page.evaluate(()=>window.__map.setPaintProperty=window.__paint);
+ await page.getByRole('button',{name:'Show all',exact:true}).click();const after=await page.evaluate(()=>({center:window.__map.getCenter().toArray(),zoom:window.__map.getZoom(),pitch:window.__map.getPitch(),bearing:window.__map.getBearing()}));if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Filter moved camera');result.cameraPreserved=true;
+ await row.getByRole('button',{name:'Expand row',exact:true}).click();await child.focus();await child.press('Space');await page.getByRole('button',{name:'Close modal',exact:true}).click();
+ const retry=await page.evaluate(async()=>{const old=window.__map;await window.__retryMap();return old!==window.__map});await page.waitForFunction(()=>window.__map?.getLayer('pbb-poi-points'));await page.waitForTimeout(600);
+ result.actualMapReplacement=retry;result.selectionPreserved=await page.evaluate(()=>window.__poiFilter.state.selected('alcohol_shop','alcohol')===false);if(!retry||!result.selectionPreserved)throw Error('Retry choice lost');
+ await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();await page.getByRole('columnheader',{name:'Loaded count',exact:true}).waitFor();result.singleDialog=await page.getByRole('dialog').count();await page.getByRole('button',{name:'Close modal',exact:true}).click();
+ await page.getByRole('button',{name:'Layers',exact:true}).click();await page.getByRole('checkbox',{name:'Points of interest',exact:true}).uncheck();result.masterOff=await page.evaluate(()=>!window.__poiFilter.state.getMaster());await page.getByRole('checkbox',{name:'Points of interest',exact:true}).check();result.masterRetainsChoice=await page.evaluate(()=>window.__poiFilter.state.selected('alcohol_shop','alcohol')===false);
+ return result;
+}
+)(page);
+```

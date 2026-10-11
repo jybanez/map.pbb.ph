@@ -1,0 +1,48 @@
+{
+  "syntheticLocation": "Cebu reference, not owner position",
+  "date": "2026-10-10T00:00:00.000Z",
+  "rows": [
+    {
+      "modelEvaluationHeightMetres": -1000,
+      "declinationDegrees": -2.0628527632369975,
+      "horizontalFieldNt": 39498.46824890817,
+      "modelSigmaDegrees": 0.29395344869487633
+    },
+    {
+      "modelEvaluationHeightMetres": 0,
+      "declinationDegrees": -2.0617219692918805,
+      "horizontalFieldNt": 39478.22524325988,
+      "modelSigmaDegrees": 0.29398626450040277
+    },
+    {
+      "modelEvaluationHeightMetres": 100,
+      "declinationDegrees": -2.0616089359897867,
+      "horizontalFieldNt": 39476.20169429527,
+      "modelSigmaDegrees": 0.2939895474366904
+    },
+    {
+      "modelEvaluationHeightMetres": 1000,
+      "declinationDegrees": -2.0605920131009254,
+      "horizontalFieldNt": 39457.99589967615,
+      "modelSigmaDegrees": 0.2940191049590634
+    },
+    {
+      "modelEvaluationHeightMetres": 3000,
+      "declinationDegrees": -2.0583346101220252,
+      "horizontalFieldNt": 39417.5781534862,
+      "modelSigmaDegrees": 0.2940848598811967
+    },
+    {
+      "modelEvaluationHeightMetres": 10000,
+      "declinationDegrees": -2.050459947521773,
+      "horizontalFieldNt": 39276.54473831364,
+      "modelSigmaDegrees": 0.29431578035085
+    },
+    {
+      "modelEvaluationHeightMetres": 100000,
+      "declinationDegrees": -1.9527179374370647,
+      "horizontalFieldNt": 37521.07746508451,
+      "modelSigmaDegrees": 0.2973942304165324
+    }
+  ]
+}

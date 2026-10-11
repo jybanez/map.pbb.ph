@@ -1,0 +1,13 @@
+{
+  "dimensions": [
+    512,
+    512
+  ],
+  "centerRGB": [
+    1,
+    141,
+    34
+  ],
+  "mapboxMeters": 166.60000000000036,
+  "terrariumMeters": -32370.8671875
+}

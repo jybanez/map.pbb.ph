@@ -1,0 +1,6 @@
+### Result
+{"pitch":85,"id":"current-location-person","status":"not-visible","error":null,"attached":true,"destroyed":false,"lngLat":[123.8854,10.3157],"terrainOffsetMeters":0,"modelScale":1.692770004825785e-7,"sizePx":34,"scaleMode":"perspective","modelHeightMeters":12,"minSizePx":8,"maxSizePx":64,"projectedSizePx":0,"headingDegrees":90,"directionAvailable":true,"hasResources":true}
+### Ran Playwright code
+```js
+await (async(page)=>{await page.evaluate(()=>{const m=window.__map;m.jumpTo({zoom:17,pitch:85,bearing:0,center:[123.8854,10.3157]});for(let i=0;i<4;i++){const p=m.project([123.8854,10.3157]);m.panBy([0,p.y-m.getCanvas().clientHeight*.25],{duration:0})}});await page.waitForTimeout(300);return await page.evaluate(()=>({pitch:window.__map.getPitch(),...window.__person.getState()}));})(page);
+```

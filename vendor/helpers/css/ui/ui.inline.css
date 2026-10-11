@@ -1,0 +1,26 @@
+.ui-inline { min-width: 0; color: var(--ui-text); }
+.ui-inline-view { font: inherit; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 6px 8px; text-align: start; max-width: 100%; overflow-wrap: anywhere; }
+.ui-inline-view:not([aria-disabled="true"]):hover { border-color: var(--ui-border); background: var(--ui-bg-soft); cursor: pointer; }
+.ui-inline-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.ui-inline-editor[hidden], .ui-inline-view[hidden] { display: none; }
+.ui-inline-field { min-width: 0; }
+.ui-inline-actions { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.ui-inline-field > input, .ui-inline-field > textarea { box-sizing: border-box; width: 100%; }
+.ui-inline-field > .ui-datepicker, .ui-inline-field > .ui-select { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+.ui-inline-field .ui-datepicker-trigger, .ui-inline-field .ui-select-trigger { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.ui-inline-action { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 32px; width: 32px; height: 32px; padding: 6px; border: 0; border-radius: 5px; background: transparent; color: var(--ui-text); cursor: pointer; }
+.ui-inline-action svg { width: 18px; height: 18px; }
+.ui-inline-action:hover:not(:disabled) { background: var(--ui-bg-soft); }
+.ui-inline-action:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.ui-inline-action:disabled { opacity: .45; cursor: default; }
+@media (pointer: coarse) { .ui-inline-action { flex-basis: 44px; width: 44px; height: 44px; } }
+.ui-inline-editor > .ui-form-error { margin: 0; }
+.ui-inline-status { color: var(--ui-muted); font-size: 12px; min-width: 0; overflow-wrap: anywhere; }
+.ui-inline-status:empty { display: none; }
+.ui-inline[data-actions-placement="inline"] .ui-inline-editor { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.ui-inline[data-actions-placement="inline"] .ui-inline-field { grid-column: 1; grid-row: 1; }
+.ui-inline[data-actions-placement="inline"] .ui-inline-actions { grid-column: 2; grid-row: 1; align-self: center; }
+.ui-inline[data-actions-placement="inline"] .ui-form-error { grid-column: 1 / -1; }
+.ui-popover.ui-inline-actions-popover { min-width: 0; transition: none; transform: none; }
+.ui-inline-actions-popover .ui-popover-content { padding: 4px; }
+.ui-inline-actions-popover .ui-inline-status { max-width: 90px; }

@@ -1,0 +1,44 @@
+async(page)=>{
+ page.setDefaultTimeout(15000);
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(ok){ok({coords:{latitude:10.3157,longitude:123.8854,accuracy:20}})}}});
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copied=value}}});
+  let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const M=v.Map,K=v.Marker;
+   v.Map=class extends M{constructor(o){super(o);window.__map=this;window.__flights=[]}flyTo(o,e){window.__flights.push(o.center);return super.flyTo(o,e)}};
+   v.Marker=class extends K{constructor(o){super(o);if(o.element.dataset.markerId==='search-destination')window.__pin=this}};
+  }});
+ });
+ await page.setViewportSize({width:375,height:740});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ const pin=page.locator('[data-marker-id="search-destination"]'),menu=page.getByRole('menu',{name:'Map location actions'});
+ const select=async value=>{await page.getByRole('button',{name:'Open map search'}).click();await page.getByRole('textbox',{name:'Search map'}).fill(value);await page.getByRole('textbox',{name:'Search map'}).press('Enter');await page.keyboard.press('Enter')};
+ const settled=()=>page.waitForFunction(()=>document.querySelector('[data-marker-id="search-destination"]')?.getAttribute('aria-disabled')==='false');
+ const check=async value=>{await menu.waitFor({state:'visible'});if(await menu.count()!==1||!(await menu.innerText()).includes(value))throw Error('Duplicate or stale menu: '+await menu.innerText())};
+ await select('10.32,123.91');
+ const hidden=await pin.evaluate(e=>({visibility:getComputedStyle(e).visibility,tabIndex:e.tabIndex,disabled:e.getAttribute('aria-disabled')}));
+ await pin.dispatchEvent('click');if(await menu.count())throw Error('Hidden pin activation');
+ await settled();await pin.click();await check('10.320000, 123.910000');
+ await page.waitForTimeout(300);await page.screenshot({path:'output/playwright/pin-context-mobile.png'});
+ await menu.getByRole('menuitem',{name:'10.320000, 123.910000',exact:true}).click();await page.waitForFunction(()=>window.__copied==='10.320000, 123.910000');
+ await page.waitForTimeout(300);await pin.focus();await pin.press('Enter');await check('10.320000, 123.910000');await page.keyboard.press('Escape');await page.waitForTimeout(300);
+ if(!await pin.evaluate(e=>e===document.activeElement))throw Error('Escape focus');
+ await pin.press('Space');await check('10.320000, 123.910000');await menu.getByRole('menuitem',{name:'Get info',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Location information',exact:true});await dialog.waitFor({state:'visible'});await page.waitForTimeout(100);
+ if(!(await dialog.innerText()).includes('10.320000, 123.910000'))throw Error('Info wrong coordinates');await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+ await pin.click();await check('10.320000, 123.910000');await menu.getByRole('menuitem',{name:'Center in view',exact:true}).click();
+ const center=await page.evaluate(()=>window.__flights.at(-1));if(center[0]!==123.91||center[1]!==10.32)throw Error('Center wrong coordinates');await page.waitForTimeout(1400);
+ await pin.click();await check('10.320000, 123.910000');await select('10.33,123.92');if(await menu.count())throw Error('Old destination menu survives new selection');await settled();
+ const r=await pin.boundingBox();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:r.x+r.width/2,y:r.y+r.height/2}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await check('10.330000, 123.920000');await pin.dispatchEvent('click');await check('10.330000, 123.920000');
+ await page.keyboard.press('Escape');await page.waitForTimeout(300);
+ const b=await pin.boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2+20,b.y+b.height/2+20,{steps:5});await page.mouse.up();if(await menu.count())throw Error('Drag activates pin');
+ await page.mouse.click(180,350,{button:'right'});await menu.waitFor({state:'visible'});await page.keyboard.press('Escape');await page.waitForTimeout(300);
+ await page.mouse.move(170,350);await page.mouse.down({button:'right'});await page.mouse.move(230,410,{steps:6});await page.mouse.up({button:'right'});await page.waitForTimeout(100);if(await menu.count())throw Error('Right drag context regression');
+ await page.setViewportSize({width:1200,height:800});await pin.click();await check('10.330000, 123.920000');
+ await page.getByRole('textbox',{name:'Search map'}).click();await page.waitForTimeout(300);if(!await page.getByRole('textbox',{name:'Search map'}).evaluate(e=>e===document.activeElement)||await menu.count())throw Error('Desktop context-to-search focus race');
+ await pin.click();await check('10.330000, 123.920000');
+ await page.evaluate(()=>{window.__oldPin=window.__pin.getElement();window.dispatchEvent(new Event('pagehide'));window.__oldPin.dispatchEvent(new MouseEvent('click',{bubbles:true}));});
+ if(await pin.count()||await menu.count()||await dialog.count())throw Error('Teardown retained UI');if(errors.length)throw Error(errors.join(';'));
+ return{hidden,click:true,keyboardEnterSpace:true,escapeFocus:true,copy:'10.320000, 123.910000',infoExact:true,center,touchTap:true,repeatedSingleMenu:true,newDestinationExact:true,dragSuppressed:true,rightClickAndDragPreserved:true,teardown:true,errors};
+}

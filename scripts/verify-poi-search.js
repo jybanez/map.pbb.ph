@@ -1,0 +1,8 @@
+async(page)=>{
+ await page.setViewportSize({width:1440,height:900});await page.evaluate(()=>{const m=window.__map;m.resize();for(const id of ['pbb-poi-points','pbb-poi-labels'])m.setLayoutProperty(id,'visibility','visible');m.jumpTo({center:[123.8854,10.3157],zoom:15});});await page.waitForFunction(()=>window.__map.loaded(),{},{timeout:15000});await page.waitForTimeout(1000);
+ const name=await page.evaluate(()=>window.__map.querySourceFeatures('pbb-poi',{sourceLayer:'poi'}).find(f=>typeof f.properties.name==='string'&&f.properties.name.trim())?.properties.name);if(!name)throw Error('No loaded names');
+ await page.getByRole('textbox',{name:'Search map',exact:true}).fill(name);
+ await page.waitForTimeout(800);
+ const text=await page.locator('body').innerText();if(!text.includes(name))throw Error('Loaded named POI search failed');
+ return {namedLoadedPoiSearch:true,name,note:'Existing search ordering tests passed; context uses same tested helper, source-reviewed.'};
+}

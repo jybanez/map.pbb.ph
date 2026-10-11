@@ -1,0 +1,199 @@
+
+> pbb-map@1.0.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# Subtest: bounded guard cache reuses a UTC day and exact position, invalidates changes and never bypasses eligibility
+ok 1 - bounded guard cache reuses a UTC day and exact position, invalidates changes and never bypasses eligibility
+  ---
+  duration_ms: 5.5176
+  ...
+# Subtest: frequent location fixes preserve a fresh cue and transitions without renewing sparse sensor freshness
+ok 2 - frequent location fixes preserve a fresh cue and transitions without renewing sparse sensor freshness
+  ---
+  duration_ms: 11.3524
+  ...
+# Subtest: missing vs partly present invalid altitude provenance never enables invalid fallback
+ok 3 - missing vs partly present invalid altitude provenance never enables invalid fallback
+  ---
+  duration_ms: 0.5555
+  ...
+# Subtest: strict default, rectangle boundaries, date and sampled field guards; reference does not mutate measured fields
+ok 4 - strict default, rectangle boundaries, date and sampled field guards; reference does not mutate measured fields
+  ---
+  duration_ms: 7.6861
+  ...
+# Subtest: session selection lifecycle, measured transitions, hidden/stale neutrality and new controller automatic default
+ok 5 - session selection lifecycle, measured transitions, hidden/stale neutrality and new controller automatic default
+  ---
+  duration_ms: 24.4581
+  ...
+# Subtest: already granted sensor queries auto-start, resume, revoke and grant without request prompts
+ok 6 - already granted sensor queries auto-start, resume, revoke and grant without request prompts
+  ---
+  duration_ms: 23.9084
+  ...
+# Subtest: prompt and denied queries require explicit activation; unsupported query passively receives without fake grant
+ok 7 - prompt and denied queries require explicit activation; unsupported query passively receives without fake grant
+  ---
+  duration_ms: 4.3891
+  ...
+# Subtest: late read-only query cannot override explicit grant or revive destroyed controller
+ok 8 - late read-only query cannot override explicit grant or revive destroyed controller
+  ---
+  duration_ms: 1.0927
+  ...
+# Subtest: pinned local correction runtime and notices match provenance inventory
+ok 9 - pinned local correction runtime and notices match provenance inventory
+  ---
+  duration_ms: 9.2083
+  ...
+# Subtest: WMM2025 matches every NOAA published reference field at epoch and2027.5, surface and100km
+ok 10 - WMM2025 matches every NOAA published reference field at epoch and2027.5, surface and100km
+  ---
+  duration_ms: 23.7172
+  ...
+# Subtest: model rejects date/location/altitude failures, altitude missing and magnetic caution; leapyear UTC fraction
+ok 11 - model rejects date/location/altitude failures, altitude missing and magnetic caution; leapyear UTC fraction
+  ---
+  duration_ms: 1.8033
+  ...
+# Subtest: diagnostics identify rejected altitude and omit raw position and sensor values
+ok 12 - diagnostics identify rejected altitude and omit raw position and sensor values
+  ---
+  duration_ms: 3.2209
+  ...
+# Subtest: north reference correction signs and screen/attitude projection, wrap smoothing and unknown source gates
+ok 13 - north reference correction signs and screen/attitude projection, wrap smoothing and unknown source gates
+  ---
+  duration_ms: 2.0202
+  ...
+# Subtest: relative Android delivery is diagnostic only, stale and cleaned with listener lifecycle
+ok 14 - relative Android delivery is diagnostic only, stale and cleaned with listener lifecycle
+  ---
+  duration_ms: 12.5297
+  ...
+# Subtest: sensor permission is explicit/single, lifecycle discards late permission and stops hidden/destroyed events
+ok 15 - sensor permission is explicit/single, lifecycle discards late permission and stops hidden/destroyed events
+  ---
+  duration_ms: 1.9514
+  ...
+# Subtest: denied/rejected permission retry and invalid readings retain neutral fallback
+ok 16 - denied/rejected permission retry and invalid readings retain neutral fallback
+  ---
+  duration_ms: 0.8647
+  ...
+# Subtest: old cached fix and future timestamp cannot refresh direction validity on Locate
+ok 17 - old cached fix and future timestamp cannot refresh direction validity on Locate
+  ---
+  duration_ms: 0.8593
+  ...
+# Subtest: Apple-like cadence, invalid accuracy/tilt and location transitions classify neutral cycles without fabricating direction
+ok 18 - Apple-like cadence, invalid accuracy/tilt and location transitions classify neutral cycles without fabricating direction
+  ---
+  duration_ms: 15.273
+  ...
+# Subtest: one watcher updates movement without ongoing camera following; Locate uses latest fix
+ok 19 - one watcher updates movement without ongoing camera following; Locate uses latest fix
+  ---
+  duration_ms: 4.0126
+  ...
+# Subtest: watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+ok 20 - watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+  ---
+  duration_ms: 0.9148
+  ...
+# Subtest: watch transient errors and invalid fixes recover; hidden startup starts only on resume
+ok 21 - watch transient errors and invalid fixes recover; hidden startup starts only on resume
+  ---
+  duration_ms: 0.5216
+  ...
+# Subtest: pending permission never permits duplicate fixes; initial fix respects user camera navigation
+ok 22 - pending permission never permits duplicate fixes; initial fix respects user camera navigation
+  ---
+  duration_ms: 0.6253
+  ...
+# Subtest: denial and timeout clear pending; stale callbacks cannot overwrite retry
+ok 23 - denial and timeout clear pending; stale callbacks cannot overwrite retry
+  ---
+  duration_ms: 1.2703
+  ...
+# Subtest: teardown invalidates callbacks and removes the finite watchdog
+ok 24 - teardown invalidates callbacks and removes the finite watchdog
+  ---
+  duration_ms: 0.5554
+  ...
+# Subtest: invalid device values are rejected without leaving busy state
+ok 25 - invalid device values are rejected without leaving busy state
+  ---
+  duration_ms: 1.2508
+  ...
+# Subtest: missing geolocation and insecure context are actionable and never request
+ok 26 - missing geolocation and insecure context are actionable and never request
+  ---
+  duration_ms: 0.4918
+  ...
+# Subtest: accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+ok 27 - accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+  ---
+  duration_ms: 7.7559
+  ...
+# Subtest: eligible counts exclude unnamed/exclusions, deduplicate loaded copies and ignore visibility
+ok 28 - eligible counts exclude unnamed/exclusions, deduplicate loaded copies and ignore visibility
+  ---
+  duration_ms: 36.3732
+  ...
+# Subtest: children independent, mixed parents, class and global actions persist across new data/master changes
+ok 29 - children independent, mixed parents, class and global actions persist across new data/master changes
+  ---
+  duration_ms: 3.0726
+  ...
+# Subtest: stable palette independent of loaded row order and shared exclusion eligibility
+ok 30 - stable palette independent of loaded row order and shared exclusion eligibility
+  ---
+  duration_ms: 0.416
+  ...
+# Subtest: actual POI names skip blank/non-string fields and preserve local/English precedence
+ok 31 - actual POI names skip blank/non-string fields and preserve local/English precedence
+  ---
+  duration_ms: 1.5174
+  ...
+# Subtest: style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+ok 32 - style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+  ---
+  duration_ms: 6.3355
+  ...
+# Subtest: public MapServer configuration rejects credentials and query tokens
+ok 33 - public MapServer configuration rejects credentials and query tokens
+  ---
+  duration_ms: 1.3403
+  ...
+# Subtest: every pinned public runtime asset matches the snapshot inventory
+ok 34 - every pinned public runtime asset matches the snapshot inventory
+  ---
+  duration_ms: 88.326
+  ...
+# Subtest: name alone precedes full numeric distance, including equal rounded metre labels
+ok 35 - name alone precedes full numeric distance, including equal rounded metre labels
+  ---
+  duration_ms: 34.1136
+  ...
+# Subtest: distance sort occurs before cap; origin updates reorder full result pool
+ok 36 - distance sort occurs before cap; origin updates reorder full result pool
+  ---
+  duration_ms: 0.5245
+  ...
+# Subtest: missing origin and equal distances have deterministic numeric coordinate ties
+ok 37 - missing origin and equal distances have deterministic numeric coordinate ties
+  ---
+  duration_ms: 0.4168
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 978.2669

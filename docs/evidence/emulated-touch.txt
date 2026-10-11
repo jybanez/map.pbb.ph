@@ -1,0 +1,33 @@
+### Result
+{"date":"2026-10-10","emulatedMobileTouch":true,"before":{"center":[123.8854,10.3157],"zoom":12},"after":{"center":[123.88011932373047,10.31567927667642],"zoom":12.998489494141126,"scroll":[390,844]},"limitations":["Emulation does not verify physical device safe areas or device GPS"]}
+### Ran Playwright code
+```js
+await (async (page) => {
+  const context = await page.context().browser().newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const mobile = await context.newPage();
+  await mobile.addInitScript(() => {
+    let lib;
+    Object.defineProperty(window, 'maplibregl', { get: () => lib, set(value) {
+      lib = value; const Original = value.Map;
+      value.Map = class extends Original { constructor(options) { super(options); window.__map = this; } };
+    } });
+  });
+  await mobile.goto('https://map.pbb.ph/');
+  await mobile.waitForFunction(() => window.__map?.loaded());
+  const before = await mobile.evaluate(() => ({ center: window.__map.getCenter().toArray(), zoom: window.__map.getZoom() }));
+  const zoomButton = await mobile.getByRole('button', { name: 'Zoom in', exact: true }).boundingBox();
+  await mobile.touchscreen.tap(zoomButton.x + zoomButton.width / 2, zoomButton.y + zoomButton.height / 2);
+  await mobile.waitForFunction(() => !window.__map.isMoving());
+  const cdp = await context.newCDPSession(mobile);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 160, y: 420, id: 1 }] });
+  for (let i = 1; i <= 6; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 160 + i * 10, y: 420, id: 1 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await mobile.waitForFunction(() => !window.__map.isMoving());
+  const after = await mobile.evaluate(() => ({ center: window.__map.getCenter().toArray(), zoom: window.__map.getZoom(), scroll: [document.documentElement.scrollWidth, document.documentElement.scrollHeight] }));
+  if (after.center[0] === before.center[0] || after.zoom < before.zoom + 0.9) throw Error('Emulated touch pan/control failed');
+  await mobile.screenshot({ path: 'output/playwright/emulated-touch.png' });
+  await cdp.detach(); await context.close();
+  return { date: '2026-10-10', emulatedMobileTouch: true, before, after, limitations: ['Emulation does not verify physical device safe areas or device GPS'] };
+}
+)(page);
+```

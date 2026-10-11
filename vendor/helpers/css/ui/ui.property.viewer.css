@@ -1,0 +1,275 @@
+.ui-property-viewer {
+  --ui-property-viewer-label-width: 180px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ui-property-viewer.is-dense {
+  gap: 10px;
+}
+
+.ui-property-viewer.is-chrome-less .ui-property-viewer-section {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ui-property-viewer.is-chrome-less .ui-property-viewer-section-header,
+.ui-property-viewer.is-chrome-less .ui-property-viewer-row {
+  padding-inline: 0;
+}
+
+.ui-property-viewer-label,
+.ui-property-viewer-section-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-property-viewer-selection {
+  display: grid;
+  grid-template-columns: var(--ui-property-viewer-label-width) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border, #2b3750);
+  border-radius: 12px;
+  background: var(--ui-bg-soft, #101826);
+}
+
+.ui-property-viewer-selection-label,
+.ui-property-viewer-label {
+  color: var(--ui-text, #d7e0f4);
+  font-weight: 600;
+}
+
+.ui-property-viewer-selection-value,
+.ui-property-viewer-display {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 0;
+  color: var(--ui-text, #d7e0f4);
+  display: block;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.ui-property-viewer-row.is-sensitive .ui-property-viewer-display {
+  word-break: break-all;
+}
+
+.ui-property-viewer-section {
+  border: 1px solid var(--ui-border, #2b3750);
+  border-radius: 12px;
+  background: var(--ui-bg-soft, #101826);
+  overflow: hidden;
+}
+
+.ui-property-viewer-section-header {
+  padding: 12px 14px 10px;
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-border-strong, #344769) 40%, transparent);
+}
+
+.ui-property-viewer-section-title {
+  color: var(--ui-text, #d7e0f4);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ui-property-viewer-section-description,
+.ui-property-viewer-help {
+  color: var(--ui-muted, #9fb2d8);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ui-property-viewer-section-body {
+  display: grid;
+}
+
+.ui-property-viewer-row {
+  display: grid;
+  grid-template-columns: var(--ui-property-viewer-label-width) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border, #2b3750) 55%, transparent);
+}
+
+.ui-property-viewer-section-body > :first-child.ui-property-viewer-row,
+.ui-property-viewer-section-body > :first-child.ui-property-viewer-divider {
+  border-top: 0;
+}
+
+.ui-property-viewer.is-dense .ui-property-viewer-row {
+  padding-block: 10px;
+}
+
+.ui-property-viewer-value {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.ui-property-viewer-custom {
+  min-width: 0;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--ui-text, #d7e0f4);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ui-property-viewer-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.ui-property-viewer-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 9px;
+  border: 1px solid color-mix(in srgb, var(--ui-accent, #6f9cff) 34%, var(--ui-border-strong, #344769));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-accent, #6f9cff) 12%, var(--ui-bg, #0f1b30));
+  color: var(--ui-text, #d7e0f4);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ui-property-viewer-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ui-property-viewer-color-swatch {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--ui-border-strong, #344769);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ui-bg-soft, #101826) 74%, transparent);
+  flex: 0 0 auto;
+}
+
+.ui-property-viewer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ui-property-viewer-actions:empty {
+  display: none;
+}
+
+.ui-property-viewer-action,
+.ui-property-viewer-copy,
+.ui-property-viewer-sensitive-toggle {
+  min-height: 34px;
+}
+
+.ui-property-viewer-copy,
+.ui-property-viewer-sensitive-toggle {
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+}
+
+.ui-property-viewer-divider {
+  height: 1px;
+  background: color-mix(in srgb, var(--ui-border, #2b3750) 72%, transparent);
+}
+
+.ui-property-viewer-row.is-neutral .ui-property-viewer-display {
+  color: var(--ui-muted, #9fb2d8);
+}
+
+.ui-property-viewer-row.is-success .ui-property-viewer-display {
+  color: var(--ui-success, #45c47a);
+}
+
+.ui-property-viewer-row.is-info .ui-property-viewer-display {
+  color: var(--ui-accent, #6f9cff);
+}
+
+.ui-property-viewer-row.is-warning .ui-property-viewer-display {
+  color: var(--ui-warning, #f4be49);
+}
+
+.ui-property-viewer-row.is-danger .ui-property-viewer-display {
+  color: var(--ui-danger, #ff5f67);
+}
+
+.ui-property-viewer.is-mobile-columns .ui-property-viewer-row {
+  min-width: 0;
+}
+
+.ui-property-viewer.is-mobile-columns .ui-property-viewer-row:has(.ui-property-viewer-actions:not(:empty)) {
+  grid-template-columns: var(--ui-property-viewer-label-width) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.ui-property-viewer.is-mobile-columns .ui-property-viewer-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ui-property-viewer.is-mobile-columns .ui-property-viewer-action {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ui-property-viewer.is-mobile-columns .ui-property-viewer-chip {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .ui-property-viewer-selection,
+  .ui-property-viewer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-property-viewer-actions {
+    justify-content: flex-start;
+  }
+
+  .ui-property-viewer.is-dense .ui-property-viewer-row {
+    gap: 2px;
+  }
+
+  .ui-property-viewer.is-mobile-columns .ui-property-viewer-selection,
+  .ui-property-viewer.is-mobile-columns .ui-property-viewer-row,
+  .ui-property-viewer.is-mobile-columns .ui-property-viewer-row:has(.ui-property-viewer-actions:not(:empty)) {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    column-gap: 12px;
+  }
+
+  .ui-property-viewer.is-mobile-columns .ui-property-viewer-selection-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .ui-property-viewer.is-mobile-columns .ui-property-viewer-actions {
+    grid-column: 1 / -1;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+
+}

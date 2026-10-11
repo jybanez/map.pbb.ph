@@ -1,0 +1,14 @@
+async(page)=>{
+ const result={};await page.setViewportSize({width:375,height:740});
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true});
+ const box=await page.getByRole('button',{name:'Filter points of interest',exact:true}).boundingBox();const touch={x:box.x+box.width/2,y:box.y+box.height/2};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.getByRole('columnheader',{name:'Loaded count',exact:true}).waitFor();result.touchOpen=true;
+ await page.getByRole('button',{name:'Hide all',exact:true}).click();await page.getByRole('button',{name:'Close modal',exact:true}).click();
+ await page.evaluate(()=>{const m=window.__map;m.jumpTo({zoom:16,center:[123.8864,10.3167],pitch:60,bearing:25})});await page.waitForTimeout(800);result.panZoomChoices=await page.evaluate(()=>!window.__poiFilter.state.selected('shop','mall'));if(!result.panZoomChoices)throw Error('Pan/zoom selection lost');
+ await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();await page.getByRole('columnheader',{name:'Loaded count',exact:true}).waitFor();await page.screenshot({path:'output/playwright/poi-filter-mobile-final.png'});
+ result.fit=await page.getByRole('dialog').evaluate(e=>e.scrollWidth===e.clientWidth);if(!result.fit)throw Error('Mobile overflow');await page.getByRole('button',{name:'Close modal',exact:true}).click();
+ await page.evaluate(async()=>{const {uiLoader}=await import('/vendor/helpers/js/ui/ui.loader.js?v=0.21.283');window.__get=uiLoader.get;window.__loader=uiLoader;uiLoader.get=async function(name,...args){if(name==='ui.tree.grid'||name==='ui.checkbox')await new Promise(r=>setTimeout(r,600));return window.__get.call(this,name,...args)}});
+ await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();await page.evaluate(()=>window.__retryMap());await page.waitForFunction(()=>window.__map?.getLayer('pbb-poi-points'));await page.waitForTimeout(800);result.contextCancellation=!await page.getByRole('dialog').count();if(!result.contextCancellation)throw Error('Late context revived modal');await page.evaluate(()=>window.__loader.get=window.__get);
+ result.retryHidden=await page.evaluate(()=>!window.__poiFilter.state.selected('shop','mall'));await page.getByRole('button',{name:'Filter points of interest',exact:true}).click();await page.getByRole('columnheader',{name:'Loaded count',exact:true}).waitFor();await page.getByRole('button',{name:'Show all',exact:true}).click();
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));result.teardown=await page.getByRole('dialog').count()===0&&await page.getByRole('button',{name:'Filter points of interest',exact:true}).count()===0;if(!result.teardown)throw Error('Teardown leak');
+ return result;
+}

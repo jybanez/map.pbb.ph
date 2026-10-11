@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-10",
+  "checks": [
+    {
+      "state": "requesting",
+      "disabled": true,
+      "label": "Locate \u2014 Requesting your location\u2026"
+    },
+    {
+      "width": 320,
+      "navbarHeight": 67,
+      "layout": "ui-navbar is-mobile-layout-scroll has-brand has-end-slot",
+      "radius": "0px",
+      "borders": [
+        "0px",
+        "0px",
+        "0px",
+        "1px"
+      ],
+      "overflow": false,
+      "attribution": false,
+      "locate": {
+        "x": 269,
+        "y": 676,
+        "width": 48,
+        "height": 48,
+        "color": "rgb(96, 220, 148)",
+        "state": "success",
+        "label": "Locate \u2014 Location found. Reported accuracy: 25 m. The circle is an estimate, not guaranteed precision."
+      }
+    },
+    {
+      "width": 375,
+      "navbarHeight": 67,
+      "layout": "ui-navbar is-mobile-layout-scroll has-brand has-end-slot",
+      "radius": "0px",
+      "borders": [
+        "0px",
+        "0px",
+        "0px",
+        "1px"
+      ],
+      "overflow": false,
+      "attribution": false,
+      "locate": {
+        "x": 311,
+        "y": 676,
+        "width": 48,
+        "height": 48,
+        "color": "rgb(96, 220, 148)",
+        "state": "success",
+        "label": "Locate \u2014 Location found. Reported accuracy: 25 m. The circle is an estimate, not guaranteed precision."
+      }
+    },
+    {
+      "width": 1440,
+      "navbarHeight": 67,
+      "layout": "ui-navbar is-mobile-layout-scroll has-brand has-end-slot",
+      "radius": "0px",
+      "borders": [
+        "0px",
+        "0px",
+        "0px",
+        "1px"
+      ],
+      "overflow": false,
+      "attribution": false,
+      "locate": {
+        "x": 1376,
+        "y": 836,
+        "width": 48,
+        "height": 48,
+        "color": "rgb(96, 220, 148)",
+        "state": "success",
+        "label": "Locate \u2014 Location found. Reported accuracy: 25 m. The circle is an estimate, not guaranteed precision."
+      }
+    },
+    {
+      "state": "error",
+      "label": "Locate \u2014 The device could not determine your location. Choose Locate to try again; the map remains available.",
+      "disabled": false
+    }
+  ],
+  "uncaughtErrors": []
+}

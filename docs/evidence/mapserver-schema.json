@@ -1,0 +1,307 @@
+{
+  "date": "2026-10-10",
+  "area": "Cebu City",
+  "tiles": [
+    {
+      "url": "https://mapserver.pbb.ph/tiles/vector/14/13830/7719.pbf",
+      "status": 200,
+      "bytes": 261465,
+      "cache": "HIT",
+      "cors": "*",
+      "layers": {
+        "water": {
+          "count": 1,
+          "properties": {
+            "class": "river",
+            "intermittent": 0
+          }
+        },
+        "waterway": {
+          "count": 4,
+          "properties": {
+            "name": "Kamputhaw River",
+            "name_en": "Kamputhaw River",
+            "name_de": "Kamputhaw River",
+            "name_int": "Kamputhaw River",
+            "name:latin": "Kamputhaw River",
+            "class": "river",
+            "intermittent": 0
+          }
+        },
+        "landcover": {
+          "count": 66,
+          "properties": {
+            "class": "wood",
+            "subclass": "wood"
+          }
+        },
+        "landuse": {
+          "count": 130,
+          "properties": {
+            "class": "residential"
+          }
+        },
+        "aeroway": {
+          "count": 2,
+          "properties": {
+            "ref": "",
+            "class": "helipad"
+          }
+        },
+        "transportation": {
+          "count": 1511,
+          "properties": {
+            "class": "path",
+            "subclass": "",
+            "oneway": 0,
+            "ramp": 0,
+            "brunnel": "tunnel",
+            "layer": -1,
+            "surface": "paved"
+          }
+        },
+        "building": {
+          "count": 2308,
+          "properties": {
+            "height": "3",
+            "levels": "1",
+            "render_height": 3,
+            "render_min_height": 0
+          }
+        },
+        "water_name": {
+          "count": 4,
+          "properties": {
+            "name": "",
+            "name_en": "",
+            "name_de": "",
+            "class": "bay",
+            "intermittent": 0
+          }
+        },
+        "transportation_name": {
+          "count": 187,
+          "properties": {
+            "name": "Governor M. Roa St.",
+            "name_en": "Governor M. Roa St.",
+            "name_de": "Governor M. Roa St.",
+            "name_int": "Governor M. Roa St.",
+            "name:latin": "Governor M. Roa St.",
+            "class": "service"
+          }
+        },
+        "place": {
+          "count": 38,
+          "properties": {
+            "name": "Guadalupe",
+            "name_en": "Guadalupe",
+            "name_de": "Guadalupe",
+            "name_int": "Guadalupe",
+            "name:latin": "Guadalupe",
+            "class": "suburb",
+            "rank": 11
+          }
+        },
+        "housenumber": {
+          "count": 45,
+          "properties": {
+            "housenumber": "32"
+          }
+        },
+        "poi": {
+          "count": 1856,
+          "properties": {
+            "name": "Nuclear Medicine - Perpetual Soccur Hospital",
+            "name_en": "Nuclear Medicine - Perpetual Soccur Hospital",
+            "name_de": "Nuclear Medicine - Perpetual Soccur Hospital",
+            "name_int": "Nuclear Medicine - Perpetual Soccur Hospital",
+            "name:latin": "Nuclear Medicine - Perpetual Soccur Hospital",
+            "class": "hospital",
+            "subclass": "clinic",
+            "rank": 1
+          }
+        }
+      }
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/poi/14/13830/7719.pbf",
+      "status": 200,
+      "bytes": 342048,
+      "cache": "HIT",
+      "cors": "*",
+      "layers": {
+        "building": {
+          "count": 37,
+          "properties": {
+            "render_height": 5,
+            "render_min_height": 0
+          }
+        },
+        "housenumber": {
+          "count": 43,
+          "properties": {
+            "housenumber": "32"
+          }
+        },
+        "landcover": {
+          "count": 67,
+          "properties": {
+            "class": "grass",
+            "subclass": "grass"
+          }
+        },
+        "landuse": {
+          "count": 69,
+          "properties": {
+            "class": "school"
+          }
+        },
+        "mountain_peak": {
+          "count": 1,
+          "properties": {
+            "class": "ridge",
+            "rank": 3
+          }
+        },
+        "place": {
+          "count": 94,
+          "properties": {
+            "class": "state",
+            "name": "Cebu",
+            "name:ar": "سيبو",
+            "name:bn": "সেবু",
+            "name:br": "Cebu",
+            "name:ca": "Cebú",
+            "name:cs": "Cebu",
+            "name:da": "Cebu",
+            "name:de": "Cebu",
+            "name:el": "Σεμπού",
+            "name:en": "Cebu",
+            "name:eo": "Cebuo",
+            "name:es": "Cebú",
+            "name:et": "Cebu",
+            "name:eu": "Cebu",
+            "name:fi": "Cebu",
+            "name:fr": "Cebu",
+            "name:he": "סבו",
+            "name:hi": "सिबु",
+            "name:hu": "Cebu",
+            "name:hy": "Սեբու",
+            "name:id": "Cebu",
+            "name:it": "Cebu",
+            "name:ja": "セブ州",
+            "name:ka": "სებუ (პროვინცია)",
+            "name:kn": "ಸೆಬು",
+            "name:ko": "세부주",
+            "name:la": "Caebua",
+            "name:latin": "Cebu",
+            "name:lt": "Sebu",
+            "name:lv": "Sebu",
+            "name:mk": "Себу",
+            "name:ml": "സെബൂ",
+            "name:nb": "Cebu",
+            "name:nl": "Cebu",
+            "name:nn": "Cebu",
+            "name:no": "Cebu",
+            "name:oc": "Cebu",
+            "name:pl": "Cebu",
+            "name:pt": "Cebu",
+            "name:ru": "Себу",
+            "name:sl": "Cebu",
+            "name:sr": "Себу",
+            "name:sv": "Cebu",
+            "name:ta": "செப்பு",
+            "name:te": "సెబు",
+            "name:th": "เซบู",
+            "name:tr": "Cebu",
+            "name:uk": "Себу",
+            "name:vi": "Cebu",
+            "name:zh": "宿务省",
+            "name_int": "Cebu",
+            "rank": 4,
+            "wikidata": "Q13786"
+          }
+        },
+        "poi": {
+          "count": 2223,
+          "properties": {
+            "class": "school",
+            "name": "UP High School – Cebu",
+            "name:latin": "UP High School – Cebu",
+            "name_de": "UP High School – Cebu",
+            "name_en": "UP High School – Cebu",
+            "name_int": "UP High School – Cebu",
+            "rank": 2,
+            "subclass": "school"
+          }
+        },
+        "transportation": {
+          "count": 253,
+          "properties": {
+            "class": "secondary",
+            "oneway": 1,
+            "surface": "paved"
+          }
+        },
+        "transportation_name": {
+          "count": 148,
+          "properties": {
+            "class": "secondary",
+            "name": "Osmeña Boulevard",
+            "name:latin": "Osmeña Boulevard",
+            "name_de": "Osmeña Boulevard",
+            "name_en": "Osmeña Boulevard",
+            "name_int": "Osmeña Boulevard"
+          }
+        },
+        "water": {
+          "count": 9,
+          "properties": {
+            "class": "river",
+            "id": 16544258,
+            "intermittent": 0
+          }
+        },
+        "water_name": {
+          "count": 5,
+          "properties": {
+            "class": "lake",
+            "intermittent": 0,
+            "name": "Emerald Lake",
+            "name:latin": "Emerald Lake",
+            "name_de": "Emerald Lake",
+            "name_en": "Emerald Lake",
+            "name_int": "Emerald Lake"
+          }
+        },
+        "waterway": {
+          "count": 4,
+          "properties": {
+            "class": "river",
+            "intermittent": 0,
+            "name": "Kamputhaw River",
+            "name:latin": "Kamputhaw River",
+            "name_de": "Kamputhaw River",
+            "name_en": "Kamputhaw River",
+            "name_int": "Kamputhaw River"
+          }
+        }
+      }
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/terrain/12/3457/1929.png",
+      "status": 200,
+      "bytes": 319444,
+      "cache": "HIT",
+      "cors": "*",
+      "dimensions": [
+        512,
+        512
+      ]
+    }
+  ],
+  "glyphs": {
+    "status": 200,
+    "bytes": 82888
+  }
+}

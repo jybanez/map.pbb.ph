@@ -1,0 +1,28 @@
+async(page)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{
+  for(const type of ['deviceorientation','deviceorientationabsolute'])window.addEventListener(type,e=>{if(e.isTrusted)e.stopImmediatePropagation();},true);
+  Object.defineProperty(navigator,'userAgent',{configurable:true,value:'Mozilla/5.0 (Linux; Android 14) Chrome/130.0.0.0 Mobile'});
+  window.DeviceOrientationEvent={};Object.defineProperty(screen,'orientation',{configurable:true,value:Object.assign(new EventTarget(),{angle:0})});
+  Object.defineProperty(navigator,'geolocation',{configurable:true,value:{watchPosition(ok){window.__fix=ok;return 1;},clearWatch(){}}});
+  let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}}}});
+ });
+ await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__fix&&window.__map?.loaded());
+ await page.evaluate(()=>window.__fix({timestamp:Date.now(),coords:{latitude:10.315712345,longitude:123.885412345,accuracy:20,altitude:null,altitudeAccuracy:10}}));
+ await page.waitForFunction(()=>document.querySelector('.ui-map-location-person-label'));await page.waitForTimeout(200);
+ await page.evaluate(()=>{const e=new Event('deviceorientation');Object.assign(e,{alpha:270,beta:0,gamma:0});window.dispatchEvent(e);});
+ const instant=await page.evaluate(()=>{document.querySelector('[aria-label="Direction diagnostics"]').click();const d=document.querySelector('[role="dialog"]');return {visible:!!d,text:d?.textContent};});
+ if(!instant.visible||!instant.text.includes('Reading local direction status'))throw Error('Modal did not open busy immediately');
+ const dialog=page.getByRole('dialog',{name:'Direction diagnostics'});
+ await dialog.getByText('Ellipsoid altitude',{exact:true}).waitFor();
+ let text=await dialog.innerText();if(!/altitude/i.test(text))throw Error('Missing altitude reason');
+ if(!text.includes('Relative orientation events arrive')||!text.includes('Absolute event delivery'))throw Error('Missing relative/absolute distinction');
+ if(text.includes('10.315712345')||text.includes('123.885412345'))throw Error('Raw position leaked');
+ await page.evaluate(()=>{window.__fix({timestamp:Date.now(),coords:{latitude:10.315712345,longitude:123.885412345,accuracy:20,altitude:40,altitudeAccuracy:10}});const e=new Event('deviceorientationabsolute');Object.assign(e,{absolute:true,alpha:270,beta:0,gamma:0});window.dispatchEvent(e);});
+ await dialog.getByRole('button',{name:'Refresh diagnostics'}).click();await dialog.getByText('Direction inputs are accepted',{exact:true}).waitFor();
+ await page.setViewportSize({width:390,height:780});await page.screenshot({path:'output/playwright/direction-diagnostics-mobile.png'});
+ await dialog.getByRole('button',{name:'Close',exact:true}).last().click();
+ await page.evaluate(()=>{const b=document.querySelector('[aria-label="Direction diagnostics"]');b.click();b.click();document.querySelector('[role="dialog"] [aria-label="Close modal"]').click();});
+ await page.waitForTimeout(100);if(await dialog.isVisible())throw Error('Dismissed loading modal revived');
+ if(errors.length)throw Error(errors.join(';'));return {immediateBusy:true,missingAltitudeReason:true,relativeAbsoluteDistinction:true,refreshAccepted:true,rawValuesAbsent:true,dismissWhileLoading:true,pageErrors:errors};
+}

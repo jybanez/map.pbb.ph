@@ -1,0 +1,78 @@
+### Result
+{"date":"2026-10-10","checks":[{"copy":true,"copyFailure":true,"center":true,"information":true,"immediateBusy":true,"dismissal":true},{"syntheticPoiDedupAndRadius":true,"readError":true}],"longPress":true,"movementCancelled":true,"multitouchCancelled":true,"edgePlacement":true,"keyboardMenu":true,"cleanup":true,"uncaughtErrors":[],"limitations":"Synthetic touch event gesture checks; real mobile hardware remains unverified."}
+### Ran Playwright code
+```js
+await (async (page) => {
+  const errors=[],checks=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>{
+    Object.defineProperty(navigator,'geolocation',{configurable:true,value:undefined});
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{if(window.__copyFail)throw Error('denied');window.__copied=text;}}});
+    let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});
+  });
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+  const canvas=page.locator('canvas.maplibregl-canvas'),menu=page.getByRole('menu',{name:'Map location actions'});
+  await canvas.click({button:'right',position:{x:200,y:200}});
+  const coordinate=await menu.getByRole('menuitem').first().innerText();
+  await menu.getByRole('menuitem').first().click();
+  if(await page.evaluate(()=>window.__copied)!==coordinate)throw Error('Copy wrong coordinate');
+  await canvas.click({button:'right',position:{x:200,y:200}});
+  await menu.getByRole('menuitem',{name:'Center in view'}).click();
+  await page.waitForFunction(()=>!window.__map.isMoving());
+  const center=await page.evaluate(()=>window.__map.getCenter().toArray());
+  const [lat,lng]=coordinate.split(',').map(Number);if(Math.abs(center[0]-lng)>0.00001||Math.abs(center[1]-lat)>0.00001)throw Error('Center wrong coordinate');
+  await canvas.click({button:'right',position:{x:200,y:200}});
+  await page.evaluate(()=>window.__copyFail=true);
+  await menu.getByRole('menuitem').first().click();
+  await page.getByText('Could not copy coordinates. Allow clipboard access and try again.',{exact:true}).waitFor();
+  await canvas.click({button:'right',position:{x:200,y:200}});
+  await menu.getByRole('menuitem',{name:'Get info'}).click();
+  const dialog=page.getByRole('dialog',{name:'Location information'});
+  await dialog.getByText(/Latitude, longitude/).waitFor();
+  await dialog.getByText(/^Nearby POIs within 250 m/).waitFor();
+  await page.waitForTimeout(250);await page.screenshot({path:'output/playwright/context-info-desktop.png'});
+  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+  // Hold the content paint to verify immediate busy opening and dismissal cancellation.
+  await page.evaluate(()=>{window.__raf=requestAnimationFrame;window.__frames=[];window.requestAnimationFrame=cb=>{window.__frames.push(cb);return 1;};});
+  await canvas.click({button:'right',position:{x:200,y:200}});
+  await page.evaluate(()=>[...document.querySelectorAll('[role="menuitem"]')].find(b=>b.textContent==='Get info').click());
+  const immediate=await page.evaluate(()=>({open:document.querySelector('.ui-modal-root')?.getAttribute('aria-hidden'),busy:document.querySelector('.ui-modal-busy')?.hidden}));
+  if(immediate.open!=='false'||immediate.busy)throw Error('Modal did not open busy immediately');
+  await page.evaluate(()=>document.querySelector('.ui-modal-close').click());
+  await page.evaluate(()=>{window.requestAnimationFrame=window.__raf;window.__frames.splice(0).forEach(cb=>cb(performance.now()));});
+  await dialog.waitFor({state:'hidden'});
+  checks.push({copy:true,copyFailure:true,center:true,information:true,immediateBusy:true,dismissal:true});
+  await canvas.click({button:'right',position:{x:200,y:200}});
+  const fixturePoint=(await menu.getByRole('menuitem').first().innerText()).split(',').map(Number);
+  await page.evaluate(([lat,lng])=>{window.__sourceQuery=window.__map.querySourceFeatures;const f={geometry:{type:'Point',coordinates:[lng,lat]},properties:{name:'Test nearby POI'}};window.__map.querySourceFeatures=()=>[f,f,{...f,geometry:{type:'Point',coordinates:[0,0]}}];},fixturePoint);
+  await menu.getByRole('menuitem',{name:'Get info'}).click();await dialog.getByText('Test nearby POI — approximately 0 m',{exact:true}).waitFor();
+  if(await dialog.locator('li').count()!==1)throw Error('POI dedup/radius failed');
+  await page.waitForTimeout(250);await page.screenshot({path:'output/playwright/context-info-populated.png'});
+  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+  await page.evaluate(()=>window.__map.querySourceFeatures=()=>{throw Error('tile read failure');});
+  await canvas.click({button:'right',position:{x:200,y:200}});await menu.getByRole('menuitem',{name:'Get info'}).click();
+  await dialog.getByText(/^Nearby map data could not be read/).waitFor();
+  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+  await page.evaluate(()=>window.__map.querySourceFeatures=window.__sourceQuery);
+  checks.push({syntheticPoiDedupAndRadius:true,readError:true});
+  await page.setViewportSize({width:375,height:740});
+  async function touch(type,touches){await canvas.dispatchEvent(type,{touches:touches.map(([x,y],identifier)=>({identifier,clientX:x,clientY:y})),changedTouches:[]});}
+  await touch('touchstart',[[150,250]]);await touch('touchmove',[[180,250]]);await page.waitForTimeout(700);
+  if(await menu.isVisible())throw Error('Pan opened menu');await touch('touchend',[]);
+  await touch('touchstart',[[150,250]]);await touch('touchstart',[[150,250],[180,260]]);await page.waitForTimeout(700);
+  if(await menu.isVisible())throw Error('Multitouch opened menu');await touch('touchend',[]);
+  await touch('touchstart',[[350,690]]);await page.waitForTimeout(700);await touch('touchend',[]);
+  await menu.waitFor();const box=await menu.boundingBox();if(box.x<0||box.x+box.width>375||box.y+box.height>740)throw Error('Menu outside viewport');
+  await page.waitForTimeout(250);await page.screenshot({path:'output/playwright/context-menu-mobile.png'});
+  await menu.getByRole('menuitem',{name:'Get info'}).click();await dialog.getByText(/Latitude, longitude/).waitFor();
+  await page.waitForTimeout(250);await page.screenshot({path:'output/playwright/context-info-mobile.png'});
+  await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+  await canvas.focus();await page.keyboard.press('Shift+F10');await menu.waitFor();await page.keyboard.press('Escape');
+  await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));
+  if(await page.locator('.pbb-context-anchor').count())throw Error('Context anchor not cleaned');
+  if(errors.length)throw Error(errors.join(';'));
+  return{date:'2026-10-10',checks,longPress:true,movementCancelled:true,multitouchCancelled:true,edgePlacement:true,keyboardMenu:true,cleanup:true,uncaughtErrors:errors,limitations:'Synthetic touch event gesture checks; real mobile hardware remains unverified.'};
+}
+)(page);
+```

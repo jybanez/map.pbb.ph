@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-10",
+  "cleanBrowserContext": true,
+  "blockedExternalRequests": [],
+  "requestedOrigins": [
+    "https://map.pbb.ph",
+    "https://mapserver.pbb.ph"
+  ],
+  "requestCount": 88,
+  "failedResponses": [],
+  "limitations": [
+    "This blocks browser public CDN requests only. MapServer backend upstream access was not disabled; this does not satisfy genuine local-node offline acceptance."
+  ]
+}

@@ -1,0 +1,37 @@
+async(page)=>{
+ page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{
+  window.__hidden=false;Object.defineProperty(document,'hidden',{configurable:true,get:()=>window.__hidden});
+  Object.defineProperty(navigator,'userAgent',{configurable:true,value:'Android Chrome/154.0.8037.127'});window.__calls=0;
+  window.DeviceOrientationEvent={requestPermission(){window.__calls++;return Promise.resolve('granted');}};
+  Object.defineProperty(screen,'orientation',{configurable:true,value:Object.assign(new EventTarget(),{angle:0})});
+  for(const type of ['deviceorientation','deviceorientationabsolute'])window.addEventListener(type,e=>{if(e.isTrusted)e.stopImmediatePropagation();},true);
+  Object.defineProperty(navigator,'geolocation',{configurable:true,value:{watchPosition(ok){window.__fix=ok;return 1;},clearWatch(){}}});
+  let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}}}});
+ });
+ await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__fix&&window.__map?.loaded());
+ const fix=async(altitude=null,altitudeAccuracy=null,latitude=10.3157)=>page.evaluate(({altitude,altitudeAccuracy,latitude})=>window.__fix({timestamp:Date.now(),coords:{latitude,longitude:123.8854,accuracy:20,altitude,altitudeAccuracy}}),{altitude,altitudeAccuracy,latitude});
+ const sensor=()=>page.evaluate(()=>{const e=new Event('deviceorientationabsolute');Object.assign(e,{absolute:true,alpha:270,beta:0,gamma:0});window.dispatchEvent(e);});
+ await fix();await page.waitForFunction(()=>document.querySelector('.ui-map-location-person-label'));await page.locator('#locate-control button').click();await sensor();
+ const options=()=>page.locator('#zoom-control').getByRole('button',{name:'Direction options',exact:true});const dialog=page.getByRole('dialog',{name:'Use approximate direction?'});
+ await page.evaluate(()=>{document.querySelector('#zoom-control [aria-label="Direction options"]').click();document.querySelector('[role="dialog"] [aria-label="Close modal"]').click();});await page.waitForTimeout(220);if(await dialog.isVisible())throw Error('Cancelled loading revived');
+ const immediate=await page.evaluate(()=>{document.querySelector('#zoom-control [aria-label="Direction options"]').click();return document.querySelector('[role="dialog"]').innerText;});if(!immediate.includes('Reading direction options'))throw Error('Options not immediate busy');
+ await dialog.getByLabel('Direction mode',{exact:true}).waitFor();await dialog.getByLabel('Direction mode',{exact:true}).selectOption('approximate');await dialog.getByRole('button',{name:'Apply',exact:true}).click();
+ const alert=page.getByRole('dialog',{name:'Check direction options'});await alert.waitFor();if(!await dialog.getByRole('checkbox').getAttribute('aria-invalid'))throw Error('Missing field cue');await alert.getByRole('button',{name:'OK',exact:true}).click();
+ if(await page.locator('#direction-mode-status').isVisible())throw Error('Invalid selection applied');
+ await dialog.getByRole('checkbox',{name:'I am using the map on the ground.'}).check();await dialog.getByRole('button',{name:'Apply',exact:true}).click();await dialog.waitFor({state:'hidden'});await sensor();
+ await page.getByText('Approximate direction · altitude unavailable',{exact:true}).waitFor();if(!(await page.locator('.ui-map-location-person-label').getAttribute('aria-label')).includes('approximate geographic'))throw Error('Missing accessible label');
+ if(await page.evaluate(()=>window.__calls)!==1)throw Error('Options requested permission');
+ await page.evaluate(()=>window.__map.jumpTo({bearing:125,pitch:60}));await sensor();if(await page.evaluate(()=>window.__map.getBearing())!==125)throw Error('Camera followed');
+ await page.setViewportSize({width:390,height:780});await page.screenshot({path:'output/playwright/approximate-mobile.png'});
+ await page.waitForTimeout(2100);if(await page.locator('#direction-mode-status').isVisible())throw Error('Stale approximate label');await sensor();
+ await page.evaluate(()=>{window.__hidden=true;document.dispatchEvent(new Event('visibilitychange'));});if(await page.locator('#direction-mode-status').isVisible())throw Error('Hidden approximate cue');await sensor();await page.evaluate(()=>{window.__hidden=false;document.dispatchEvent(new Event('visibilitychange'));});await sensor();await page.getByText('Approximate direction · altitude unavailable',{exact:true}).waitFor();
+ await fix(40,10);await sensor();if(await page.locator('#direction-mode-status').isVisible())throw Error('Measured label persisted');if((await page.locator('.ui-map-location-person-label').getAttribute('aria-label')).includes('approximate'))throw Error('Measured accessible label');
+ await fix(null,null,23);await sensor();await page.getByText('Approximate direction is unavailable outside the Philippines region.',{exact:true}).waitFor();
+ await fix();await sensor();await page.getByText('Approximate direction · altitude unavailable',{exact:true}).waitFor();
+ await fix(null,-1);await sensor();if(await page.locator('#direction-mode-status').isVisible())throw Error('Partial invalid altitude bypass');await fix();await sensor();
+ await options().click();await dialog.getByLabel('Direction mode').waitFor();await dialog.getByLabel('Direction mode').selectOption('strict');await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await dialog.waitFor({state:'hidden'});await sensor();if(!await page.locator('#direction-mode-status').isVisible())throw Error('Cancel changed mode');
+ await options().click();await dialog.getByLabel('Direction mode').waitFor();await dialog.getByLabel('Direction mode').selectOption('strict');await dialog.getByRole('button',{name:'Apply',exact:true}).click();await dialog.waitFor({state:'hidden'});await sensor();if(await page.locator('#direction-mode-status').isVisible())throw Error('Strict selection');
+ await page.reload();await page.waitForFunction(()=>window.__fix&&window.__map?.loaded());await fix();await sensor();if(await page.locator('#direction-mode-status').isVisible())throw Error('Session persisted');
+ if(errors.length)throw Error(errors.join(';'));return{strictDefault:true,immediateBusy:true,loadingCancellation:true,conditionalValidation:true,explicitSessionOnly:true,persistentAccessibleLabel:true,noPermissionOnOptions:true,cameraIndependent:true,measuredTransition:true,partlyInvalidNeutral:true,staleHiddenNeutral:true,outsideRegionNeutral:true,cancelPreserves:true,reloadResets:true,errors};
+}

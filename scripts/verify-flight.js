@@ -1,0 +1,32 @@
+async(page)=>{
+  const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+  await page.setViewportSize({width:1280,height:800});
+  await page.addInitScript(()=>{Object.defineProperty(navigator,'geolocation',{configurable:true,value:undefined});let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});});
+  const checks=[];
+  for(const reduced of [false,true]){
+    await page.emulateMedia({reducedMotion:reduced?'reduce':'no-preference'});
+    await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+    await page.evaluate(()=>window.__map.jumpTo({zoom:12,pitch:35,bearing:23}));
+    const before=await page.evaluate(()=>({center:window.__map.getCenter().toArray(),zoom:window.__map.getZoom(),pitch:window.__map.getPitch(),bearing:window.__map.getBearing()}));
+    await page.mouse.click(1100,500,{button:'right'});
+    const text=await page.getByRole('menu',{name:'Map location actions'}).getByRole('menuitem').first().innerText();
+    const [lat,lng]=text.split(',').map(Number);
+    await page.getByRole('menuitem',{name:'Center in view',exact:true}).click();
+    await page.waitForTimeout(250);
+    const intermediate=await page.evaluate(()=>({moving:window.__map.isMoving(),center:window.__map.getCenter().toArray()}));
+    if(!intermediate.moving||Math.abs(intermediate.center[0]-before.center[0])<0.000001||Math.abs(intermediate.center[0]-lng)<0.000001)throw Error('No intermediate flight');
+    await page.waitForFunction(()=>!window.__map.isMoving());
+    const after=await page.evaluate(()=>({center:window.__map.getCenter().toArray(),zoom:window.__map.getZoom(),pitch:window.__map.getPitch(),bearing:window.__map.getBearing()}));
+    if(Math.abs(after.center[0]-lng)>0.000001||Math.abs(after.center[1]-lat)>0.000001||Math.abs(after.zoom-before.zoom)>0.00001||Math.abs(after.pitch-before.pitch)>0.00001||Math.abs(after.bearing-before.bearing)>0.00001)throw Error('Final camera mismatch');
+    checks.push({reduced,before,captured:[lng,lat],intermediate,after});
+  }
+  const served=await page.evaluate(async()=>{
+    const html=await(await fetch('/',{cache:'reload'})).text();
+    const boot=await(await fetch('/assets/boot.js?v=20261010-flight2',{cache:'reload'})).text();
+    const app=await(await fetch('/assets/app.js?v=20261010-flight2',{cache:'reload'})).text();
+    const context=await(await fetch('/assets/map-context.js?v=20261010-flight2',{cache:'reload'})).text();
+    return{entryVersion:html.includes('boot.js?v=20261010-flight2'),appVersion:boot.includes('app.js?v=20261010-flight2'),contextVersion:app.includes('map-context.js?v=20261010-flight2'),override:context.includes('duration: 1200, essential: true'),loaded:performance.getEntriesByType('resource').some(r=>r.name.includes('map-context.js?v=20261010-flight2'))};
+  });
+  if(Object.values(served).some(v=>!v))throw Error('Served source mismatch');
+  return{date:'2026-10-10',checks,served,method:'Trusted mouse context action, sampled at 250ms and movement completion under both motion settings; current served and loaded versioned import chain verified.'};
+}

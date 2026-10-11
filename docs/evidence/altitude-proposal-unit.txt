@@ -1,0 +1,134 @@
+
+> pbb-map@1.0.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# Subtest: pinned local correction runtime and notices match provenance inventory
+ok 1 - pinned local correction runtime and notices match provenance inventory
+  ---
+  duration_ms: 9.8065
+  ...
+# Subtest: WMM2025 matches every NOAA published reference field at epoch and2027.5, surface and100km
+ok 2 - WMM2025 matches every NOAA published reference field at epoch and2027.5, surface and100km
+  ---
+  duration_ms: 7.013
+  ...
+# Subtest: model rejects date/location/altitude failures, altitude missing and magnetic caution; leapyear UTC fraction
+ok 3 - model rejects date/location/altitude failures, altitude missing and magnetic caution; leapyear UTC fraction
+  ---
+  duration_ms: 1.8229
+  ...
+# Subtest: diagnostics identify rejected altitude and omit raw position and sensor values
+ok 4 - diagnostics identify rejected altitude and omit raw position and sensor values
+  ---
+  duration_ms: 3.3585
+  ...
+# Subtest: north reference correction signs and screen/attitude projection, wrap smoothing and unknown source gates
+ok 5 - north reference correction signs and screen/attitude projection, wrap smoothing and unknown source gates
+  ---
+  duration_ms: 1.0409
+  ...
+# Subtest: relative Android delivery is diagnostic only, stale and cleaned with listener lifecycle
+ok 6 - relative Android delivery is diagnostic only, stale and cleaned with listener lifecycle
+  ---
+  duration_ms: 2.864
+  ...
+# Subtest: sensor permission is explicit/single, lifecycle discards late permission and stops hidden/destroyed events
+ok 7 - sensor permission is explicit/single, lifecycle discards late permission and stops hidden/destroyed events
+  ---
+  duration_ms: 1.196
+  ...
+# Subtest: denied/rejected permission retry and invalid readings retain neutral fallback
+ok 8 - denied/rejected permission retry and invalid readings retain neutral fallback
+  ---
+  duration_ms: 0.7512
+  ...
+# Subtest: old cached fix and future timestamp cannot refresh direction validity on Locate
+ok 9 - old cached fix and future timestamp cannot refresh direction validity on Locate
+  ---
+  duration_ms: 0.61
+  ...
+# Subtest: one watcher updates movement without ongoing camera following; Locate uses latest fix
+ok 10 - one watcher updates movement without ongoing camera following; Locate uses latest fix
+  ---
+  duration_ms: 3.3715
+  ...
+# Subtest: watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+ok 11 - watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+  ---
+  duration_ms: 0.8258
+  ...
+# Subtest: watch transient errors and invalid fixes recover; hidden startup starts only on resume
+ok 12 - watch transient errors and invalid fixes recover; hidden startup starts only on resume
+  ---
+  duration_ms: 1.0138
+  ...
+# Subtest: pending permission never permits duplicate fixes; initial fix respects user camera navigation
+ok 13 - pending permission never permits duplicate fixes; initial fix respects user camera navigation
+  ---
+  duration_ms: 0.8725
+  ...
+# Subtest: denial and timeout clear pending; stale callbacks cannot overwrite retry
+ok 14 - denial and timeout clear pending; stale callbacks cannot overwrite retry
+  ---
+  duration_ms: 0.531
+  ...
+# Subtest: teardown invalidates callbacks and removes the finite watchdog
+ok 15 - teardown invalidates callbacks and removes the finite watchdog
+  ---
+  duration_ms: 0.3027
+  ...
+# Subtest: invalid device values are rejected without leaving busy state
+ok 16 - invalid device values are rejected without leaving busy state
+  ---
+  duration_ms: 0.9949
+  ...
+# Subtest: missing geolocation and insecure context are actionable and never request
+ok 17 - missing geolocation and insecure context are actionable and never request
+  ---
+  duration_ms: 0.3466
+  ...
+# Subtest: accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+ok 18 - accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+  ---
+  duration_ms: 4.3409
+  ...
+# Subtest: style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+ok 19 - style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+  ---
+  duration_ms: 4.3787
+  ...
+# Subtest: public MapServer configuration rejects credentials and query tokens
+ok 20 - public MapServer configuration rejects credentials and query tokens
+  ---
+  duration_ms: 0.8898
+  ...
+# Subtest: every pinned public runtime asset matches the snapshot inventory
+ok 21 - every pinned public runtime asset matches the snapshot inventory
+  ---
+  duration_ms: 107.1758
+  ...
+# Subtest: name alone precedes full numeric distance, including equal rounded metre labels
+ok 22 - name alone precedes full numeric distance, including equal rounded metre labels
+  ---
+  duration_ms: 12.0548
+  ...
+# Subtest: distance sort occurs before cap; origin updates reorder full result pool
+ok 23 - distance sort occurs before cap; origin updates reorder full result pool
+  ---
+  duration_ms: 0.2821
+  ...
+# Subtest: missing origin and equal distances have deterministic numeric coordinate ties
+ok 24 - missing origin and equal distances have deterministic numeric coordinate ties
+  ---
+  duration_ms: 0.2707
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 394.7724

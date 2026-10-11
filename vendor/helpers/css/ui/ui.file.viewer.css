@@ -1,0 +1,16 @@
+.ui-file-viewer-modal .ui-modal-body { min-width: 0; }
+.ui-file-viewer { min-width: 0; width: 100%; }
+.ui-file-viewer-content { min-width: 0; overflow: auto; max-width: 100%; }
+.ui-file-viewer-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; min-width: 0; }
+.ui-file-viewer-tools a { color: var(--ui-primary, #77aaff); font-size: .85rem; }
+.ui-file-viewer-tools [hidden], .ui-file-viewer [hidden] { display: none !important; }
+.ui-file-viewer-status { overflow-wrap: anywhere; }
+.ui-file-viewer-csv td { white-space: pre-wrap; }
+.ui-file-viewer .ui-data-inspector-value { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ui-file-viewer .ui-data-inspector-head { flex-wrap: wrap; }
+.ui-file-viewer .ui-data-inspector-key { overflow-wrap: anywhere; min-width: 0; }
+@media (max-width: 600px) {
+  .ui-file-viewer-modal .ui-modal-header { flex-wrap: wrap; }
+  .ui-file-viewer-modal .ui-modal-header-actions { order: 3; flex-basis: 100%; }
+  .ui-file-viewer-modal .ui-modal-body { padding: .75rem; }
+}

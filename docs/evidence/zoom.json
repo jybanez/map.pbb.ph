@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-10",
+  "checks": [
+    {
+      "width": 375,
+      "x": 16,
+      "mapOffset": 16,
+      "buttons": [
+        {
+          "label": "Zoom in",
+          "width": 44,
+          "height": 44,
+          "y": 84
+        },
+        {
+          "label": "Zoom out",
+          "width": 44,
+          "height": 44,
+          "y": 130
+        }
+      ],
+      "navbarZoom": false,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "x": 16,
+      "mapOffset": 16,
+      "buttons": [
+        {
+          "label": "Zoom in",
+          "width": 44,
+          "height": 44,
+          "y": 84
+        },
+        {
+          "label": "Zoom out",
+          "width": 44,
+          "height": 44,
+          "y": 130
+        }
+      ],
+      "navbarZoom": false,
+      "overflow": false
+    }
+  ],
+  "keyboardZoom": true,
+  "zoomOut": true,
+  "lateFixPreservesExploration": true,
+  "feedbackNoOverlap": true,
+  "cleanup": true,
+  "uncaughtErrors": []
+}

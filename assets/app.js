@@ -1,0 +1,345 @@
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-location-ripple4';
+import { createPoiFilter } from './poi-filter.js?v=20261011-location-ripple4';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261011-location-ripple4';
+import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.284';
+import { config } from './config.js?v=20261011-location-ripple4';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-location-ripple4';
+import { createLocationController } from './location.js?v=20261011-location-ripple4';
+import { installMapContext } from './map-context.js?v=20261011-location-ripple4';
+import { createMapSearch } from './map-search.js?v=20261011-location-ripple4';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-location-ripple4';
+import { createDirectionOptions } from './direction-options.js?v=20261011-location-ripple4';
+
+export async function mountApp() {
+  const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert] = await Promise.all(
+    ['ui.navbar', 'ui.map.controls', 'ui.map.markers', 'ui.toast', 'ui.empty.state', 'ui.busy.overlay', 'ui.icons', 'ui.menu', 'ui.modal', 'ui.search', 'ui.events.createEventBag','ui.action.modal','ui.form.modal','ui.dialog.alert']
+      .map(name => uiLoader.get(name, { preferBundles: true })));
+  const { createIcon } = icons;
+  const { createMapMarker } = markers;
+  // An optional renderer must never prevent the canonical location fallback.
+  const createPerson = await uiLoader.get('ui.map.location.person', { preferBundles: true }).catch(() => null);
+  let person = null;
+  let headingDegrees=null;
+  let approximateActive=false;let welcome=null;
+  const header = document.getElementById('navbar'), region = document.getElementById('map-region');
+  const container = document.getElementById('map'), feedbackContainer = document.getElementById('map-feedback');
+  const controlsContainer = document.createElement('div');
+  const locateContainer = document.createElement('div');
+  locateContainer.id = 'locate-control';
+  region.appendChild(locateContainer);
+  const zoomContainer = document.createElement('div');
+  zoomContainer.id = 'zoom-control';
+  region.appendChild(zoomContainer);
+  let map = null, controls = null, zoomControls = null, marker = null, position = null, recenterPending = false;
+  let contextActions = null;
+  let disposed = false, ready = false, poiVisible = true, generation = 0, abort = null, startupTimer = null;
+  let locationState = { status: 'idle' }, locationToast = null;
+  const warned = new Set();
+  const optionalNotices = [];
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const toast = createToastStack({ className: 'pbb-location-toast', position: 'bottom-left', max: 3, workspaceBridge: false });
+  const directionNotice=message=>{if(!disposed){syncDirectionUI();welcome?.consider();if(message)toast.show(message,{type:'warn',duration:5000,dismissible:true});}};
+  let directionModuleState='loading';
+  let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
+  // Optional local sensor/model code never gates map or live location startup.
+  void import('./heading.js?v=20261011-location-ripple4').then(({createHeadingController})=>{
+    if(disposed)return;
+    directionModuleState='ready';
+    direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
+    if(position)direction.setPosition(position);
+    void direction.request(false).then(()=>welcome?.consider());
+  }).catch(()=>{directionModuleState='failed';});
+  const diagnostics=createDirectionDiagnostics({createActionModal,getSnapshot:()=>{
+    const snapshot=direction.getDiagnostics?.()||{issues:[directionModuleState==='loading'?'Direction module is still loading. Wait, then refresh diagnostics.':'Direction module could not load. Reload the app or check its local correction assets.'],fields:{'Direction module':directionModuleState}};
+    const renderer=person?.getState().status||'not created';
+    if(renderer!=='rendered')snapshot.issues.push('The 3D person renderer is not ready. Wait for the map to load or choose Locate to retry an errored model.');
+    snapshot.fields['Person renderer']=renderer;
+    snapshot.fields['Map camera']='manual bearing; no compass-follow mode';
+    return snapshot;
+  }});
+  welcome=createDirectionWelcome({createActionModal,needsActivation:()=>direction.needsActivation?.()===true&&direction.getDiagnostics?.().fields.Permission!=='denied',enable:()=>{void direction.request(true);location.request(false);}});
+  const welcomeVisible=()=>{if(document.hidden)welcome?.close();else welcome?.consider();};document.addEventListener('visibilitychange',welcomeVisible);
+  const directionOptions=createDirectionOptions({createFormModal,uiAlert,getState:()=>direction.getOptionsState?.()||{selected:false,eligible:false},apply:value=>{direction.setApproximate(value);syncDirectionUI();}});
+  let directionControlKey='';
+  function syncDirectionUI(){
+    if(disposed)return;
+    const state=direction.getOptionsState?.()||{};
+    const key=JSON.stringify([state.missing,state.selected,direction.needsActivation?.()]);
+    if(key!==directionControlKey){directionControlKey=key;updateSearchAction();}
+    // Complete person API has no label update; scope only this app's label node.
+    if(approximateActive)region.querySelector('.ui-map-location-person-label')?.setAttribute('aria-label','Your location; approximate geographic direction, altitude unavailable');
+  }
+  const busy = createBusyOverlay(region, { text: 'Loading map…', fullscreen: false,
+    blockInteraction: false, backdrop: false, lockScroll: false });
+  const feedback = createEmptyState(feedbackContainer, {}, { ariaLabel: 'Map status', onActionClick: () => { void initialize(); } });
+
+  function showError(title, description) {
+    if (disposed) return;
+    busy.hide();
+    feedback.update({ title, description, actions: [{ id: 'retry', label: 'Retry map' }] });
+    feedbackContainer.hidden = false;
+  }
+
+  const poiFilter = createPoiFilter({createModal,createMapControls,createMenu,uiLoader,excluded:config.poi.excludedClasses,sourceLayer:config.poi.sourceLayer,onChange:()=>search.closeResults()});
+  const search = createMapSearch({createSearchField,createMenu,createIcon,createEventBag,createMapMarker,markExploration,poiAllowed:p=>poiFilter.visible(p),onDismiss:()=>dismissSearch(),
+    onDestinationActivate:({point,x,y,trigger})=>contextActions?.openAt(point,x,y,trigger),
+    onDestinationUnavailable:()=>contextActions?.close(),onSearchFocus:()=>contextActions?.close()});
+  function navbarOptions() {
+    const brandIcon = document.createElement('img');
+    brandIcon.src = new URL('./pbb-map-icon-navbar.png', import.meta.url).href;
+    brandIcon.alt = '';
+    brandIcon.width = 32;
+    brandIcon.height = 32;
+    return { brandText: 'PBB Map', brandMedia: brandIcon,
+      mobileLayout: 'scroll', mobileCollapse: false, contentEnd: controlsContainer,
+    };
+  }
+  const navbar = createNavbar(header, {}, navbarOptions());
+  const searchMobile = window.matchMedia('(max-width: 720px)');
+  let searchExpanded=false;
+  function searchAction() {return {id:'search',label:searchExpanded?'Close map search':'Open map search',icon:searchExpanded?'actions.close':'actions.search',visible:searchMobile.matches,expanded:searchExpanded,ariaControls:'map-search',onActivate:()=>searchExpanded?dismissSearch():revealSearch()};}
+  function enableAction(){return{id:'enable-direction',label:'Enable direction',icon:'actions.add',visible:direction.needsActivation?.()===true,onActivate:()=>{void direction.request(true);}};}
+  function directionAction(){return{id:'direction-status',label:'Direction diagnostics',icon:'status.info',onActivate:()=>diagnostics.open()};}
+  function optionsAction(){const state=direction.getOptionsState?.()||{};return{id:'direction-options',label:'Direction options',icon:'actions.settings',visible:state.missing||state.selected,onActivate:()=>directionOptions.open()};}
+  function mapActions(){return [searchAction(),{id:'poi-filter',label:'Filter points of interest',icon:'data.filter',onActivate:()=>poiFilter.open()},enableAction(),...(config.showDirectionTools ? [directionAction(),optionsAction()] : [])];}
+  function updateSearchAction(){zoomControls?.update({actions:mapActions()});}
+  function dismissSearch(returnFocus=true) {
+    if(!searchMobile.matches)return;
+    searchExpanded=false;search.closeResults();search.container.hidden=true;
+    updateSearchAction();
+    if(returnFocus)zoomContainer.querySelector('[aria-controls="map-search"]')?.focus();
+  }
+  function revealSearch() {
+    contextActions?.close();
+    searchExpanded=true;search.container.hidden=false;
+    updateSearchAction();search.focus();
+  }
+  function placeSearch() {
+    search.closeResults();
+    (searchMobile.matches ? region : header).appendChild(search.container);
+    searchExpanded=false;search.container.hidden=searchMobile.matches;
+    updateSearchAction();
+  }
+  searchMobile.addEventListener('change', placeSearch);
+  placeSearch();
+  const locateControl = createMapControls(locateContainer, { controls: ['locate'], ariaLabel: 'Your location',
+    onLocate: () => { void direction.request(true); if (person?.getState().status === 'error') person.retry(); location.request(true); } });
+  function syncLocate() {
+    const button = locateContainer.querySelector('button');
+    const status = locationState.status;
+    const tone = status === 'requesting' ? 'requesting' : status === 'success' ? 'success' :
+      status === 'error' || status === 'unavailable' ? 'error' : 'idle';
+    locateContainer.dataset.state = tone;
+    button.disabled = status === 'requesting';
+    button.setAttribute('aria-busy', String(status === 'requesting'));
+    const label = `Locate — ${tone === 'idle' ? 'show your location' : locationState.message}`;
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  }
+  syncLocate();
+  function syncControls() {
+    if (!map || disposed) return;
+    const zoomOptions = { map, controls: ['search','zoom','poi-filter','enable-direction',...(config.showDirectionTools ? ['direction-status','direction-options'] : [])], orientation: 'vertical', ariaLabel: 'Map zoom',
+      actions:mapActions(),
+      onZoomIn: () => { markExploration(); map.zoomIn({ duration: reducedMotion ? 0 : 300 }); },
+      onZoomOut: () => { markExploration(); map.zoomOut({ duration: reducedMotion ? 0 : 300 }); } };
+    if (zoomControls) zoomControls.update(zoomOptions); else zoomControls = createMapControls(zoomContainer, zoomOptions);
+    const options = { map, orientation: 'horizontal', controls: ['compass', 'pitch', 'layers'],
+      pitchPresets: [{ value: 0, label: '2D' }, { value: 60, label: '3D' }],
+      layers: [{ id: 'pbb-poi-group', label: 'Points of interest', checked: poiVisible }],
+      onResetNorth: () => { markExploration(); map.easeTo({ bearing: 0, duration: reducedMotion ? 0 : 300 }); },
+      onPitchChange: ({ pitch }) => { markExploration(); map.easeTo({ pitch, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 600 }); },
+      onLayerToggle: ({ checked }) => {
+        poiVisible = checked;poiFilter.setMaster(checked);
+        if (!ready) return;
+        POI_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', checked ? 'visible' : 'none'); });
+      },
+    };
+    if (controls) controls.update(options); else controls = createMapControls(controlsContainer, options);
+  }
+
+  function markExploration() {
+    location.markNavigation();
+    recenterPending = false;
+  }
+
+  const accuracyRipple=createAccuracyRipple({staleMs:config.location.maximumAge});
+
+  function displayPosition() {
+    if (!position || !map || !ready || disposed) return;
+    const coords = [position.longitude, position.latitude];
+    if (!marker) marker = new window.maplibregl.Marker({ element: createMapMarker({ id: 'current-location',
+      shape: 'dot', tone: 'info', label: 'Your reported location', size: 'md' }), anchor: 'center' }).setLngLat(coords).addTo(map);
+    else marker.setLngLat(coords);
+    // MapLibre initializes Marker aria-label; restore the canonical user-facing label.
+    marker.getElement().setAttribute('aria-label', 'Your reported location');
+    if (createPerson) {
+      if (!person) {
+        const currentMap = map;
+        try {
+          person = createPerson({ map, maplibre: window.maplibregl, lngLat: coords,
+            id: 'current-location-person', label: 'Your reported location', sizePx: 34,headingDegrees,
+            scaleMode: 'perspective', modelHeightMeters: 12, minSizePx: 8, maxSizePx: 64,
+            onStateChange: state => {
+              if (disposed || map !== currentMap || !marker) return;
+              marker.getElement().style.visibility = state.status === 'rendered' ? 'hidden' : 'visible';
+              marker.getElement().setAttribute('aria-hidden', String(state.status === 'rendered'));
+              syncDirectionUI();
+            } });
+        } catch { marker.getElement().style.visibility = 'visible'; }
+      } else person.updateLngLat(coords);
+    }
+    accuracyRipple.setPosition(position);
+    if (recenterPending) {
+      recenterPending = false;
+      map.easeTo({ center: coords, zoom: config.locationZoom, duration: reducedMotion ? 0 : 700 });
+    }
+  }
+
+  const location = createLocationController({ geolocation: navigator.geolocation, secure: window.isSecureContext,
+    policy: config.location,
+    onState: state => {
+      if (disposed) return;
+      locationState = state;
+      accuracyRipple.setAvailable(state.status==='success');
+      if(state.status==='error'||state.status==='unavailable')direction.invalidatePosition();
+      syncLocate();
+      const options = { busy: state.status === 'requesting', persistent: state.status !== 'success', duration: 3200,
+        type: state.status === 'error' || state.status === 'unavailable' ? 'warn' : 'info', dismissible: true };
+      // A dismissed toast needs a fresh handle on the next deliberate request.
+      const exists = locationToast && toast.getState().items.some(item => item.id === locationToast.id);
+      if (exists) locationToast.update(state.message, options);
+      else locationToast = toast.show(state.message, options);
+    },
+    onPosition: (next, { recenter }) => { position = {...next,timestamp:Number.isFinite(next.timestamp)?next.timestamp:Date.now()}; direction.setPosition(next); search.setUserLocation(next); recenterPending = recenter; displayPosition();syncDirectionUI(); },
+  });
+
+  function removeMap() {
+    diagnostics.close();
+    welcome?.close();directionOptions.close();directionControlKey='';
+    person?.destroy(); person = null;
+    accuracyRipple.setMap(null);poiFilter.setMap(null);search.setMap(null);
+    contextActions?.destroy(); contextActions = null;
+    ready = false;
+    clearTimeout(startupTimer);
+    abort?.abort();
+    controls?.destroy(); controls = null;
+    zoomControls?.destroy(); zoomControls = null;
+    marker?.remove(); marker = null;
+    map?.remove(); map = null;
+  }
+
+  async function initialize() {
+    if (disposed) return;
+    const id = ++generation;
+    const camera = map && { center: map.getCenter().toArray(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() };
+    removeMap();
+    warned.clear();
+    optionalNotices.splice(0).forEach(notice => notice?.close());
+    feedbackContainer.hidden = true;
+    busy.show({ text: 'Loading map…' });
+    abort = new AbortController();
+    const controller = abort;
+    startupTimer = setTimeout(() => {
+      if (!disposed && id === generation && !ready) {
+        // A deadline ends this initialization, including MapLibre's tile work.
+        // Late events must never revive it or leave a loaded map behind stale feedback.
+        generation++;
+        removeMap();
+        showError('Map is taking too long', 'Check that this node can reach its MapServer, then choose Retry map.');
+      }
+    }, 20000);
+    try {
+      if (!window.maplibregl) throw new Error('The local map renderer did not load. Reload or verify its installed files.');
+      const probe = document.createElement('canvas');
+      const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+      if (!gl) throw new Error('WebGL is unavailable. Enable hardware acceleration or use a browser/device with WebGL support.');
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      const response = await fetch(config.styleUrl, { signal: controller.signal, credentials: 'same-origin' });
+      if (!response.ok) throw new Error('The local map style is missing. Ask the node operator to verify the installation.');
+      const style = buildStyle(await response.json(), config, poiVisible);
+      if (disposed || id !== generation || controller.signal.aborted) return;
+      map = new window.maplibregl.Map({ container, style, ...config, ...(camera || {}), attributionControl: false,
+        keyboard: true, dragRotate: true, touchPitch: true });
+      map.getCanvas().setAttribute('aria-label', 'Map. Use arrow keys to pan, plus or minus to zoom, and Shift with arrow keys to rotate or pitch.');
+      map.on('style.load', () => { if (!disposed && id === generation && ready) displayPosition(); });
+      contextActions = installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed:p=>poiFilter.visible(p) });
+      map.on('movestart', event => {
+        if (event.originalEvent) { location.markNavigation(); recenterPending = false; }
+      });
+      map.on('load', () => {
+        if (disposed || id !== generation) return;
+        ready = true;accuracyRipple.setMap(map);
+        search.setMap(map);poiFilter.setMap(map);
+        clearTimeout(startupTimer);
+        busy.hide();
+        POI_LAYERS.forEach(layer => {
+          if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', poiVisible ? 'visible' : 'none');
+        });
+        displayPosition();
+        syncDirectionUI();
+      });
+      map.on('error', event => {
+        if (disposed || id !== generation) return;
+        const source = event.sourceId || sourceFromError(event.error);
+        const warningKey = source === 'terrain-hillshade' ? 'terrain' : source;
+        if (warned.has(warningKey)) return;
+        warned.add(warningKey);
+        if (source === 'pbb-poi') {
+          optionalNotices.push(toast.show('Points of interest are unavailable for this area. You can keep using the basemap. Choose Retry map in Map status to reload map data.', { type: 'warn', persistent: true }));
+          showError('Some map layers are unavailable', 'Points of interest could not load. Continue exploring the basemap, or choose Retry map to reload the layers.');
+        } else if (source === 'terrain' || source === 'terrain-hillshade') {
+          map.setTerrain(null);
+          if (map.getLayer('terrain-hillshade')) map.removeLayer('terrain-hillshade');
+          optionalNotices.push(toast.show('Terrain is unavailable for this area. The flat basemap remains usable. Choose Retry map in Map status to try terrain again.', { type: 'warn', persistent: true }));
+          showError('Some map layers are unavailable', 'Terrain could not load. Continue exploring the flat basemap, or choose Retry map to reload the layers.');
+        } else {
+          showError('Some map data could not load', 'Check the local MapServer connection and prepared cache coverage. Navigation remains available where tiles are present; choose Retry map to reload.');
+        }
+      });
+      syncControls();
+    } catch (error) {
+      if (disposed || id !== generation || controller.signal.aborted) return;
+      clearTimeout(startupTimer);
+      showError('Map could not open', error.message || 'Check the installation and choose Retry map.');
+    }
+  }
+
+  const resize = new ResizeObserver(() => map?.resize());
+  resize.observe(region);
+  const onViewportResize = () => map?.resize();
+  window.visualViewport?.addEventListener('resize', onViewportResize);
+  const onPageHide = () => destroy();
+  const onPageShow = event => { if (event.persisted) window.location.reload(); };
+  function destroy() {
+    if (disposed) return;
+    disposed = true; generation++;
+    document.removeEventListener('visibilitychange',welcomeVisible);welcome?.destroy();directionOptions.destroy();diagnostics.destroy();direction.destroy();location.destroy();accuracyRipple.destroy(); removeMap(); resize.disconnect();
+    window.visualViewport?.removeEventListener('resize', onViewportResize);
+    window.removeEventListener('pagehide', onPageHide);
+    searchMobile.removeEventListener('change', placeSearch);
+    poiFilter.destroy();search.destroy(); navbar.destroy(); locateControl.destroy(); locateContainer.remove(); zoomContainer.remove(); feedback.destroy(); busy.destroy(); toast.destroy();
+  }
+  window.addEventListener('pagehide', onPageHide);
+  window.addEventListener('pageshow', onPageShow);
+  // Requesting permission never delays the independent fallback map initialization.
+  void initialize();
+  location.request(false);
+  return { destroy };
+}
+
+function sourceFromError(error) {
+  const message = String(error?.message || '');
+  if (message.includes('/tiles/poi/')) return 'pbb-poi';
+  if (message.includes('/tiles/terrain/')) return 'terrain';
+  if (message.includes('/tiles/glyphs/')) return 'glyphs';
+  return 'basemap';
+}
+
+
+
+
+
+
+
+

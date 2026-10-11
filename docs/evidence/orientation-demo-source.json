@@ -1,0 +1,12 @@
+{
+  "event": "deviceorientation",
+  "decodedUtf8Sha256": "d92377595f2d7220837ad79cb97916ec27c3c9f434fa29f16e2bca054a802d35",
+  "url": "https://whatpwacando.today/src/elements/device-orientation.js",
+  "northReferenceChecked": false,
+  "observedUtc": "2026-10-10T06:56:44.9067838Z",
+  "usedFields": [
+    "beta",
+    "gamma"
+  ],
+  "locationUsed": false
+}

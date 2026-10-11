@@ -1,0 +1,1083 @@
+import { createElement, clearNode } from "./ui.dom.js";
+import { createMediaStrip } from "./ui.media.strip.js";
+import { createMenu } from "./ui.menu.js";
+
+const DOWNLOAD_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4h2v9.17l2.59-2.58L17 12l-5 5-5-5 1.41-1.41L11 13.17V4zm-5 14h12v2H6v-2z"></path></svg>';
+const MESSAGE_MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="17.5" cy="12" r="1.5"></circle></svg>';
+const DEFAULT_MESSAGE_HEIGHT = 128;
+const DEFAULT_SYSTEM_HEIGHT = 40;
+
+const DEFAULT_OPTIONS = {
+  className: "",
+  emptyTitle: "No messages yet",
+  emptyText: "Start the conversation from the composer below.",
+  showSenderNames: true,
+  showTimestamps: true,
+  showStates: true,
+  groupAdjacentMessages: true,
+  alignOutgoingRight: true,
+  showMessageMenuTrigger: true,
+  maxMediaThumbsPerMessage: 4,
+  mediaStripOptions: {},
+  getMessageMenuItems: null,
+  messageMenuOptions: {},
+  allowedReactions: [],
+  showReactionPicker: true,
+  enableVirtualization: false,
+  virtualThreshold: 120,
+  virtualOverscan: 10,
+  bottomAnchorThreshold: 48,
+  onAttachmentOpen: null,
+  onAttachmentDownload: null,
+  onMessageAction: null,
+  onMessageMenuSelect: null,
+  onReplyPreviewOpen: null,
+  onReactionSelect: null,
+};
+
+export function createChatThread(container, data = {}, options = {}) {
+  let currentMessages = normalizeMessages(data?.messages || []);
+  let currentOptions = { ...DEFAULT_OPTIONS, ...(options || {}) };
+  let mediaStripApis = [];
+  let messageMenuApis = [];
+  let virtualRoot = null;
+  let virtualViewport = null;
+  let virtualScroller = null;
+  let topSpacer = null;
+  let sliceHost = null;
+  let bottomSpacer = null;
+  let scrollRaf = 0;
+  let remeasureRaf = 0;
+  let measureRetryCount = 0;
+  let bottomPinToken = 0;
+  const measuredHeights = new Map();
+
+  function render(reason = "replace", restoreSnapshot = null) {
+    if (!container || container.nodeType !== 1) {
+      return;
+    }
+
+    destroyMediaStrips(mediaStripApis);
+    destroyMessageMenus(messageMenuApis);
+
+    if (shouldVirtualize(currentMessages, currentOptions)) {
+      renderVirtual(reason, restoreSnapshot);
+      return;
+    }
+
+    teardownVirtualRoot();
+    clearNode(container);
+
+    const root = createElement("div", {
+      className: `ui-chat-thread ${currentOptions.className || ""}`.trim(),
+    });
+
+    if (!currentMessages.length) {
+      root.appendChild(createEmptyState());
+      container.appendChild(root);
+      return;
+    }
+
+    currentMessages.forEach((message, index) => {
+      root.appendChild(createMessageNode(message, index));
+    });
+
+    container.appendChild(root);
+  }
+
+  function renderVirtual(reason = "replace", restoreSnapshot = null) {
+    ensureVirtualRoot();
+
+    if (!currentMessages.length) {
+      clearNode(sliceHost);
+      topSpacer.style.height = "0px";
+      bottomSpacer.style.height = "0px";
+      sliceHost.appendChild(createEmptyState());
+      if (restoreSnapshot?.mode === "bottom") {
+        queuePinnedToBottom();
+      }
+      return;
+    }
+
+    const viewportHeight = getViewportHeight();
+    const scrollTop = virtualViewport.scrollTop;
+    const windowRange = computeVirtualWindow(currentMessages, measuredHeights, scrollTop, viewportHeight, currentOptions.virtualOverscan);
+
+    clearNode(sliceHost);
+    topSpacer.style.height = `${windowRange.topSpacerHeight}px`;
+    bottomSpacer.style.height = `${windowRange.bottomSpacerHeight}px`;
+
+    for (let index = windowRange.start; index < windowRange.end; index += 1) {
+      sliceHost.appendChild(createMessageNode(currentMessages[index], index));
+    }
+
+    measureVisibleRows(windowRange.start);
+    applyRestoreSnapshot(restoreSnapshot, reason);
+  }
+
+  function createEmptyState() {
+    const empty = createElement("div", { className: "ui-chat-thread-empty" });
+    empty.appendChild(createElement("div", {
+      className: "ui-chat-thread-empty-title",
+      text: currentOptions.emptyTitle,
+    }));
+    empty.appendChild(createElement("div", {
+      className: "ui-chat-thread-empty-text",
+      text: currentOptions.emptyText,
+    }));
+    return empty;
+  }
+
+  function createMessageNode(message, index) {
+    const previous = currentMessages[index - 1] || null;
+    const moderationStatus = normalizeModerationStatus(message?.status);
+    const isPlaceholder = Boolean(moderationStatus);
+    const grouped = Boolean(!isPlaceholder && currentOptions.groupAdjacentMessages && isGroupedWithPrevious(previous, message));
+    const direction = normalizeDirection(message.direction);
+    const hasSenderAvatar = shouldRenderAvatar(message);
+    const row = createElement("article", {
+      className: [
+        "ui-chat-message",
+        `is-${direction}`,
+        isPlaceholder ? "is-placeholder" : "",
+        moderationStatus ? `is-${moderationStatus}` : "",
+        grouped ? "is-grouped" : "",
+        hasSenderAvatar ? "has-avatar" : "",
+        message?.meta?.emphasized ? "is-emphasized" : "",
+        message?.meta?.muted ? "is-muted" : "",
+      ].filter(Boolean).join(" "),
+      attrs: {
+        "data-message-id": String(message.id || ""),
+        "data-direction": direction,
+        ...(moderationStatus ? { "data-message-status": moderationStatus } : {}),
+      },
+    });
+
+    if (direction === "system") {
+      row.appendChild(createElement("div", {
+        className: "ui-chat-message-system",
+        text: String(message.text || ""),
+      }));
+      return row;
+    }
+
+    if (isPlaceholder) {
+      const avatar = hasSenderAvatar ? createMessageAvatar(message, false) : null;
+      const placeholder = createElement("div", {
+        className: "ui-chat-message-bubble ui-chat-message-placeholder",
+        attrs: { role: "note" },
+      });
+      placeholder.appendChild(createElement("span", {
+        className: "ui-chat-message-placeholder-label",
+        text: getModerationPlaceholderLabel(message, moderationStatus),
+      }));
+      if (avatar && direction !== "outgoing") {
+        row.appendChild(avatar);
+      }
+      row.appendChild(placeholder);
+      if (avatar && direction === "outgoing") {
+        row.appendChild(avatar);
+      }
+      return row;
+    }
+
+    const avatar = hasSenderAvatar ? createMessageAvatar(message, grouped) : null;
+    const menuItems = getMessageMenuItemsFromOptions(message, currentMessages, currentOptions);
+    const bubble = createElement("div", {
+      className: `ui-chat-message-bubble${menuItems.length ? " has-menu" : ""}`,
+    });
+    if (menuItems.length) {
+      bubble.appendChild(createMessageMenuTrigger(message, menuItems));
+    }
+    if (currentOptions.showSenderNames && shouldShowSenderName(message, grouped)) {
+      bubble.appendChild(createElement("div", {
+        className: "ui-chat-message-sender",
+        text: String(message.senderName || ""),
+      }));
+      if (message.senderSubtitle) {
+        bubble.appendChild(createElement("div", {
+          className: "ui-chat-message-sender-subtitle",
+          text: String(message.senderSubtitle),
+        }));
+      }
+    }
+
+    const replyTo = getMessageReplyTo(message);
+    if (shouldRenderReplyPreview(replyTo)) {
+      bubble.appendChild(createReplyPreviewNode(message, replyTo));
+    }
+
+    if (message.text) {
+      bubble.appendChild(createElement("div", {
+        className: "ui-chat-message-text",
+        text: String(message.text),
+      }));
+    }
+
+    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    if (attachments.length) {
+      bubble.appendChild(createAttachmentsNode(message, attachments));
+    }
+
+    const reactions = createMessageReactionsNode(message);
+    if (reactions) {
+      bubble.appendChild(reactions);
+    }
+
+    const meta = createMessageMeta(message, direction, grouped);
+    if (meta) {
+      bubble.appendChild(meta);
+    }
+
+    if (avatar && direction !== "outgoing") {
+      row.appendChild(avatar);
+    }
+    row.appendChild(bubble);
+    if (avatar && direction === "outgoing") {
+      row.appendChild(avatar);
+    }
+    return row;
+  }
+
+  function createMessageAvatar(message, grouped) {
+    const senderName = String(message.senderName || "").trim();
+    const avatarUrl = getSenderAvatarUrl(message);
+    const presence = normalizeSenderPresence(message);
+    const renderPresence = shouldRenderPresence(presence) && !grouped;
+    const initials = getInitials(senderName);
+    const avatar = createElement("span", {
+      className: [
+        "ui-chat-message-avatar",
+        "ui-avatar-presence-host",
+        grouped ? "is-placeholder" : "",
+        avatarUrl ? "has-image" : "",
+        renderPresence ? `has-presence is-presence-${presence}` : "",
+      ].filter(Boolean).join(" "),
+      attrs: {
+        "aria-hidden": "true",
+        title: grouped ? "" : senderName,
+      },
+    });
+    if (grouped) {
+      return avatar;
+    }
+    if (avatarUrl) {
+      const image = createElement("img", {
+        className: "ui-chat-message-avatar-image",
+        attrs: {
+          src: avatarUrl,
+          alt: "",
+          loading: "lazy",
+          decoding: "async",
+        },
+      });
+      image.addEventListener("error", () => {
+        avatar.classList.remove("has-image");
+        image.hidden = true;
+      }, { once: true });
+      avatar.appendChild(image);
+    }
+    avatar.appendChild(createElement("span", {
+      className: "ui-chat-message-avatar-fallback",
+      text: initials,
+    }));
+    if (renderPresence) {
+      avatar.appendChild(createElement("span", {
+        className: "ui-avatar-presence-dot ui-chat-message-avatar-presence",
+        attrs: {
+          "aria-hidden": "true",
+        },
+      }));
+    }
+    return avatar;
+  }
+
+  function createMessageMenuTrigger(message, menuItems) {
+    const trigger = createElement("button", {
+      className: "ui-chat-message-menu-trigger",
+      html: MESSAGE_MENU_ICON,
+      attrs: {
+        type: "button",
+        title: "Message actions",
+        "aria-label": `Message actions for ${String(message.senderName || "message")}`,
+      },
+    });
+    const menuApi = createMenu(trigger, menuItems, {
+      placement: "bottom-end",
+      align: "right",
+      ...((currentOptions.messageMenuOptions && typeof currentOptions.messageMenuOptions === "object")
+        ? currentOptions.messageMenuOptions
+        : {}),
+      onSelect(item, meta) {
+        currentOptions.onMessageMenuSelect?.(message, item, meta);
+        currentOptions.messageMenuOptions?.onSelect?.(item, meta);
+      },
+    });
+    messageMenuApis.push(menuApi);
+    return trigger;
+  }
+
+  function createReplyPreviewNode(message, replyTo) {
+    const senderName = getReplySenderName(replyTo);
+    const text = getReplyText(replyTo);
+    const attachmentLabel = getReplyAttachmentLabel(replyTo);
+    const isInteractive = typeof currentOptions.onReplyPreviewOpen === "function";
+    const node = createElement(isInteractive ? "button" : "div", {
+      className: "ui-chat-message-reply",
+      attrs: isInteractive ? {
+        type: "button",
+        "aria-label": `Open replied message${senderName ? ` from ${senderName}` : ""}`,
+      } : {},
+    });
+
+    if (senderName) {
+      node.appendChild(createElement("span", {
+        className: "ui-chat-message-reply-sender",
+        text: senderName,
+      }));
+    }
+    if (text) {
+      node.appendChild(createElement("span", {
+        className: "ui-chat-message-reply-text",
+        text,
+      }));
+    }
+    if (attachmentLabel) {
+      node.appendChild(createElement("span", {
+        className: "ui-chat-message-reply-attachment",
+        text: attachmentLabel,
+      }));
+    }
+
+    if (isInteractive) {
+      node.addEventListener("click", () => currentOptions.onReplyPreviewOpen(message, { ...replyTo }));
+    }
+
+    return node;
+  }
+
+  function createAttachmentsNode(message, attachments) {
+    const wrap = createElement("div", { className: "ui-chat-message-attachments" });
+    const mediaItems = attachments
+      .filter((item) => item.kind === "image" || item.kind === "video")
+      .slice(0, currentOptions.maxMediaThumbsPerMessage);
+    const fileItems = attachments.filter((item) => item.kind !== "image" && item.kind !== "video");
+
+    if (mediaItems.length) {
+      const mediaHost = createElement("div", { className: "ui-chat-message-media-strip" });
+      wrap.appendChild(mediaHost);
+      const stripApi = createMediaStrip(mediaHost, mediaItems.map((attachment) => ({
+        id: attachment.id,
+        type: attachment.kind === "video" ? "video" : "image",
+        src: attachment.url || attachment.previewUrl || "",
+        thumb: attachment.previewUrl || attachment.url || "",
+        poster: attachment.posterUrl || attachment.previewUrl || attachment.url || "",
+        title: attachment.name || "",
+        alt: attachment.name || `${attachment.kind} attachment`,
+      })), {
+        layout: "wrap",
+        ...((currentOptions.mediaStripOptions && typeof currentOptions.mediaStripOptions === "object")
+          ? currentOptions.mediaStripOptions
+          : {}),
+        onOpen(item, index) {
+          const attachment = mediaItems[index] || mediaItems.find((candidate) => candidate.id === item?.id) || null;
+          if (attachment) {
+            currentOptions.onAttachmentOpen?.(message, attachment);
+          }
+          currentOptions.mediaStripOptions?.onOpen?.(item, index);
+        },
+      });
+      mediaStripApis.push(stripApi);
+    }
+
+    if (fileItems.length) {
+      const list = createElement("div", { className: "ui-chat-message-files" });
+      fileItems.forEach((attachment) => {
+        const row = createElement("div", { className: "ui-chat-attachment-file" });
+        const main = createElement("button", {
+          className: "ui-chat-attachment-file-main",
+          attrs: { type: "button" },
+        });
+        main.appendChild(createElement("span", {
+          className: "ui-chat-attachment-file-name",
+          text: attachment.name || "File attachment",
+        }));
+        if (attachment.sizeLabel) {
+          main.appendChild(createElement("span", {
+            className: "ui-chat-attachment-file-meta",
+            text: attachment.sizeLabel,
+          }));
+        }
+        main.addEventListener("click", () => currentOptions.onAttachmentOpen?.(message, attachment));
+        row.appendChild(main);
+        if (currentOptions.onAttachmentDownload) {
+          const download = createElement("button", {
+            className: "ui-chat-attachment-file-download",
+            html: DOWNLOAD_ICON,
+            attrs: { type: "button", title: "Download attachment", "aria-label": "Download attachment" },
+          });
+          download.addEventListener("click", () => currentOptions.onAttachmentDownload?.(message, attachment));
+          row.appendChild(download);
+        }
+        list.appendChild(row);
+      });
+      wrap.appendChild(list);
+    }
+
+    return wrap;
+  }
+
+  function createMessageReactionsNode(message) {
+    const reactions = normalizeReactions(message?.reactions);
+    const allowedReactions = normalizeReactions(currentOptions.allowedReactions);
+    const canSelect = typeof currentOptions.onReactionSelect === "function";
+    const showPicker = canSelect && currentOptions.showReactionPicker !== false && allowedReactions.length > 0;
+    if (!reactions.length && !showPicker) {
+      return null;
+    }
+
+    const wrap = createElement("div", { className: "ui-chat-message-reactions" });
+    if (reactions.length) {
+      const list = createElement("div", { className: "ui-chat-message-reaction-list" });
+      reactions.forEach((reaction) => {
+        const chip = createReactionButton(message, reaction, "chip", canSelect);
+        list.appendChild(chip);
+      });
+      wrap.appendChild(list);
+    }
+    if (showPicker) {
+      const picker = createElement("div", {
+        className: "ui-chat-message-reaction-picker",
+        attrs: { "aria-label": "Add reaction" },
+      });
+      allowedReactions.forEach((reaction) => {
+        picker.appendChild(createReactionButton(message, reaction, "picker", true));
+      });
+      wrap.appendChild(picker);
+    }
+    return wrap;
+  }
+
+  function createReactionButton(message, reaction, mode, enabled) {
+    const label = reaction.label || reaction.id;
+    const countLabel = mode !== "picker" && reaction.count > 0 ? `, ${reaction.count}` : "";
+    const button = createElement("button", {
+      className: [
+        mode === "picker" ? "ui-chat-message-reaction-option" : "ui-chat-message-reaction-chip",
+        reaction.reactedByCurrentUser ? "is-active" : "",
+      ].filter(Boolean).join(" "),
+      attrs: {
+        type: "button",
+        "data-reaction-id": reaction.id,
+        title: label,
+        "aria-label": `${mode === "picker" ? "Add reaction" : "Reaction"} ${label}${countLabel}`,
+        "aria-pressed": reaction.reactedByCurrentUser ? "true" : "false",
+        disabled: enabled ? null : "disabled",
+      },
+    });
+    button.appendChild(createElement("span", {
+      className: "ui-chat-message-reaction-label",
+      text: reaction.label,
+    }));
+    if (mode !== "picker" && reaction.count > 0) {
+      button.appendChild(createElement("span", {
+        className: "ui-chat-message-reaction-count",
+        text: String(reaction.count),
+      }));
+    }
+    if (enabled) {
+      button.addEventListener("click", () => {
+        currentOptions.onReactionSelect?.(message, { ...reaction });
+      });
+    }
+    return button;
+  }
+
+  function createMessageMeta(message, direction, grouped) {
+    const meta = createElement("div", { className: "ui-chat-message-meta" });
+    let hasContent = false;
+
+    if (currentOptions.showTimestamps && message.timestamp && (!grouped || direction === "outgoing")) {
+      meta.appendChild(createElement("span", {
+        className: "ui-chat-message-timestamp",
+        text: String(message.timestamp),
+      }));
+      hasContent = true;
+    }
+
+    if (direction === "outgoing" && currentOptions.showStates && message.state) {
+      meta.appendChild(createElement("span", {
+        className: `ui-chat-message-state is-${String(message.state).replace(/[^a-z-]/gi, "").toLowerCase()}`,
+        text: formatStateLabel(message.state),
+      }));
+      hasContent = true;
+    }
+
+    return hasContent ? meta : null;
+  }
+
+  function ensureVirtualRoot() {
+    if (virtualRoot && virtualViewport && virtualScroller && topSpacer && sliceHost && bottomSpacer) {
+      virtualRoot.className = `ui-chat-thread is-virtualized ${currentOptions.className || ""}`.trim();
+      return;
+    }
+
+    teardownVirtualRoot();
+    clearNode(container);
+
+    virtualRoot = createElement("div", {
+      className: `ui-chat-thread is-virtualized ${currentOptions.className || ""}`.trim(),
+    });
+    virtualViewport = createElement("div", { className: "ui-chat-thread-viewport" });
+    virtualScroller = createElement("div", { className: "ui-chat-thread-virtual-scroller" });
+    topSpacer = createElement("div", { className: "ui-chat-thread-virtual-spacer is-top" });
+    sliceHost = createElement("div", { className: "ui-chat-thread-virtual-window" });
+    bottomSpacer = createElement("div", { className: "ui-chat-thread-virtual-spacer is-bottom" });
+
+    virtualScroller.appendChild(topSpacer);
+    virtualScroller.appendChild(sliceHost);
+    virtualScroller.appendChild(bottomSpacer);
+    virtualViewport.appendChild(virtualScroller);
+    virtualRoot.appendChild(virtualViewport);
+    container.appendChild(virtualRoot);
+
+    virtualViewport.addEventListener("scroll", onViewportScroll, { passive: true });
+
+  }
+
+  function teardownVirtualRoot() {
+    if (scrollRaf) {
+      cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+    }
+    if (remeasureRaf) {
+      cancelAnimationFrame(remeasureRaf);
+      remeasureRaf = 0;
+    }
+    if (virtualViewport) {
+      virtualViewport.removeEventListener("scroll", onViewportScroll);
+    }
+    virtualRoot = null;
+    virtualViewport = null;
+    virtualScroller = null;
+    topSpacer = null;
+    sliceHost = null;
+    bottomSpacer = null;
+  }
+
+  function onViewportScroll() {
+    bottomPinToken += 1;
+    if (scrollRaf) {
+      cancelAnimationFrame(scrollRaf);
+    }
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = 0;
+      renderVirtual("scroll", null);
+    });
+  }
+
+  function scheduleVirtualRender() {
+    if (!virtualViewport) {
+      return;
+    }
+    if (scrollRaf) {
+      return;
+    }
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = 0;
+      renderVirtual("measure", null);
+    });
+  }
+
+  function cancelScheduledVirtualRenders() {
+    if (scrollRaf) {
+      cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+    }
+    if (remeasureRaf) {
+      cancelAnimationFrame(remeasureRaf);
+      remeasureRaf = 0;
+    }
+  }
+
+  function captureVirtualSnapshot() {
+    if (!virtualViewport || !shouldVirtualize(currentMessages, currentOptions)) {
+      return null;
+    }
+    const anchor = getFirstVisibleAnchor(virtualViewport);
+    return {
+      scrollTop: virtualViewport.scrollTop,
+      scrollHeight: virtualViewport.scrollHeight,
+      mode: isPinnedToBottom(virtualViewport, currentOptions.bottomAnchorThreshold) ? "bottom" : "preserve",
+      anchorId: anchor?.id || null,
+      anchorOffset: anchor?.offset || 0,
+    };
+  }
+
+  function applyRestoreSnapshot(snapshot, reason) {
+    if (!virtualViewport || !snapshot) {
+      return;
+    }
+
+    if (snapshot.mode === "bottom" && reason === "append") {
+      queuePinnedToBottom();
+      return;
+    }
+
+    if (reason === "prepend") {
+      const delta = virtualViewport.scrollHeight - snapshot.scrollHeight;
+      virtualViewport.scrollTop = snapshot.scrollTop + delta;
+      requestAnimationFrame(() => {
+        if (!virtualViewport || !snapshot.anchorId) {
+          return;
+        }
+        renderVirtual("scroll", null);
+        requestAnimationFrame(() => {
+          restoreAnchorOffset(snapshot);
+        });
+      });
+      return;
+    }
+
+    if (snapshot.mode === "preserve") {
+      virtualViewport.scrollTop = snapshot.scrollTop;
+      requestAnimationFrame(() => {
+        if (!virtualViewport || !snapshot.anchorId) {
+          return;
+        }
+        renderVirtual("scroll", null);
+        requestAnimationFrame(() => {
+          restoreAnchorOffset(snapshot);
+        });
+      });
+    }
+  }
+
+  function restoreAnchorOffset(snapshot) {
+    if (!virtualViewport || !snapshot?.anchorId) {
+      return;
+    }
+    const anchorNode = findMessageNodeById(virtualViewport, snapshot.anchorId);
+    if (!anchorNode) {
+      return;
+    }
+    const viewportRect = virtualViewport.getBoundingClientRect();
+    const anchorRect = anchorNode.getBoundingClientRect();
+    const offsetDelta = (anchorRect.top - viewportRect.top) - snapshot.anchorOffset;
+    if (Math.abs(offsetDelta) > 1) {
+      virtualViewport.scrollTop += offsetDelta;
+    }
+  }
+
+  function queuePinnedToBottom() {
+    if (!virtualViewport) {
+      return;
+    }
+    const token = bottomPinToken + 1;
+    bottomPinToken = token;
+    const applyBottom = () => {
+      if (!virtualViewport || token !== bottomPinToken) {
+        return;
+      }
+      virtualViewport.scrollTop = virtualViewport.scrollHeight;
+    };
+    applyBottom();
+    requestAnimationFrame(() => {
+      applyBottom();
+      requestAnimationFrame(applyBottom);
+    });
+  }
+
+  function measureVisibleRows(startIndex) {
+    if (!sliceHost) {
+      return;
+    }
+
+    let changed = false;
+    Array.from(sliceHost.children).forEach((node, offset) => {
+      const message = currentMessages[startIndex + offset];
+      if (!message || !node || node.nodeType !== 1) {
+        return;
+      }
+      const key = getMessageMeasureKey(message, startIndex + offset);
+      const nextHeight = Math.max(1, Math.round(node.getBoundingClientRect().height));
+      if (measuredHeights.get(key) !== nextHeight) {
+        measuredHeights.set(key, nextHeight);
+        changed = true;
+      }
+    });
+
+    if (changed && !remeasureRaf && measureRetryCount < 2) {
+      measureRetryCount += 1;
+      remeasureRaf = requestAnimationFrame(() => {
+        remeasureRaf = 0;
+        renderVirtual("measure", null);
+      });
+    } else if (!changed) {
+      measureRetryCount = 0;
+    }
+  }
+
+  function getViewportHeight() {
+    if (!virtualViewport) {
+      return container?.clientHeight || 0;
+    }
+    return virtualViewport.clientHeight || container?.clientHeight || 0;
+  }
+
+  function update(nextData = {}, nextOptions = {}) {
+    const previousMessages = currentMessages;
+    const snapshot = captureVirtualSnapshot();
+    cancelScheduledVirtualRenders();
+    if (Object.prototype.hasOwnProperty.call(nextData || {}, "messages")) {
+      currentMessages = normalizeMessages(nextData.messages || []);
+    }
+    currentOptions = { ...currentOptions, ...(nextOptions || {}) };
+    const reason = detectChangeReason(previousMessages, currentMessages);
+    render(reason, snapshot);
+  }
+
+  function destroy() {
+    destroyMediaStrips(mediaStripApis);
+    destroyMessageMenus(messageMenuApis);
+    teardownVirtualRoot();
+    clearNode(container);
+  }
+
+  function setMessages(messages = []) {
+    const previousMessages = currentMessages;
+    const snapshot = captureVirtualSnapshot();
+    cancelScheduledVirtualRenders();
+    currentMessages = normalizeMessages(messages);
+    render(detectChangeReason(previousMessages, currentMessages), snapshot);
+  }
+
+  function getMessages() {
+    return currentMessages.map((message) => ({
+      ...message,
+      replyTo: normalizeReplyTo(message.replyTo),
+      attachments: Array.isArray(message.attachments) ? message.attachments.map((item) => ({ ...item })) : [],
+      meta: message.meta ? { ...message.meta } : undefined,
+    }));
+  }
+
+  function getState() {
+    return {
+      messages: getMessages(),
+      options: { ...currentOptions },
+      virtualization: {
+        enabled: shouldVirtualize(currentMessages, currentOptions),
+      },
+    };
+  }
+
+  render();
+  return { update, destroy, setMessages, getMessages, getState };
+}
+
+function destroyMediaStrips(list = []) {
+  list.forEach((api) => api?.destroy?.());
+  list.length = 0;
+}
+
+function destroyMessageMenus(list = []) {
+  list.forEach((api) => api?.destroy?.());
+  list.length = 0;
+}
+
+function normalizeMessages(messages) {
+  return Array.isArray(messages) ? messages.map((message) => ({
+    ...message,
+    direction: normalizeDirection(message?.direction),
+    status: normalizeModerationStatus(message?.status) || message?.status,
+    replyTo: normalizeReplyTo(message?.replyTo || message?.reply),
+    attachments: Array.isArray(message?.attachments) ? message.attachments.map((item) => ({ ...item })) : [],
+    reactions: normalizeReactions(message?.reactions),
+    meta: message?.meta ? { ...message.meta } : undefined,
+  })) : [];
+}
+
+function normalizeReplyTo(replyTo) {
+  return replyTo && typeof replyTo === "object" ? { ...replyTo } : null;
+}
+
+function normalizeDirection(direction) {
+  const value = String(direction || "incoming").toLowerCase();
+  if (value === "outgoing" || value === "system") {
+    return value;
+  }
+  return "incoming";
+}
+
+function isGroupedWithPrevious(previous, current) {
+  if (!previous || !current) {
+    return false;
+  }
+  if (normalizeModerationStatus(previous?.status) || normalizeModerationStatus(current?.status)) {
+    return false;
+  }
+  const prevDirection = normalizeDirection(previous.direction);
+  const currentDirection = normalizeDirection(current.direction);
+  if (prevDirection !== currentDirection || currentDirection === "system") {
+    return false;
+  }
+  return String(previous.senderName || "") === String(current.senderName || "");
+}
+
+function shouldShowSenderName(message, grouped) {
+  if (normalizeDirection(message.direction) === "outgoing") {
+    return Boolean(message.senderName) && !grouped;
+  }
+  return Boolean(message.senderName) && !grouped;
+}
+
+function shouldRenderAvatar(message) {
+  return normalizeDirection(message?.direction) !== "system"
+    && Boolean(getSenderAvatarUrl(message) || String(message?.senderName || "").trim());
+}
+
+function getSenderAvatarUrl(message) {
+  return String(message?.senderAvatar || message?.sender?.avatar || "").trim();
+}
+
+function normalizeSenderPresence(message) {
+  const value = String(message?.senderPresence || message?.sender?.presence || "").trim().toLowerCase();
+  if (["online", "away", "busy", "offline", "none"].includes(value)) {
+    return value;
+  }
+  return "none";
+}
+
+function shouldRenderPresence(presence) {
+  return presence === "online";
+}
+
+function getMessageReplyTo(message) {
+  return normalizeReplyTo(message?.replyTo || message?.reply);
+}
+
+function getReplySenderName(replyTo) {
+  return String(replyTo?.senderName || replyTo?.authorName || replyTo?.sender?.name || replyTo?.title || "").trim();
+}
+
+function getReplyText(replyTo) {
+  return String(replyTo?.text || replyTo?.preview || replyTo?.excerpt || "").trim();
+}
+
+function getReplyAttachmentLabel(replyTo) {
+  return String(replyTo?.attachmentLabel || replyTo?.attachment?.name || "").trim();
+}
+
+function shouldRenderReplyPreview(replyTo) {
+  return Boolean(replyTo && (getReplySenderName(replyTo) || getReplyText(replyTo) || getReplyAttachmentLabel(replyTo)));
+}
+
+function getInitials(name) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const initials = parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+  return initials || "?";
+}
+
+function getMessageMenuItemsFromOptions(message, currentMessages, currentOptions) {
+  if (normalizeModerationStatus(message?.status)
+    || currentOptions.showMessageMenuTrigger === false
+    || typeof currentOptions.getMessageMenuItems !== "function") {
+    return [];
+  }
+  const items = currentOptions.getMessageMenuItems(message, { messages: currentMessages.map((item) => ({ ...item })) });
+  return Array.isArray(items) ? items : [];
+}
+
+function normalizeReactions(reactions) {
+  if (!Array.isArray(reactions)) {
+    return [];
+  }
+  return reactions
+    .map((reaction) => {
+      if (typeof reaction === "string") {
+        const id = reaction.trim();
+        return id ? { id, label: id, count: 0, reactedByCurrentUser: false } : null;
+      }
+      if (!reaction || typeof reaction !== "object") {
+        return null;
+      }
+      const id = String(reaction.id || reaction.key || reaction.value || reaction.label || "").trim();
+      if (!id) {
+        return null;
+      }
+      const count = Number(reaction.count);
+      return {
+        ...reaction,
+        id,
+        label: String(reaction.label || reaction.icon || reaction.emoji || id).trim() || id,
+        count: Number.isFinite(count) && count > 0 ? count : 0,
+        reactedByCurrentUser: Boolean(reaction.reactedByCurrentUser || reaction.active || reaction.selected),
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeModerationStatus(status) {
+  const value = String(status || "").trim().toLowerCase();
+  return value === "hidden" || value === "deleted" ? value : "";
+}
+
+function getModerationPlaceholderLabel(message, status) {
+  const override = String(message?.statusLabel || message?.placeholderLabel || "").trim();
+  if (override) {
+    return override;
+  }
+  return status === "deleted" ? "Message deleted" : "Message hidden by moderator";
+}
+
+function formatStateLabel(state) {
+  const value = String(state || "").toLowerCase();
+  switch (value) {
+    case "sending":
+      return "Sending";
+    case "sent":
+      return "Sent";
+    case "delivered":
+      return "Delivered";
+    case "read":
+      return "Read";
+    case "failed":
+      return "Failed";
+    default:
+      return String(state || "");
+  }
+}
+
+function shouldVirtualize(messages, options) {
+  return Boolean(options?.enableVirtualization) && Array.isArray(messages) && messages.length >= Number(options?.virtualThreshold || 0);
+}
+
+function getMessageMeasureKey(message, index) {
+  return String(message?.id ?? index);
+}
+
+function estimateMessageHeight(message) {
+  if (normalizeDirection(message?.direction) === "system") {
+    return DEFAULT_SYSTEM_HEIGHT;
+  }
+  if (normalizeModerationStatus(message?.status)) {
+    return 52;
+  }
+  let height = DEFAULT_MESSAGE_HEIGHT;
+  if (message?.text) {
+    height += Math.min(56, Math.ceil(String(message.text).length / 42) * 18);
+  }
+  if (shouldRenderReplyPreview(getMessageReplyTo(message))) {
+    height += 54;
+  }
+  if (normalizeReactions(message?.reactions).length) {
+    height += 34;
+  }
+  const attachments = Array.isArray(message?.attachments) ? message.attachments : [];
+  if (attachments.some((item) => item.kind === "image" || item.kind === "video")) {
+    height += 112;
+  }
+  const fileCount = attachments.filter((item) => item.kind !== "image" && item.kind !== "video").length;
+  height += fileCount * 52;
+  return height;
+}
+
+function computeVirtualWindow(messages, measuredHeights, scrollTop, viewportHeight, overscan) {
+  const heights = messages.map((message, index) => measuredHeights.get(getMessageMeasureKey(message, index)) || estimateMessageHeight(message));
+  const offsets = new Array(messages.length);
+  let totalHeight = 0;
+  for (let index = 0; index < heights.length; index += 1) {
+    offsets[index] = totalHeight;
+    totalHeight += heights[index];
+  }
+
+  const visibleBottom = scrollTop + Math.max(viewportHeight, 1);
+  let visibleStart = 0;
+  while (visibleStart < messages.length && offsets[visibleStart] + heights[visibleStart] < scrollTop) {
+    visibleStart += 1;
+  }
+
+  let visibleEnd = visibleStart;
+  while (visibleEnd < messages.length && offsets[visibleEnd] < visibleBottom) {
+    visibleEnd += 1;
+  }
+
+  const start = Math.max(0, visibleStart - Math.max(0, overscan || 0));
+  const end = Math.min(messages.length, Math.max(visibleEnd, visibleStart + 1) + Math.max(0, overscan || 0));
+  const topSpacerHeight = offsets[start] || 0;
+  const bottomStart = end < messages.length ? offsets[end] : totalHeight;
+  const bottomSpacerHeight = Math.max(0, totalHeight - bottomStart);
+
+  return {
+    start,
+    end,
+    topSpacerHeight,
+    bottomSpacerHeight,
+  };
+}
+
+function detectChangeReason(previousMessages, nextMessages) {
+  if (!Array.isArray(previousMessages) || !Array.isArray(nextMessages)) {
+    return "replace";
+  }
+  if (previousMessages.length === 0 || nextMessages.length === 0) {
+    return "replace";
+  }
+  if (nextMessages.length > previousMessages.length) {
+    if (isPrefixMatch(previousMessages, nextMessages)) {
+      return "append";
+    }
+    if (isSuffixMatch(previousMessages, nextMessages)) {
+      return "prepend";
+    }
+  }
+  return "replace";
+}
+
+function isPrefixMatch(previousMessages, nextMessages) {
+  return previousMessages.every((message, index) => sameMessageIdentity(message, nextMessages[index]));
+}
+
+function isSuffixMatch(previousMessages, nextMessages) {
+  const offset = nextMessages.length - previousMessages.length;
+  return previousMessages.every((message, index) => sameMessageIdentity(message, nextMessages[offset + index]));
+}
+
+function sameMessageIdentity(left, right) {
+  return String(left?.id ?? "") === String(right?.id ?? "") && normalizeDirection(left?.direction) === normalizeDirection(right?.direction);
+}
+
+function isPinnedToBottom(viewport, threshold) {
+  if (!viewport) {
+    return true;
+  }
+  const distance = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop;
+  return distance <= Math.max(0, Number(threshold) || 0);
+}
+
+function getFirstVisibleAnchor(viewport) {
+  if (!viewport) {
+    return null;
+  }
+  const viewportRect = viewport.getBoundingClientRect();
+  const rows = Array.from(viewport.querySelectorAll(".ui-chat-message[data-message-id]"));
+  const candidate = rows.find((row) => row.getBoundingClientRect().bottom > viewportRect.top + 2);
+  if (!candidate) {
+    return null;
+  }
+  return {
+    id: candidate.dataset.messageId || null,
+    offset: candidate.getBoundingClientRect().top - viewportRect.top,
+  };
+}
+
+function findMessageNodeById(viewport, id) {
+  if (!viewport || !id) {
+    return null;
+  }
+  return Array.from(viewport.querySelectorAll(".ui-chat-message[data-message-id]"))
+    .find((row) => row.dataset.messageId === id) || null;
+}

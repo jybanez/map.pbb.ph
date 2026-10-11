@@ -1,0 +1,123 @@
+.ui-splitter {
+  --ui-splitter-ratio-a: 0.5;
+  --ui-splitter-ratio-b: 0.5;
+  --ui-splitter-divider-edge: var(--ui-border, #2b3750);
+  --ui-splitter-divider-core: var(--ui-border-strong, #344769);
+  --ui-splitter-divider-active-edge: color-mix(in srgb, var(--ui-accent, #6f9cff) 34%, var(--ui-border, #2b3750));
+  --ui-splitter-divider-active-core: color-mix(in srgb, var(--ui-accent, #6f9cff) 52%, var(--ui-border-strong, #344769));
+  display: grid;
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid var(--ui-border, #2b3750);
+  border-radius: 10px;
+  background: var(--ui-bg-soft, #101c31);
+  overflow: hidden;
+}
+
+.ui-splitter--horizontal {
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+}
+
+.ui-splitter--chromeless {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  min-height: 0;
+  height: 100%;
+}
+
+.ui-splitter--vertical {
+  grid-template-rows: minmax(0, 1fr) 24px minmax(0, 1fr);
+}
+
+.ui-splitter-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
+.ui-splitter-pane.is-a {
+  border-right: 1px solid var(--ui-border, #2b3750);
+}
+
+.ui-splitter--vertical > .ui-splitter-pane.is-a {
+  border-right: 0;
+  border-bottom: 1px solid var(--ui-border, #2b3750);
+}
+
+.ui-splitter.ui-splitter--chromeless > .ui-splitter-pane {
+  border: 0;
+}
+
+.ui-splitter-divider {
+  position: relative;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  width: 24px;
+  min-width: 24px;
+  height: 100%;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.ui-splitter-divider::before {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  inset: 0 calc(50% - 4px);
+  border: 1px solid var(--ui-border-strong, #344769);
+  background: linear-gradient(180deg, var(--ui-splitter-divider-edge), var(--ui-splitter-divider-core));
+  pointer-events: none;
+}
+
+.ui-splitter-divider:enabled:hover::before,
+.ui-splitter-divider:enabled:focus-visible::before,
+.ui-splitter.is-dragging > .ui-splitter-divider::before,
+.ui-splitter-divider:enabled:active::before {
+  border-color: color-mix(in srgb, var(--ui-accent, #6f9cff) 58%, var(--ui-border-strong, #344769));
+  background: linear-gradient(180deg, var(--ui-splitter-divider-active-edge), var(--ui-splitter-divider-active-core));
+}
+
+.ui-splitter-divider:focus-visible {
+  outline: 2px solid var(--ui-accent, #6f9cff);
+  outline-offset: -2px;
+}
+
+.ui-splitter-divider:disabled {
+  cursor: default;
+}
+
+.ui-splitter--vertical > .ui-splitter-divider {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  cursor: row-resize;
+}
+
+.ui-splitter--vertical > .ui-splitter-divider::before {
+  inset: calc(50% - 4px) 0;
+  background: linear-gradient(90deg, var(--ui-splitter-divider-edge), var(--ui-splitter-divider-core));
+}
+
+.ui-splitter--vertical > .ui-splitter-divider:enabled:hover::before,
+.ui-splitter--vertical > .ui-splitter-divider:enabled:focus-visible::before,
+.ui-splitter--vertical.is-dragging > .ui-splitter-divider::before,
+.ui-splitter--vertical > .ui-splitter-divider:enabled:active::before {
+  background: linear-gradient(90deg, var(--ui-splitter-divider-active-edge), var(--ui-splitter-divider-active-core));
+}
+
+.ui-splitter--vertical > .ui-splitter-divider:disabled {
+  cursor: default;
+}
+
+.ui-splitter-empty {
+  margin: 0;
+  color: var(--ui-muted, #9fb2d8);
+  font-size: 12px;
+}

@@ -1,0 +1,9 @@
+### Result
+[
+  "https://map.pbb.ph/vendor/helpers/dist/helpers.ui.bundle.min.css?v=0.21.280",
+  "https://map.pbb.ph/vendor/helpers/dist/helpers.ui.bundle.min.js?v=0.21.280"
+]
+### Ran Playwright code
+```js
+await page.evaluate('() => (performance.getEntriesByType(\'resource\').filter(e=>e.name.includes(\'helpers.ui.bundle\')).map(e=>e.name))');
+```

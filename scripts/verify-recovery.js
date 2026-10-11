@@ -1,0 +1,72 @@
+async (page) => {
+  const checks = [], errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const originalTimer = window.setTimeout;
+    window.setTimeout = function(callback, delay, ...args) {
+      if (delay === 20000) window.__startupDeadline = callback;
+      return originalTimer.call(this, callback, delay, ...args);
+    };
+    let lib;
+    Object.defineProperty(window, 'maplibregl', { configurable: true, get: () => lib, set(value) {
+      lib = value; const Original = value.Map;
+      value.Map = class extends Original { constructor(options) { super(options); window.__map = this; } };
+    } });
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: undefined });
+  });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  for (const kind of ['poi', 'terrain']) {
+    await page.route(`**/tiles/${kind}/**`, route => route.abort('failed'));
+    await page.goto('https://map.pbb.ph/');
+    await page.getByRole('heading', { name: 'Some map layers are unavailable', exact: true }).waitFor();
+    await page.waitForFunction(() => window.__map?.loaded());
+    if (!(await page.getByRole('button', { name: 'Retry map', exact: true }).isVisible())) throw Error(`${kind} has no canonical retry action`);
+    const before = await page.evaluate(() => ({ zoom: window.__map.getZoom(), terrain: window.__map.getTerrain() }));
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await page.waitForFunction(() => !window.__map.isMoving());
+    const zoom = await page.evaluate(() => window.__map.getZoom());
+    if (zoom < before.zoom + 0.9) throw Error(`${kind} outage blocks navigation`);
+    if (kind === 'terrain' && before.terrain !== null) throw Error('Terrain failure did not preserve a flat map');
+    await page.screenshot({ path: `output/playwright/${kind}-retry-available.png` });
+    await page.unroute(`**/tiles/${kind}/**`);
+    await page.getByRole('button', { name: 'Retry map', exact: true }).click();
+    await page.waitForFunction(() => window.__map?.loaded());
+    const recovered = await page.evaluate(() => ({ terrain: window.__map.getTerrain(),
+      poi: window.__map.queryRenderedFeatures({ layers: ['pbb-poi-points'] }).length,
+      feedbackHidden: document.getElementById('map-feedback').hidden,
+      staleNotices: [...document.querySelectorAll('.ui-toast-message')].some(el => /Points of interest are unavailable|Terrain is unavailable/.test(el.textContent)),
+    }));
+    if (!recovered.feedbackHidden || recovered.staleNotices || !recovered.terrain || recovered.poi < 1) throw Error(`${kind} retry did not recover cleanly`);
+    checks.push({ check: `${kind} outage preserves navigation, exposes canonical retry and recovers`, result: recovered });
+  }
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  await page.route('**/tiles/vector/**', async route => { await gate; try { await route.continue(); } catch {} });
+  await page.reload();
+  await page.getByRole('button', { name: 'Layers', exact: true }).waitFor();
+  const timeout = await page.evaluate(() => {
+    window.__expiredMap = window.__map;
+    window.__startupDeadline();
+    return { removed: window.__expiredMap._removed, canvasCount: document.querySelectorAll('canvas.maplibregl-canvas').length };
+  });
+  if (!timeout.removed || timeout.canvasCount) throw Error('Timed-out initialization left map alive');
+  await page.getByRole('heading', { name: 'Map is taking too long', exact: true }).waitFor();
+  release();
+  await page.unroute('**/tiles/vector/**');
+  // Deliver the old generation's load handler after the deadline and request release.
+  await page.evaluate(() => window.__expiredMap.fire('load'));
+  const late = await page.evaluate(() => ({ feedbackHidden: document.getElementById('map-feedback').hidden,
+    canvasCount: document.querySelectorAll('canvas.maplibregl-canvas').length,
+    busy: !!document.querySelector('.ui-busy-overlay:not([hidden])') }));
+  if (late.feedbackHidden || late.canvasCount || late.busy) throw Error('Late load revived expired initialization');
+  await page.screenshot({ path: 'output/playwright/startup-deadline-late-load.png' });
+  await page.getByRole('button', { name: 'Retry map', exact: true }).click();
+  await page.waitForFunction(() => window.__map?.loaded());
+  const retry = await page.evaluate(() => ({ feedbackHidden: document.getElementById('map-feedback').hidden,
+    canvasCount: document.querySelectorAll('canvas.maplibregl-canvas').length }));
+  if (!retry.feedbackHidden || retry.canvasCount !== 1) throw Error('Deadline retry did not recover a single clean map');
+  checks.push({ check: 'deadline removes generation, late load ignored, deliberate retry clears failure', timeout, late, retry });
+  if (errors.length) throw Error(errors.join('; '));
+  return { date: '2026-10-10', checks, uncaughtErrors: errors,
+    method: 'Real tile failures and held vector requests; production deadline callback invoked deterministically, followed by expired MapLibre load event.' };
+}

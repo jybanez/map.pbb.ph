@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-10",
+  "emulatedMobileTouch": true,
+  "before": {
+    "center": [
+      123.8854,
+      10.3157
+    ],
+    "zoom": 12
+  },
+  "after": {
+    "center": [
+      123.88011932373047,
+      10.31567927667642
+    ],
+    "zoom": 12.998489494141126,
+    "scroll": [
+      390,
+      844
+    ]
+  },
+  "limitations": [
+    "Emulation does not verify physical device safe areas or device GPS"
+  ]
+}

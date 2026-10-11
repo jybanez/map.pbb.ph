@@ -1,0 +1,74 @@
+
+> pbb-map@1.0.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# Subtest: one watcher updates movement without ongoing camera following; Locate uses latest fix
+ok 1 - one watcher updates movement without ongoing camera following; Locate uses latest fix
+  ---
+  duration_ms: 3.7046
+  ...
+# Subtest: watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+ok 2 - watch visibility, stale callbacks, denial/retry and teardown preserve one active watcher
+  ---
+  duration_ms: 2.1859
+  ...
+# Subtest: watch transient errors and invalid fixes recover; hidden startup starts only on resume
+ok 3 - watch transient errors and invalid fixes recover; hidden startup starts only on resume
+  ---
+  duration_ms: 0.6235
+  ...
+# Subtest: pending permission never permits duplicate fixes; initial fix respects user camera navigation
+ok 4 - pending permission never permits duplicate fixes; initial fix respects user camera navigation
+  ---
+  duration_ms: 0.7318
+  ...
+# Subtest: denial and timeout clear pending; stale callbacks cannot overwrite retry
+ok 5 - denial and timeout clear pending; stale callbacks cannot overwrite retry
+  ---
+  duration_ms: 0.5749
+  ...
+# Subtest: teardown invalidates callbacks and removes the finite watchdog
+ok 6 - teardown invalidates callbacks and removes the finite watchdog
+  ---
+  duration_ms: 0.303
+  ...
+# Subtest: invalid device values are rejected without leaving busy state
+ok 7 - invalid device values are rejected without leaving busy state
+  ---
+  duration_ms: 1.1234
+  ...
+# Subtest: missing geolocation and insecure context are actionable and never request
+ok 8 - missing geolocation and insecure context are actionable and never request
+  ---
+  duration_ms: 0.3787
+  ...
+# Subtest: accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+ok 9 - accuracy polygon uses meters at equator, Cebu, high latitude and antimeridian
+  ---
+  duration_ms: 3.2359
+  ...
+# Subtest: style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+ok 10 - style keeps Hotline terrain, separate POIs and attribution with configurable endpoints
+  ---
+  duration_ms: 4.4154
+  ...
+# Subtest: public MapServer configuration rejects credentials and query tokens
+ok 11 - public MapServer configuration rejects credentials and query tokens
+  ---
+  duration_ms: 0.6099
+  ...
+# Subtest: every pinned public runtime asset matches the snapshot inventory
+ok 12 - every pinned public runtime asset matches the snapshot inventory
+  ---
+  duration_ms: 89.1355
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 241.0246

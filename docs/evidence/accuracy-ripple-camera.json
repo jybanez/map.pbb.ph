@@ -1,0 +1,209 @@
+{
+  "results": [
+    {
+      "width": 1200,
+      "action": "zoom in",
+      "during": 5,
+      "total": 9,
+      "tiles": 4,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 19.381333339435784,
+      "zoom": 17,
+      "pitch": 35,
+      "bearing": 0
+    },
+    {
+      "width": 1200,
+      "action": "zoom out",
+      "during": 6,
+      "total": 9,
+      "tiles": 0,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 21.301333339394454,
+      "zoom": 15,
+      "pitch": 35,
+      "bearing": 0
+    },
+    {
+      "width": 1200,
+      "action": "pan",
+      "during": 5,
+      "total": 9,
+      "tiles": 0,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 21.106666671826392,
+      "zoom": 15,
+      "pitch": 35,
+      "bearing": 0
+    },
+    {
+      "width": 1200,
+      "action": "tilt",
+      "during": 6,
+      "total": 8,
+      "tiles": 0,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 23.357333339192024,
+      "zoom": 15,
+      "pitch": 65,
+      "bearing": 0
+    },
+    {
+      "width": 1200,
+      "action": "rotate",
+      "during": 3,
+      "total": 6,
+      "tiles": 0,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 26.874666671358217,
+      "zoom": 15,
+      "pitch": 65,
+      "bearing": 135
+    },
+    {
+      "width": 1200,
+      "action": "combined",
+      "during": 3,
+      "total": 6,
+      "tiles": 5,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.88540000000006,
+        10.3157
+      ],
+      "radius": 22.226666671440586,
+      "zoom": 16,
+      "pitch": 45,
+      "bearing": -75
+    },
+    {
+      "width": 375,
+      "action": "zoom in",
+      "during": 5,
+      "total": 9,
+      "tiles": 0,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 20.989333338360904,
+      "zoom": 17,
+      "pitch": 45,
+      "bearing": -75
+    },
+    {
+      "width": 375,
+      "action": "zoom out",
+      "during": 5,
+      "total": 8,
+      "tiles": 0,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.88540000000006,
+        10.3157
+      ],
+      "radius": 20.917333341445673,
+      "zoom": 15,
+      "pitch": 45,
+      "bearing": -75
+    },
+    {
+      "width": 375,
+      "action": "pan",
+      "during": 5,
+      "total": 8,
+      "tiles": 4,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 19.746666671622037,
+      "zoom": 15,
+      "pitch": 45,
+      "bearing": -75
+    },
+    {
+      "width": 375,
+      "action": "tilt",
+      "during": 5,
+      "total": 9,
+      "tiles": 8,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.3157
+      ],
+      "radius": 21.189333339552885,
+      "zoom": 15,
+      "pitch": 65,
+      "bearing": -75
+    },
+    {
+      "width": 375,
+      "action": "rotate",
+      "during": 4,
+      "total": 8,
+      "tiles": 8,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.8854,
+        10.315699999999998
+      ],
+      "radius": 20.712000005890594,
+      "zoom": 15,
+      "pitch": 65,
+      "bearing": 135
+    },
+    {
+      "width": 375,
+      "action": "combined",
+      "during": 6,
+      "total": 10,
+      "tiles": 3,
+      "sameSource": true,
+      "oneLayer": true,
+      "center": [
+        123.88540000000006,
+        10.3157
+      ],
+      "radius": 22.594666674154457,
+      "zoom": 16,
+      "pitch": 45,
+      "bearing": -75
+    }
+  ],
+  "errors": []
+}

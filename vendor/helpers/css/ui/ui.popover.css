@@ -1,0 +1,52 @@
+.ui-popover {
+  position: fixed;
+  z-index: var(--ui-z-popover, 1500);
+  box-sizing: border-box;
+  min-width: 220px;
+  border: 1px solid var(--ui-border, #2b3750);
+  border-radius: 10px;
+  background: var(--ui-bg, #0d1523);
+  color: var(--ui-text, #d7e0f4);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.34);
+  overflow: auto;
+  opacity: 0;
+  transform: translateY(4px) scale(0.985);
+  transform-origin: top left;
+  transition: opacity 140ms ease, transform 160ms ease;
+  pointer-events: none;
+}
+
+.ui-popover[data-placement^="top"] {
+  transform: translateY(-4px) scale(0.985);
+  transform-origin: bottom left;
+}
+
+.ui-popover[data-placement$="end"] {
+  transform-origin: top right;
+}
+
+.ui-popover[data-placement^="top"][data-placement$="end"] {
+  transform-origin: bottom right;
+}
+
+.ui-popover.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.ui-popover:focus-visible {
+  outline: 2px solid var(--ui-accent, #7bb5ff);
+  outline-offset: 2px;
+}
+
+.ui-popover-content {
+  min-width: 0;
+  padding: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-popover {
+    transition: none;
+  }
+}

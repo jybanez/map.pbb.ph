@@ -1,0 +1,7 @@
+# Maximum camera pitch85 — task191
+
+Alfred9147 accepted revision20261011-pitch85-1 and completed task191, deliverable38 and milestone18. Independent configuration/import/docs and submitted browser evidence/screenshot review confirmed the bounded behavior. Submitted console/page errors were empty; substantial sky and dense distant labels were observed. No independent browser rerun, physical-device or broad performance validation claimed. Earlier pending-review statements below are historical.
+
+Owner9140 / Alfred9142 request explicit maxPitch85. Revision20261011-pitch85-1 sets config.maxPitch85, passed to the complete MapLibre Map through the existing configuration spread. Initial pitch35, 2D/3D presets0/60, maxZoom24 and named-only POI filters/source data remain unchanged. Config, style and entry/import graph queries use the new revision for returning clients.
+
+Focused actual-browser evidence: docs/evidence/pitch85-browser.txt and output/playwright/pitch85-desktop.png. Checks actual getMaxPitch, initial pitch/maximum zoom, canonical2D/3D buttons, reaches85 and clamps90 to85. Bounded Cebu zoom16 viewport observes terrain source/render configuration, building extrusions and named POIs. Console observations are recorded in the evidence, separate from uncaught page errors. High pitch enlarges the visible horizon and may incur more requests, occlusion/label limitations and device cost; no broad performance or physical-device validation claimed. Submitted for Alfred review.

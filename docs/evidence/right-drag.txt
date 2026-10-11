@@ -1,0 +1,34 @@
+### Result
+{"checks":[{"before":{"bearing":0,"pitch":35},"after":{"bearing":130.64806085231524,"pitch":0}},{"before":{"bearing":165.68542369008125,"pitch":0},"after":{"bearing":-58.26777622954353,"pitch":0}}],"events":[{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":true,"prevented":true,"x":500,"y":350},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":640,"y":430},{"type":"contextmenu","trusted":true,"prevented":true,"x":640,"y":430},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":true,"prevented":true,"x":500,"y":350},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":640,"y":430},{"type":"contextmenu","trusted":true,"prevented":true,"x":640,"y":430},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":true,"prevented":true,"x":500,"y":350},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":40},{"type":"contextmenu","trusted":true,"prevented":false,"x":500,"y":40},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":true,"prevented":true,"x":500,"y":350},{"type":"mousedown","trusted":false,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":false,"prevented":true,"x":500,"y":350},{"type":"mouseup","trusted":false,"prevented":false,"x":560,"y":380},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":true,"prevented":true,"x":500,"y":350},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":true,"prevented":true,"x":500,"y":350},{"type":"mousedown","trusted":true,"prevented":false,"x":500,"y":350},{"type":"mouseup","trusted":true,"prevented":false,"x":500,"y":350},{"type":"contextmenu","trusted":true,"prevented":true,"x":500,"y":350}],"stationaryClickBeforeAndAfter":true,"outsideRelease":true,"syntheticPressOrder":true,"blurCancellation":true,"cleanup":true}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});await page.setViewportSize({width:1280,height:800});
+ await page.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});});
+ await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ await page.evaluate(()=>{window.__events=[];for(const type of ['mousedown','mouseup','contextmenu'])window.addEventListener(type,e=>window.__events.push({type,trusted:e.isTrusted,prevented:e.defaultPrevented,x:e.clientX,y:e.clientY}));});
+ const menu=page.getByRole('menu',{name:'Map location actions'}),checks=[];
+ async function click(){await page.mouse.click(500,350,{button:'right'});await menu.waitFor();await page.waitForTimeout(200);const rect=await menu.boundingBox();if(Math.abs(rect.x-500)>1||Math.abs(rect.y-350)>1)throw Error('Click position');}
+ await click();
+ for(let i=0;i<2;i++){
+  await page.keyboard.press('Escape');await page.waitForTimeout(200);const before=await page.evaluate(()=>({bearing:window.__map.getBearing(),pitch:window.__map.getPitch()}));
+  await page.mouse.move(500,350);await page.mouse.down({button:'right'});await page.mouse.move(640,430,{steps:12});await page.mouse.up({button:'right'});await page.waitForTimeout(100);
+  const after=await page.evaluate(()=>({bearing:window.__map.getBearing(),pitch:window.__map.getPitch()}));if(Math.abs(before.bearing-after.bearing)<1&&Math.abs(before.pitch-after.pitch)<1)throw Error('Rotation blocked');if(await menu.isVisible())throw Error('Drag menu');checks.push({before,after});
+  await click();
+ }
+ await page.keyboard.press('Escape');await page.waitForTimeout(200);await page.mouse.move(500,350);await page.mouse.down({button:'right'});await page.mouse.move(500,40,{steps:10});await page.mouse.up({button:'right'});await page.waitForTimeout(100);if(await menu.isVisible())throw Error('Outside release');await click();
+ await page.keyboard.press('Escape');await page.waitForTimeout(200);
+ // Synthetic press-order contextmenu exercises the alternate browser ordering;
+ // physical trusted evidence above covers Chromium's actual release ordering.
+ const alternate=await page.evaluate(()=>{const c=window.__map.getCanvas();c.dispatchEvent(new MouseEvent('mousedown',{button:2,buttons:2,clientX:500,clientY:350,bubbles:true}));c.dispatchEvent(new MouseEvent('contextmenu',{button:2,clientX:500,clientY:350,bubbles:true,cancelable:true}));const deferred=!document.querySelector('.pbb-context-menu.is-open');c.dispatchEvent(new MouseEvent('mousemove',{buttons:2,clientX:560,clientY:380,bubbles:true}));c.dispatchEvent(new MouseEvent('mouseup',{button:2,clientX:560,clientY:380,bubbles:true}));return deferred;});await page.waitForTimeout(50);if(!alternate||await menu.isVisible())throw Error('Press-order drag');
+ await click();await page.keyboard.press('Escape');await page.waitForTimeout(200);await page.mouse.down({button:'right'});await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.mouse.up({button:'right'});await page.waitForTimeout(100);if(await menu.isVisible())throw Error('Cancel');await click();
+ const events=await page.evaluate(()=>window.__events);if(events.filter(e=>e.type==='contextmenu'&&e.trusted&&e.y>=67).some(e=>!e.prevented))throw Error('Native menu not suppressed');
+ await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));if(await page.locator('.pbb-context-menu').count())throw Error('Cleanup');
+ return{checks,events,stationaryClickBeforeAndAfter:true,outsideRelease:true,syntheticPressOrder:true,blurCancellation:true,cleanup:true};
+}
+
+
+
+
+)(page);
+```

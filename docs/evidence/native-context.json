@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-10",
+  "method": "Playwright real mouse right-button click; trusted native contextmenu event, no dispatchEvent",
+  "events": [
+    {
+      "trusted": true,
+      "defaultPrevented": true,
+      "target": "CANVAS"
+    }
+  ],
+  "items": [
+    "10.334847, 123.814030",
+    "Center in view",
+    "Get info"
+  ],
+  "customMenu": true,
+  "infoAction": true
+}

@@ -1,0 +1,15 @@
+/* Invalid feedback must outrank the modal input reset and component focus rules. */
+.ui-modal-body .ui-field-error-target[aria-invalid="true"],
+.ui-field-error-target[aria-invalid="true"] {
+  outline: 2px solid var(--ui-danger, #ff7194) !important;
+  outline-offset: 2px;
+  border-color: var(--ui-danger, #ff7194) !important;
+}
+.ui-modal-body .ui-field-error-target[aria-invalid="true"]:focus-visible,
+.ui-field-error-target[aria-invalid="true"]:focus-visible {
+  outline-style: double !important;
+  outline-width: 4px !important;
+}
+.ui-field-error-target[aria-invalid="true"] .ui-form-modal-avatar-circle {
+  border-color: var(--ui-danger, #ff7194) !important;
+}

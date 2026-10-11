@@ -1,0 +1,201 @@
+{
+  "kind": "ONLINE READ-ONLY DRY RUN; NOT OUTAGE SUCCESS",
+  "utc": "2026-10-10T14:24:42.825Z",
+  "routes": [
+    {
+      "host": "map.pbb.ph",
+      "addresses": [
+        {
+          "address": "127.0.0.1",
+          "family": 4,
+          "classification": "loopback: this device only"
+        }
+      ]
+    },
+    {
+      "host": "mapserver.pbb.ph",
+      "addresses": [
+        {
+          "address": "127.0.0.1",
+          "family": 4,
+          "classification": "loopback: this device only"
+        }
+      ]
+    }
+  ],
+  "interfaces": [
+    {
+      "address": "192.168.254.100",
+      "internal": false
+    },
+    {
+      "address": "127.0.0.1",
+      "internal": true
+    }
+  ],
+  "candidateCoverage": {
+    "bbox": [
+      123.88,
+      10.31,
+      123.89,
+      10.32
+    ],
+    "displayZooms": [
+      12,
+      13,
+      14,
+      15
+    ],
+    "vectorSourceMaxZoom": 14,
+    "terrainSourceMaxZoom": 12,
+    "prepared": false,
+    "note": "Only center samples probed. Inventory all covering and viewport-border tiles, POI source zooms and glyph ranges before claiming prepared coverage."
+  },
+  "probes": [
+    {
+      "url": "https://map.pbb.ph/",
+      "status": 200,
+      "bytes": 1057,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "text/html",
+      "cors": null,
+      "serverCache": null,
+      "redirect": null
+    },
+    {
+      "url": "https://map.pbb.ph/assets/config.js",
+      "status": 200,
+      "bytes": 1336,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "text/javascript",
+      "cors": null,
+      "serverCache": null,
+      "redirect": null
+    },
+    {
+      "url": "https://map.pbb.ph/assets/maps/hotline-dark.json",
+      "status": 200,
+      "bytes": 5917,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/json",
+      "cors": null,
+      "serverCache": null,
+      "redirect": null
+    },
+    {
+      "url": "https://map.pbb.ph/vendor/maplibre/4.6.0/maplibre-gl.js",
+      "status": 200,
+      "bytes": 800475,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "text/javascript",
+      "cors": null,
+      "serverCache": null,
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/vector/12/3457/1929.pbf",
+      "status": 200,
+      "bytes": 127312,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/x-protobuf",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/poi/12/3457/1929.pbf",
+      "status": 200,
+      "bytes": 64629,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/x-protobuf",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/vector/13/6915/3859.pbf",
+      "status": 200,
+      "bytes": 99072,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/x-protobuf",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/poi/13/6915/3859.pbf",
+      "status": 200,
+      "bytes": 120449,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/x-protobuf",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/vector/14/13830/7719.pbf",
+      "status": 200,
+      "bytes": 140495,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/x-protobuf",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/poi/14/13830/7719.pbf",
+      "status": 200,
+      "bytes": 219580,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/x-protobuf",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/terrain/12/3457/1929.png",
+      "status": 200,
+      "bytes": 319444,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "image/png",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    },
+    {
+      "url": "https://mapserver.pbb.ph/tiles/glyphs/Open%20Sans%20Regular,Arial%20Unicode%20MS%20Regular/0-255.pbf",
+      "status": 200,
+      "bytes": 29221,
+      "peer": "127.0.0.1",
+      "route": "loopback: this device only",
+      "tlsAuthorized": true,
+      "contentType": "application/x-protobuf",
+      "cors": "*",
+      "serverCache": "HIT",
+      "redirect": null
+    }
+  ],
+  "readiness": "UNCONFIRMED: phone DNS/TLS/LAN route, DNS survival after WAN loss, complete bounded asset inventory and server upstream/cache misses require operator verification."
+}

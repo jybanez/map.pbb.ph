@@ -1,0 +1,17 @@
+### Result
+{"desktopAbsent":true,"mobileAbsent":true,"hiddenEntryCount":0,"zoom":13,"locate":true,"mobileSearch":true,"buttons":[{"label":"Open map search","rect":{"top":84,"height":44}},{"label":"Zoom in","rect":{"top":138,"height":44}},{"label":"Zoom out","rect":{"top":184,"height":44}},{"label":"Enable direction","rect":{"top":0,"height":0}}],"errors":[]}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>{window.__fixes=[];Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(ok){window.__fixes.push(ok);}}});let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set:v=>{lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this;}};}});});
+ await page.setViewportSize({width:1440,height:900});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ const absent=async()=>{for(const name of ['Direction diagnostics','Direction options'])if(await page.getByRole('button',{name,exact:true,includeHidden:true}).count())throw Error('Hidden entry still exists '+name);};await absent();
+ await page.getByRole('button',{name:'Zoom in',exact:true}).click();await page.waitForFunction(()=>!window.__map.isMoving());const zoom=await page.evaluate(()=>window.__map.getZoom());if(zoom!==13)throw Error('Zoom failed');
+ await page.evaluate(()=>window.__fixes[0]({coords:{latitude:10.3157,longitude:123.8854,accuracy:20}}));await page.waitForFunction(()=>window.__map.getSource('pbb-accuracy'));await page.getByRole('button',{name:/^Locate/}).click();await absent();
+ await page.screenshot({path:'output/playwright/direction-tools-off-desktop.png'});
+ await page.setViewportSize({width:390,height:844});await absent();await page.getByRole('button',{name:'Open map search',exact:true}).click();await page.getByRole('textbox',{name:'Search map'}).fill('10.3157,123.8854');await page.waitForFunction(()=>document.querySelector('[role="menu"]'));await page.getByRole('button',{name:'Close map search',exact:true}).click();await absent();
+ await page.screenshot({path:'output/playwright/direction-tools-off-mobile.png'});
+ const buttons=await page.locator('#zoom-control button').evaluateAll(bs=>bs.filter(b=>!b.hidden&&getComputedStyle(b).display!=='none').map(b=>({label:b.getAttribute('aria-label'),rect:{top:b.getBoundingClientRect().top,height:b.getBoundingClientRect().height}})));
+ if(errors.length)throw Error(errors.join(';'));return {desktopAbsent:true,mobileAbsent:true,hiddenEntryCount:0,zoom,locate:true,mobileSearch:true,buttons,errors};
+})(page);
+```

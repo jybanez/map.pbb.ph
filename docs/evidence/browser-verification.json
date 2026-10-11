@@ -1,0 +1,555 @@
+{
+  "date": "2026-10-10",
+  "browser": "Chromium via Playwright CLI",
+  "syntheticLocation": true,
+  "externalRuntimeRequests": [],
+  "requestCount": 656,
+  "uncaughtErrors": [],
+  "checks": [
+    {
+      "check": "fallback renders independently while one fix is pending; POIs default visible",
+      "result": {
+        "center": [
+          123.8854,
+          10.3157
+        ],
+        "zoom": 12,
+        "policy": {
+          "enableHighAccuracy": true,
+          "timeout": 10000,
+          "maximumAge": 60000
+        },
+        "count": 1,
+        "pending": true,
+        "poi": 20,
+        "sources": [
+          "osm",
+          "terrain",
+          "terrain-hillshade",
+          "pbb-poi"
+        ]
+      }
+    },
+    {
+      "check": "late initial fix preserves exploration and displays marker/circle",
+      "result": {
+        "zoom": 13,
+        "source": true
+      }
+    },
+    {
+      "check": "explicit Locate recenters; terrain/buildings/POIs render at detail zoom",
+      "result": {
+        "zoom": 15,
+        "pitch": 60,
+        "terrain": {
+          "source": "terrain",
+          "exaggeration": 1.6
+        },
+        "buildings": 6774,
+        "pois": 1723
+      }
+    },
+    {
+      "check": "POI toggle affects complete group",
+      "result": [
+        "none",
+        "none"
+      ]
+    },
+    {
+      "check": "compass resets bearing without relocation; keyboard pan works",
+      "result": {
+        "bearing": 0,
+        "center": [
+          123.88540000000489,
+          10.315699999998486
+        ]
+      }
+    },
+    {
+      "check": "responsive layouts, 44px controls and attribution",
+      "result": [
+        {
+          "viewport": [
+            1440,
+            900
+          ],
+          "scroll": [
+            1440,
+            900
+          ],
+          "map": {
+            "x": 0,
+            "y": 68,
+            "width": 1440,
+            "height": 832,
+            "top": 68,
+            "right": 1440,
+            "bottom": 900,
+            "left": 0
+          },
+          "controls": [
+            {
+              "name": "Zoom in",
+              "rect": {
+                "x": 1053.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 1097.484375,
+                "bottom": 56,
+                "left": 1053.484375
+              }
+            },
+            {
+              "name": "Zoom out",
+              "rect": {
+                "x": 1099.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 1143.484375,
+                "bottom": 56,
+                "left": 1099.484375
+              }
+            },
+            {
+              "name": "Reset north",
+              "rect": {
+                "x": 1152.484375,
+                "y": 11,
+                "width": 44,
+                "height": 44,
+                "top": 11,
+                "right": 1196.484375,
+                "bottom": 55,
+                "left": 1152.484375
+              }
+            },
+            {
+              "name": "Set pitch 0 degrees",
+              "rect": {
+                "x": 1205.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 1249.484375,
+                "bottom": 56,
+                "left": 1205.484375
+              }
+            },
+            {
+              "name": "Set pitch 60 degrees",
+              "rect": {
+                "x": 1251.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 1295.484375,
+                "bottom": 56,
+                "left": 1251.484375
+              }
+            },
+            {
+              "name": "Layers",
+              "rect": {
+                "x": 1305.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 1349.484375,
+                "bottom": 56,
+                "left": 1305.484375
+              }
+            }
+          ],
+          "attribution": {
+            "x": 1043.15625,
+            "y": 882,
+            "width": 396.84375,
+            "height": 18,
+            "top": 882,
+            "right": 1440,
+            "bottom": 900,
+            "left": 1043.15625
+          }
+        },
+        {
+          "viewport": [
+            390,
+            844
+          ],
+          "scroll": [
+            390,
+            844
+          ],
+          "map": {
+            "x": 0,
+            "y": 166,
+            "width": 1440,
+            "height": 832,
+            "top": 166,
+            "right": 1440,
+            "bottom": 998,
+            "left": 0
+          },
+          "controls": [
+            {
+              "name": "Zoom in",
+              "rect": {
+                "x": 14,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 58,
+                "bottom": 100,
+                "left": 14
+              }
+            },
+            {
+              "name": "Zoom out",
+              "rect": {
+                "x": 60,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 104,
+                "bottom": 100,
+                "left": 60
+              }
+            },
+            {
+              "name": "Reset north",
+              "rect": {
+                "x": 113,
+                "y": 55,
+                "width": 44,
+                "height": 44,
+                "top": 55,
+                "right": 157,
+                "bottom": 99,
+                "left": 113
+              }
+            },
+            {
+              "name": "Set pitch 0 degrees",
+              "rect": {
+                "x": 166,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 210,
+                "bottom": 100,
+                "left": 166
+              }
+            },
+            {
+              "name": "Set pitch 60 degrees",
+              "rect": {
+                "x": 212,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 256,
+                "bottom": 100,
+                "left": 212
+              }
+            },
+            {
+              "name": "Layers",
+              "rect": {
+                "x": 266,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 310,
+                "bottom": 100,
+                "left": 266
+              }
+            }
+          ],
+          "attribution": {
+            "x": 16,
+            "y": 808,
+            "width": 374,
+            "height": 36,
+            "top": 808,
+            "right": 390,
+            "bottom": 844,
+            "left": 16
+          }
+        },
+        {
+          "viewport": [
+            320,
+            568
+          ],
+          "scroll": [
+            320,
+            568
+          ],
+          "map": {
+            "x": 0,
+            "y": 166,
+            "width": 390,
+            "height": 678,
+            "top": 166,
+            "right": 390,
+            "bottom": 844,
+            "left": 0
+          },
+          "controls": [
+            {
+              "name": "Zoom in",
+              "rect": {
+                "x": 14,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 58,
+                "bottom": 100,
+                "left": 14
+              }
+            },
+            {
+              "name": "Zoom out",
+              "rect": {
+                "x": 60,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 104,
+                "bottom": 100,
+                "left": 60
+              }
+            },
+            {
+              "name": "Reset north",
+              "rect": {
+                "x": 113,
+                "y": 55,
+                "width": 44,
+                "height": 44,
+                "top": 55,
+                "right": 157,
+                "bottom": 99,
+                "left": 113
+              }
+            },
+            {
+              "name": "Set pitch 0 degrees",
+              "rect": {
+                "x": 166,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 210,
+                "bottom": 100,
+                "left": 166
+              }
+            },
+            {
+              "name": "Set pitch 60 degrees",
+              "rect": {
+                "x": 212,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 256,
+                "bottom": 100,
+                "left": 212
+              }
+            },
+            {
+              "name": "Layers",
+              "rect": {
+                "x": 266,
+                "y": 56,
+                "width": 44,
+                "height": 44,
+                "top": 56,
+                "right": 310,
+                "bottom": 100,
+                "left": 266
+              }
+            }
+          ],
+          "attribution": {
+            "x": 16,
+            "y": 532,
+            "width": 304,
+            "height": 36,
+            "top": 532,
+            "right": 320,
+            "bottom": 568,
+            "left": 16
+          }
+        },
+        {
+          "viewport": [
+            844,
+            390
+          ],
+          "scroll": [
+            844,
+            390
+          ],
+          "map": {
+            "x": 0,
+            "y": 68,
+            "width": 844,
+            "height": 322,
+            "top": 68,
+            "right": 844,
+            "bottom": 390,
+            "left": 0
+          },
+          "controls": [
+            {
+              "name": "Zoom in",
+              "rect": {
+                "x": 457.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 501.484375,
+                "bottom": 56,
+                "left": 457.484375
+              }
+            },
+            {
+              "name": "Zoom out",
+              "rect": {
+                "x": 503.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 547.484375,
+                "bottom": 56,
+                "left": 503.484375
+              }
+            },
+            {
+              "name": "Reset north",
+              "rect": {
+                "x": 556.484375,
+                "y": 11,
+                "width": 44,
+                "height": 44,
+                "top": 11,
+                "right": 600.484375,
+                "bottom": 55,
+                "left": 556.484375
+              }
+            },
+            {
+              "name": "Set pitch 0 degrees",
+              "rect": {
+                "x": 609.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 653.484375,
+                "bottom": 56,
+                "left": 609.484375
+              }
+            },
+            {
+              "name": "Set pitch 60 degrees",
+              "rect": {
+                "x": 655.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 699.484375,
+                "bottom": 56,
+                "left": 655.484375
+              }
+            },
+            {
+              "name": "Layers",
+              "rect": {
+                "x": 709.484375,
+                "y": 12,
+                "width": 44,
+                "height": 44,
+                "top": 12,
+                "right": 753.484375,
+                "bottom": 56,
+                "left": 709.484375
+              }
+            }
+          ],
+          "attribution": {
+            "x": 447.15625,
+            "y": 372,
+            "width": 396.84375,
+            "height": 18,
+            "top": 372,
+            "right": 844,
+            "bottom": 390,
+            "left": 447.15625
+          }
+        }
+      ]
+    },
+    {
+      "check": "denied, timeout, unavailable and invalid fixes leave map and retry usable",
+      "result": "pass"
+    },
+    {
+      "check": "POI choice during map loading survives readiness",
+      "result": [
+        "none",
+        "none"
+      ]
+    },
+    {
+      "check": "optional POI outage preserves loaded basemap",
+      "result": "pass"
+    },
+    {
+      "check": "initialization failure offers deliberate successful retry",
+      "result": "pass"
+    },
+    {
+      "check": "unsupported WebGL presents actionable canonical error",
+      "result": "pass"
+    },
+    {
+      "check": "missing geolocation preserves loaded map and actionable feedback",
+      "result": "pass"
+    },
+    {
+      "check": "teardown removes map/overlays and ignores late fix",
+      "result": {
+        "removed": true,
+        "markers": 0,
+        "overlays": 0
+      }
+    }
+  ],
+  "limits": [
+    "Physical mobile/touch and real-device geolocation not tested",
+    "MapServer backend upstream disconnection not tested; local-node offline acceptance remains pending"
+  ]
+}

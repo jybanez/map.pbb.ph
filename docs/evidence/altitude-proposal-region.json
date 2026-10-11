@@ -1,0 +1,83 @@
+{
+  "purpose": "Synthetic sampled sensitivity; not measured user altitude, not a continuous/global error bound",
+  "policy": "PH-region-reference0-v1 proposal only, disabled",
+  "region": {
+    "latitude": [
+      4,
+      22
+    ],
+    "longitude": [
+      116,
+      127
+    ],
+    "description": "Operational rectangle around Philippines; not a national-boundary polygon"
+  },
+  "referenceHeightMetresWGS84": 0,
+  "assumedModelHeightMetres": [
+    -1000,
+    10000
+  ],
+  "heightSamplesMetres": [
+    -1000,
+    0,
+    1000,
+    2000,
+    3000,
+    4000,
+    5000,
+    6000,
+    7000,
+    8000,
+    9000,
+    10000
+  ],
+  "dates": [
+    "2025-01-01T00:00:00.000Z",
+    "2025-04-01T00:00:00.000Z",
+    "2025-07-01T00:00:00.000Z",
+    "2025-10-01T00:00:00.000Z",
+    "2026-01-01T00:00:00.000Z",
+    "2026-04-01T00:00:00.000Z",
+    "2026-07-01T00:00:00.000Z",
+    "2026-10-01T00:00:00.000Z",
+    "2027-01-01T00:00:00.000Z",
+    "2027-04-01T00:00:00.000Z",
+    "2027-07-01T00:00:00.000Z",
+    "2027-10-01T00:00:00.000Z",
+    "2028-01-01T00:00:00.000Z",
+    "2028-04-01T00:00:00.000Z",
+    "2028-07-01T00:00:00.000Z",
+    "2028-10-01T00:00:00.000Z",
+    "2029-01-01T00:00:00.000Z",
+    "2029-04-01T00:00:00.000Z",
+    "2029-07-01T00:00:00.000Z",
+    "2029-10-01T00:00:00.000Z",
+    "2029-12-31T23:59:59.000Z"
+  ],
+  "gridStepDegrees": 0.5,
+  "gridPoints": 851,
+  "offGridPoints": 250,
+  "seed": 181,
+  "totalEvaluations": 300573,
+  "maxDifference": {
+    "differenceDegrees": 0.022834092489006252,
+    "latitude": 22,
+    "longitude": 127,
+    "modelHeightMetres": 10000,
+    "date": "2029-12-31T23:59:59.000Z",
+    "kind": "grid",
+    "referenceDeclination": -4.909983384436876,
+    "comparedDeclination": -4.88714929194786
+  },
+  "minimumHorizontalFieldNt": 36596.35335531418,
+  "maximumEvaluatedNOAASurfaceSigmaDegrees": 0.2991821908227189,
+  "additionalHeightSensitivityTargetDegrees": 0.05,
+  "sampledPass": true,
+  "limitations": [
+    "Finite grid and seeded off-grid samples; no rigorous continuous bound",
+    "Unmeasured phone height may lie outside proposed interval",
+    "NOAA surface sigma formula applied here for context, not an altitude or phone accuracy guarantee",
+    "No calibration, local anomaly or interference validation"
+  ],
+  "runtimeInventorySHA256": "118b9350327691a695111b628b9ae4a4acc4e73d7e51b0d099a6f2c6109dbe5c"
+}

@@ -1,0 +1,86 @@
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #03080d; color: #d7e0f4; font-family: system-ui, sans-serif; }
+/* MapLibre owns marker placement; canonical relative roots must not enter inline flow. */
+.maplibregl-marker.ui-map-marker { position: absolute; top: 0; left: 0; }
+.ui-map-marker[data-marker-id="search-destination"][aria-disabled="false"] { cursor: pointer; }
+.ui-map-marker[data-marker-id="search-destination"]:focus-visible { outline: 2px solid #80baff; outline-offset: 3px; border-radius: 8px; }
+body { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+#navbar { z-index: 10; padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); background: #101c31; }
+#map-region { position: relative; min-height: 0; min-width: 0; }
+#map { position: absolute; inset: 0; }
+.pbb-context-anchor { position: fixed; width: 0; height: 0; pointer-events: none; }
+.ui-menu.pbb-context-menu { z-index: 2200; max-width: calc(100vw - 16px); }
+.ui-menu.pbb-search-results { z-index: 2200; max-width: calc(100vw - 16px); max-height: min(400px,60vh); overflow-y: auto; background: #101c31; }
+.ui-menu.pbb-search-results .ui-menu-item:disabled,
+.ui-menu.pbb-search-results .ui-menu-item.is-disabled { opacity: 1; color: #c8d5e9; }
+#navbar { position: relative; }
+#map-search { width: 260px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 11; }
+#map-search .ui-search-wrap { display: flex; gap: 4px; }
+#map-search input { box-sizing: border-box; min-width: 0; width: 100%; height: 44px; min-height: 44px; padding: 8px; }
+#map-search .ui-button-icon { width: 44px; min-width: 44px; height: 44px; padding: 0; flex-shrink: 0; }
+#map-search button[hidden] { display: none; }
+#map-search .pbb-search-submit { display: none; }
+#map-search[hidden] { display: none; }
+#map-search input[aria-invalid="true"] { border-color: #ff7a7a; }
+#map-search-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width:720px) {
+  #map-search { width: auto; left: calc(env(safe-area-inset-left) + 68px); right: calc(env(safe-area-inset-right) + 16px); top: 16px; transform: none; padding: 0; border-radius: 8px; background: #101c31; }
+  #map-search input { background: #101c31; }
+  #map-search .pbb-search-submit:not([hidden]) { display: inline-flex; }
+  #map-region #zoom-control { top: 16px; }
+}
+#zoom-control { position: absolute; top: 16px; left: calc(env(safe-area-inset-left) + 16px); z-index: 6; }
+#zoom-control .ui-map-controls__button { width: 44px; min-height: 44px; font-size: 26px; }
+#map-feedback { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: min(480px, calc(100% - 32px)); z-index: 5; }
+#map-feedback[hidden] { display: none; }
+@media (max-width: 720px) { #map-feedback { top: 120px; } }
+#boot-status { position: fixed; top: 24px; left: 24px; z-index: 20; }
+#navbar .ui-map-controls__button { width: 44px; min-height: 44px; }
+#navbar .ui-navbar-action { min-height: 44px; }
+#navbar .ui-map-controls__layer { min-height: 44px; }
+#navbar .ui-map-controls__layers-panel { position: fixed; top: calc(env(safe-area-inset-top) + 76px); right: calc(env(safe-area-inset-right) + 12px); z-index: 15; }
+#navbar .ui-navbar { border-radius: 0; border-top: 0; border-left: 0; border-right: 0; }
+#locate-control { position: absolute; right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 16px); z-index: 6; }
+#locate-control button { width: 48px; height: 48px; border: 0; border-radius: 8px; background: rgba(16, 28, 49, 0.55); font-size: 26px; color: #d7e0f4; }
+#locate-control[data-state="requesting"] button { color: #ffc24b; opacity: 1; }
+#locate-control[data-state="success"] button { color: #60dc94; }
+#locate-control[data-state="error"] button { color: #ff7a7a; }
+.maplibregl-ctrl-bottom-right { bottom: env(safe-area-inset-bottom); right: env(safe-area-inset-right); max-width: calc(100% - 16px); }
+.maplibregl-ctrl-attrib { font-size: 11px; line-height: 18px; }
+.maplibregl-ctrl-attrib a:focus-visible { outline: 2px solid #4f8fff; }
+body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) + 80px); max-width: calc(100vw - 24px); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+.pbb-direction-diagnostics { width:100%; border-collapse:collapse; }
+.pbb-direction-diagnostics th,.pbb-direction-diagnostics td { padding:6px; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+.pbb-direction-diagnostics th { width:38%; }
+
+.pbb-poi-filter { padding: 12px; }
+.pbb-poi-visibility { position:relative; display:flex; align-items:center; gap:8px; }
+.pbb-poi-swatch { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+
+.pbb-poi-filter .ui-map-controls__button { width:auto; padding-inline:12px; }
+
+.pbb-poi-filter .ui-tree-grid { min-width:0; }
+.pbb-poi-filter .ui-tree-grid-table { width:100%; min-width:0; }
+.pbb-poi-filter .ui-tree-grid-table col:nth-child(1) { width:45%; }
+.pbb-poi-filter .ui-tree-grid-table col:nth-child(2) { width:20%; }
+.pbb-poi-filter .ui-tree-grid-table col:nth-child(3) { width:35%; }
+@media(max-width:600px) {
+ .pbb-poi-filter { padding:0; }
+ .pbb-poi-filter .ui-tree-grid-col,.pbb-poi-filter .ui-tree-grid-cell { padding:8px 4px; font-size:12px; overflow-wrap:anywhere; }
+ .pbb-poi-visibility { gap:4px; flex-wrap:wrap; }
+}
+
+.pbb-poi-modal .ui-modal { height:min(720px,calc(100dvh - 32px)); }
+.pbb-poi-modal .ui-modal-body { display:flex; padding:0; gap:0; overflow:hidden; }
+.pbb-poi-modal .pbb-poi-filter { display:flex; flex:1; min-width:0; min-height:0; padding:0; }
+.pbb-poi-modal .pbb-poi-grid-host { display:flex; flex:1; min-width:0; min-height:0; }
+.pbb-poi-modal .ui-tree-grid { display:flex; flex:1; min-height:0; }
+.pbb-poi-modal .ui-tree-grid-table-wrap { flex:1; min-height:0; max-height:none; border:0; border-radius:0; }
+.pbb-poi-modal .ui-modal-header-actions .ui-map-controls__button { width:auto; padding-inline:12px; }
+@media(max-width:600px) {
+ .pbb-poi-modal .ui-modal { height:100dvh; }
+ .pbb-poi-modal .ui-modal-header { flex-wrap:nowrap; }
+ .pbb-poi-modal .ui-modal-header-actions { flex:0 0 auto; }
+}
+
+.ui-menu.pbb-poi-actions-menu { z-index:2200; }

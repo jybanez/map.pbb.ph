@@ -1,0 +1,25 @@
+### Result
+{"hiddenDuringFlight":true,"first":{"events":[{"type":"arrival","time":477.5},{"type":"arrival","token":2,"time":3859.800000011921},{"type":"drop","time":3860.100000023842,"moving":false,"point":[123.91,10.32]}],"point":[123.91,10.32],"animations":0},"rapid":[{"type":"drop","time":3860.100000023842,"moving":false,"point":[123.91,10.32]},{"type":"drop","time":6689,"moving":false,"point":[123.89,10.31]}],"interrupted":{"drops":2,"hidden":true},"teardown":true,"errors":[]}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{configurable:true,get:()=>lib,set(v){lib=v;const M=v.Map,K=v.Marker;v.Map=class extends M{constructor(o){super(o);window.__map=this;window.__sequence=[];this.on('moveend',e=>window.__sequence.push({type:'arrival',token:e.searchFlight,time:performance.now()}));}};v.Marker=class extends K{constructor(o){super(o);if(o.element.dataset.markerId==='search-destination'){window.__destination=this;const animate=o.element.animateDrop;o.element.animateDrop=function(opts){window.__sequence.push({type:'drop',time:performance.now(),moving:window.__map.isMoving(),point:window.__destination.getLngLat().toArray()});return animate.call(this,opts);};}}};}});});
+ await page.setViewportSize({width:375,height:740});await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());
+ const input=page.getByRole('textbox',{name:'Search map'}),open=page.getByRole('button',{name:'Open map search'});
+ const select=async(value)=>{await open.click();await input.fill(value);await input.press('Enter');await page.keyboard.press('Enter');};
+ await select('10.32,123.91');
+ const hidden=await page.evaluate(()=>getComputedStyle(window.__destination.getElement()).visibility==='hidden');if(!hidden)throw Error('Pin visible during flight');
+ await page.waitForFunction(()=>window.__sequence.some(e=>e.type==='drop'));await page.waitForTimeout(700);
+ const first=await page.evaluate(()=>({events:window.__sequence,point:window.__destination.getLngLat().toArray(),animations:window.__destination.getElement().querySelector('.ui-map-marker-visual').getAnimations().length}));
+ const drop=first.events.find(e=>e.type==='drop'),arrival=first.events.find(e=>e.type==='arrival'&&e.token);if(!arrival||drop.time<arrival.time||drop.moving||first.animations||first.point[0]!==123.91||first.point[1]!==10.32)throw Error('Sequence/anchor');
+ await select('10.33,123.92');await page.waitForTimeout(150);await select('10.31,123.89');await page.waitForTimeout(2100);
+ const rapid=await page.evaluate(()=>window.__sequence.filter(e=>e.type==='drop'));if(rapid.length!==2||rapid[1].point[0]!==123.89)throw Error('Stale rapid drop');
+ await select('10.34,123.94');await page.waitForTimeout(150);await page.mouse.move(180,380);await page.mouse.down();await page.mouse.move(240,430,{steps:8});await page.mouse.up();await page.waitForTimeout(1800);
+ const interrupted=await page.evaluate(()=>({drops:window.__sequence.filter(e=>e.type==='drop').length,hidden:getComputedStyle(window.__destination.getElement()).visibility==='hidden'}));if(interrupted.drops!==2||!interrupted.hidden)throw Error('Interrupted drop');
+ await select('10.3157,123.8854');await page.waitForTimeout(2100);await page.screenshot({path:'output/playwright/search-sequence-mobile.png'});
+ await select('10.35,123.95');await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await page.waitForTimeout(1600);if(await page.locator('[data-marker-id="search-destination"]').count())throw Error('Teardown');if(errors.length)throw Error(errors.join(';'));
+ return{hiddenDuringFlight:hidden,first,rapid,interrupted,teardown:true,errors};
+}
+)(page);
+```

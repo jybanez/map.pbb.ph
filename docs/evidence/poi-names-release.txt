@@ -1,0 +1,9 @@
+### Result
+{"expression":["case",["!",["all",["==",["to-number",["concat","1",["string",["get","name"],""]],-1],1],["==",["to-number",["concat",["string",["get","name"],""],"1"],-1],1]]],["string",["get","name"],""],["!",["all",["==",["to-number",["concat","1",["string",["get","name:en"],""]],-1],1],["==",["to-number",["concat",["string",["get","name:en"],""],"1"],-1],1]]],["string",["get","name:en"],""],["!",["all",["==",["to-number",["concat","1",["string",["get","name_en"],""]],-1],1],["==",["to-number",["concat",["string",["get","name_en"],""],"1"],-1],1]]],["string",["get","name_en"],""],""],"styleResources":["https://map.pbb.ph/assets/map-style.js?v=20261010-poi-names2"]}
+### Ran Playwright code
+```js
+await (async(page)=>{await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());const result=await page.evaluate(()=>({expression:window.__map.getLayoutProperty('pbb-poi-labels','text-field'),styleResources:performance.getEntriesByType('resource').filter(r=>r.name.includes('/assets/map-style.js')).map(r=>r.name)}));if(result.expression[0]!=='case'||!result.styleResources.some(u=>u.endsWith('?v=20261010-poi-names2')))throw Error('Live release mismatch');return result;})(page);
+```
+### Page
+- Page URL: https://map.pbb.ph/
+- Page Title: PBB Map

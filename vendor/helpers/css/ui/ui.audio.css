@@ -1,0 +1,272 @@
+.ui-audio-session {
+  border: 1px solid var(--ui-border, #2b3750);
+  border-radius: var(--ui-radius-md, 10px);
+  background: var(--ui-bg, #0d1523);
+  padding: var(--ui-space-3, 12px);
+  display: grid;
+  gap: var(--ui-space-3, 12px);
+}
+
+.ui-audio-session-player {
+  border: 1px solid var(--ui-border, #2b3750);
+  border-radius: var(--ui-radius-sm, 8px);
+  background: var(--ui-bg-soft, #101c31);
+  padding: 10px;
+}
+
+.ui-audio-session-player.is-disabled {
+  opacity: 0.72;
+}
+
+.ui-audio-session-player.is-disabled .ui-audio-player-toggle,
+.ui-audio-session-player.is-disabled .ui-audio-player-seek {
+  cursor: not-allowed;
+}
+
+.ui-audio-player {
+  display: grid;
+  gap: var(--ui-space-2, 8px);
+}
+
+.ui-audio-player-row {
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2, 8px);
+}
+
+.ui-audio-player-buttons,
+.ui-audio-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ui-audio-player-action { display: inline-flex; align-items: center; gap: 6px; }
+
+.ui-audio-player-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 80px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ui-audio-player-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+@media (max-width: 600px) {
+  .ui-audio-player-toggle .ui-audio-player-button-label,
+  .ui-audio-player-action:has(.ui-audio-player-icon) .ui-audio-player-button-label { display: none; }
+  .ui-audio-player-toggle,
+  .ui-audio-player-action:has(.ui-audio-player-icon) { min-width: 44px; min-height: 44px; padding: 10px; justify-content: center; }
+}
+
+.ui-audio-player-time {
+  color: var(--ui-muted, #9fb2d8);
+  font-size: 12px;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.ui-audio-player-seek {
+  width: 100%;
+  accent-color: #ffc341;
+}
+
+.ui-audio-player.is-compact { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; min-width: 0; }
+.ui-audio-player.is-compact .ui-audio-player-row { display: contents; }
+.ui-audio-player.is-compact .ui-audio-player-buttons { grid-column: 1; grid-row: 1; gap: 0; }
+.ui-audio-player.is-compact .ui-audio-player-seek { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; }
+.ui-audio-player.is-compact .ui-audio-player-time { grid-column: 3; grid-row: 1; white-space: nowrap; }
+.ui-audio-player.is-compact .ui-audio-player-toggle { min-width: 0; min-height: 0; padding: 2px; }
+.ui-audio-player.is-compact .ui-audio-player-toggle .ui-audio-player-button-label { display: none; }
+
+.ui-audio-session-tracks {
+  display: grid;
+  gap: var(--ui-space-2, 8px);
+}
+
+.ui-audio-session-track {
+  display: grid;
+  gap: var(--ui-space-2, 8px);
+}
+
+.ui-audio-session-track.is-processing .ui-audiograph {
+  border-color: rgba(255, 195, 65, 0.36);
+}
+
+.ui-audio-session-track.is-pending-only .ui-audiograph {
+  opacity: 0.76;
+}
+
+.ui-audio-session-track.is-processing .ui-audiograph.is-overlay-header {
+  min-height: 112px;
+}
+
+.ui-audio-session-processing {
+  position: absolute;
+  top: 36px;
+  left: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 195, 65, 0.32);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ui-bg-soft, #101c31) 86%, transparent);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  color: #ffd88a;
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.ui-audio-session-processing-spinner {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 216, 138, 0.28);
+  border-top-color: #ffd88a;
+  border-radius: 999px;
+  animation: ui-audio-session-spin 0.8s linear infinite;
+}
+
+.ui-audio-session-processing-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@keyframes ui-audio-session-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ui-audiograph {
+  border: 1px solid var(--ui-border, #2b3750);
+  border-radius: var(--ui-radius-sm, 8px);
+  background: var(--ui-bg-soft, #101c31);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.ui-audiograph.is-transparent-background {
+  background: transparent;
+}
+
+.ui-audiograph.is-overlay-header {
+  position: relative;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.ui-audiograph-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2, 8px);
+}
+
+.ui-audiograph.is-overlay-header .ui-audiograph-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: 9px 10px 8px;
+}
+
+.ui-audiograph.is-overlay-header .ui-audiograph-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-bg-soft, #101c31) 90%, transparent) 0%,
+    color-mix(in srgb, var(--ui-bg-soft, #101c31) 68%, transparent) 58%,
+    color-mix(in srgb, var(--ui-bg-soft, #101c31) 0%, transparent) 100%
+  );
+  pointer-events: none;
+}
+
+.ui-audiograph.is-overlay-header .ui-audiograph-role,
+.ui-audiograph.is-overlay-header .ui-audiograph-mute {
+  position: relative;
+  z-index: 1;
+}
+
+.ui-audiograph-role {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: var(--ui-muted, #9db3d8);
+  font-weight: 700;
+}
+
+.ui-audiograph-mute {
+  padding: 6px 10px;
+  min-width: 68px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ui-audiograph.is-muted .ui-audiograph-mute {
+  opacity: 0.8;
+}
+
+.ui-audiograph-canvas {
+  width: 100%;
+  height: 58px;
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ui-accent, #6f9cff) 14%, var(--ui-bg, #0d1523)), var(--ui-bg, #0d1523));
+}
+
+.ui-audiograph.is-transparent-background .ui-audiograph-canvas {
+  background: transparent;
+}
+
+.ui-audiograph.is-overlay-header .ui-audiograph-canvas {
+  height: 86px;
+  border: 0;
+  border-radius: 0;
+}
+
+.audio-demo-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.audio-demo-controls select {
+  border-radius: 8px;
+  border: 1px solid var(--ui-border, #334563);
+  background: var(--ui-bg, #0b1423);
+  color: var(--ui-text, #d7e0f4);
+  padding: 6px 8px;
+}
+
+/* Embedded sessions inherit their frame from the parent. Canvas fill remains
+   governed independently by transparentBackground. Controls retain focus styles. */
+.ui-audio-session.is-chromeless,
+.ui-audio-session.is-chromeless > .ui-audio-session-player,
+.ui-audio-session.is-chromeless .ui-audio-session-track > .ui-audiograph {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}

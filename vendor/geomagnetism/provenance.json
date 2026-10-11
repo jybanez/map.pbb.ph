@@ -1,0 +1,38 @@
+{
+  "commit": "5cf5cba40d8cadf4220734296bbfe4a7f4351be6",
+  "source": "https://raw.githubusercontent.com/naturalatlas/geomagnetism/5cf5cba40d8cadf4220734296bbfe4a7f4351be6/",
+  "coefficientArchive": "https://www.ncei.noaa.gov/sites/default/files/2024-12/WMM2025COF.zip",
+  "tests": "https://www.ncei.noaa.gov/sites/default/files/2025-02/WMM2025_TEST_VALUES.txt",
+  "sourceSHA256": {
+    "LICENSE": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+    "package.json": "29b13331c01cbc7b6fbbabd08b47c4a60bf9dd2f19d1e429adbd129fb52dbb57",
+    "data/wmm-2025.json": "dbe6da60dbd74b846a4dd3988a8060eb95cf121791ba24dc864da96cbabdda43",
+    "lib/model.js": "682834204e6dc283b6afa0a9875daf79f044efb409998529c7f84d1181c9b844",
+    "lib/ellipsoid.js": "e7897e14df4b1396dcbe60e3d57b12e4fff596798863e108ac83f7c990255e06",
+    "lib/legendre.js": "b1f796fa11e00936d054f96671ebd76203b3b0145e077b45be098a6603ead3ee",
+    "lib/magnetic_elements.js": "8f9f1e37f69da55a3724fcee25f318c7cdeaf44138d72636fd3072ad1e04ba88",
+    "lib/magnetic_vector.js": "51b565d65dbe098a43dea047df6b34706383005ed261946e46d17f7064d950fd",
+    "lib/coords/geodetic.js": "89b66f00c6281bdc00254c115f7d1873991359d142afdd0e23607250835e5cbc",
+    "lib/coords/spherical.js": "4b8c9c824d6e429d14deeaa9529b9eb96fd71328db4424905b02046224d35552",
+    "lib/coords/cartesian.js": "5349fe5f7f381e3a7f01e931a0976e7f4a69b59610216230991923cf869d31b9",
+    "NOAA.zip": "2e76569370d081f2cd7919490218bd094ca9afde347b198eff5621e0af460d03",
+    "NOAA.tests": "ae289c94e2200e4deeae2dfdedf543a8a0e93096512b30d6a754199731f570d0"
+  },
+  "runtimeSHA256": {
+    "LICENSE": "6d1d968fb225eca367cb7f0b8831ab012a35d92b547e945e17ef8e7b05c3e5cc",
+    "NOTICE": "6fbcd074bbeda877e7a6ad0110c543d38d93e8e32a51eae802b6c65ca478ea6d",
+    "package.json": "bc13e2828f52f2e01ca582dd54ea18e9bb1e94a88a3ed7d6d7269b65b49d2319",
+    "WMM.COF": "dfa8597825af4e0b87ff4198a5b4fb661b3c49f4cd090cd0164e0259b075582f",
+    "wmm2025.js": "00734e99b7571377d5b15e1d86c8c0063275971697dc3ed5cda8db16ab8e8dd4",
+    "WMM2025_TEST_VALUES.txt": "ae289c94e2200e4deeae2dfdedf543a8a0e93096512b30d6a754199731f570d0",
+    "data/wmm-2025.json": "a7830a5ac2961486e7c8e3c0312157cd38dd50835c4ee251b9824aadb1a21ff8",
+    "lib/ellipsoid.js": "a436bce834e9a76d4920aeba1af4833008ea25ec469b0e9b88aa71514a8807ff",
+    "lib/legendre.js": "54364246ae7dafeb5ff33b8feae3db9601e40ead19c2edaa29930ff7be45ae46",
+    "lib/magnetic_elements.js": "5a1e7802c561cf3ddc96b008f1dbe83de81017d1417e48a68f08176f6d34f82e",
+    "lib/magnetic_vector.js": "225491afb398f7b96c4e56815f405586e39c763767c9ba5052827daf2df67277",
+    "lib/model.js": "920a38c1dbabe2fcb54914cc50d36d2eff2a7df41ddce8a2ed9c1d867973966e",
+    "lib/coords/cartesian.js": "a41589ca1a5ecc4aa4de2fca0b762ecfbffe5408e9da67c3cc83a13512745b1e",
+    "lib/coords/geodetic.js": "38c8b5a80f29a8602b13ff6ffd24aed2a5d642e1af4fcd8d7f5f6b24bb211ada",
+    "lib/coords/spherical.js": "873d7810aa0be01edcaf53ba03f2e86f0ad24e7e43749573628b13991e1e423b"
+  }
+}

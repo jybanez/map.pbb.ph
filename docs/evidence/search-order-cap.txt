@@ -1,0 +1,12 @@
+### Result
+{"cap":20,"focusedResultRemovedAnnounced":true,"focusReturnedToTextbox":true,"freshSelection":true}
+### Ran Playwright code
+```js
+await (async(page)=>{
+ page.setDefaultTimeout(15000);const cdp=await page.context().newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+ await page.addInitScript(()=>{Object.defineProperty(document,'hidden',{get:()=>false});Object.defineProperty(navigator,'geolocation',{value:{watchPosition(ok){window.__fix=ok;return 1},clearWatch(){}}});let lib;window.__flights=0;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const M=v.Map;v.Map=class extends M{constructor(o){super(o);window.__map=this}flyTo(o,e){if(e?.searchFlight)window.__flights++;return super.flyTo(o,e)}}}})});
+ await page.goto('https://map.pbb.ph/');await page.waitForFunction(()=>window.__map?.loaded());await page.evaluate(()=>{window.__map.fire('movestart',{originalEvent:{type:'pointerdown'}});window.__map.querySourceFeatures=()=>Array.from({length:25},(_,i)=>({geometry:{type:'Point',coordinates:[123.885+i*0.001,10.3157]},properties:{name:'Petron Cap'}}));window.__fix({coords:{latitude:10.3157,longitude:123.885,accuracy:20}})});
+ const input=page.getByRole('textbox',{name:'Search map'}),menu=page.getByRole('menu',{name:'Map search results'});await input.fill('Petron Cap');if(await menu.locator('[role="menuitem"]:not(:disabled)').count()!==20)throw Error('Cap');await input.press('ArrowDown');await page.evaluate(()=>window.__fix({coords:{latitude:10.3157,longitude:123.909,accuracy:20}}));if(await menu.count()||!await input.evaluate(e=>e===document.activeElement)||!await page.locator('#map-search-status').textContent().then(t=>t.includes('outside the top 20')))throw Error('Cap focus removal');await input.press('Enter');await page.keyboard.press('Enter');if(await page.evaluate(()=>window.__flights)!==1)throw Error('Fresh canonical entry');await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));return{cap:20,focusedResultRemovedAnnounced:true,focusReturnedToTextbox:true,freshSelection:true};
+}
+)(page);
+```

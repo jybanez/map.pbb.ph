@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-10",
+  "queries": [
+    {
+      "value": "10.3, 123.9",
+      "invalid": false
+    },
+    {
+      "value": "90,180",
+      "invalid": false
+    },
+    {
+      "value": "-90,-180",
+      "invalid": false
+    },
+    {
+      "value": "91,20",
+      "invalid": true
+    },
+    {
+      "value": "10,181",
+      "invalid": true
+    },
+    {
+      "value": "10,",
+      "invalid": true
+    },
+    {
+      "value": "NaN,20",
+      "invalid": true
+    },
+    {
+      "value": "1e2,20",
+      "invalid": true
+    },
+    {
+      "value": "12x,30",
+      "invalid": true
+    },
+    {
+      "value": "10.3 123.9",
+      "invalid": true
+    }
+  ],
+  "realPoi": {
+    "name": "The Church of Jesus Christ of Latter-day Saints",
+    "coordinates": [
+      123.90095472335815,
+      10.304083938819275
+    ]
+  },
+  "numericLeadingPoiNames": [
+    "7-Eleven",
+    "3J Store"
+  ],
+  "center": [
+    123.90999999999997,
+    10.319805882984298
+  ],
+  "animated": true,
+  "locationDataPreserved": true,
+  "syntheticPoiDedup": true,
+  "hiddenPoiSearch": true,
+  "coverageVisible": true,
+  "emptyAndUnavailable": true,
+  "escape": true,
+  "layout": {
+    "overflow": false,
+    "nav": "ui-navbar is-mobile-layout-scroll has-brand has-center-slot has-end-slot",
+    "menu": {
+      "x": 8,
+      "y": 60,
+      "width": 361,
+      "height": 97,
+      "top": 60,
+      "right": 369,
+      "bottom": 157,
+      "left": 8
+    }
+  },
+  "cleanup": true,
+  "imports": [
+    "https://map.pbb.ph/assets/boot.js?v=20261010-search2",
+    "https://map.pbb.ph/assets/app.js?v=20261010-search2",
+    "https://map.pbb.ph/assets/map-search.js?v=20261010-search2"
+  ],
+  "externalRequests": [],
+  "uncaughtErrors": []
+}

@@ -1,0 +1,9 @@
+### Result
+[{"width":1200,"paragraphs":0,"labels":0,"chrome":true,"header":"Locations","fit":true},{"width":375,"paragraphs":0,"labels":0,"chrome":true,"header":"Locations","fit":true}]
+### Ran Playwright code
+```js
+await (async(page)=>{
+ const results=[];for(const width of [1200,375]){await page.setViewportSize({width,height:740});const state=await page.getByRole('dialog').evaluate(d=>({paragraphs:d.querySelectorAll('.pbb-poi-filter p').length,labels:d.querySelectorAll('.ui-checkbox-label').length,chrome:d.querySelector('.ui-tree-grid').classList.contains('is-chrome-less'),header:d.querySelectorAll('th')[1].textContent,fit:d.scrollWidth===d.clientWidth}));if(state.paragraphs||state.labels||!state.chrome||state.header!=='Locations'||!state.fit)throw Error(JSON.stringify(state));await page.screenshot({path:`output/playwright/poi-clean-${width}.png`});results.push({width,...state});}return results;
+}
+)(page);
+```

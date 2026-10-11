@@ -1,0 +1,170 @@
+### Result
+{"date":"2026-10-10","browser":"Chromium via Playwright CLI","syntheticLocation":true,"externalRuntimeRequests":[],"requestCount":656,"uncaughtErrors":[],"checks":[{"check":"fallback renders independently while one fix is pending; POIs default visible","result":{"center":[123.8854,10.3157],"zoom":12,"policy":{"enableHighAccuracy":true,"timeout":10000,"maximumAge":60000},"count":1,"pending":true,"poi":20,"sources":["osm","terrain","terrain-hillshade","pbb-poi"]}},{"check":"late initial fix preserves exploration and displays marker/circle","result":{"zoom":13,"source":true}},{"check":"explicit Locate recenters; terrain/buildings/POIs render at detail zoom","result":{"zoom":15,"pitch":60,"terrain":{"source":"terrain","exaggeration":1.6},"buildings":6774,"pois":1723}},{"check":"POI toggle affects complete group","result":["none","none"]},{"check":"compass resets bearing without relocation; keyboard pan works","result":{"bearing":0,"center":[123.88540000000489,10.315699999998486]}},{"check":"responsive layouts, 44px controls and attribution","result":[{"viewport":[1440,900],"scroll":[1440,900],"map":{"x":0,"y":68,"width":1440,"height":832,"top":68,"right":1440,"bottom":900,"left":0},"controls":[{"name":"Zoom in","rect":{"x":1053.484375,"y":12,"width":44,"height":44,"top":12,"right":1097.484375,"bottom":56,"left":1053.484375}},{"name":"Zoom out","rect":{"x":1099.484375,"y":12,"width":44,"height":44,"top":12,"right":1143.484375,"bottom":56,"left":1099.484375}},{"name":"Reset north","rect":{"x":1152.484375,"y":11,"width":44,"height":44,"top":11,"right":1196.484375,"bottom":55,"left":1152.484375}},{"name":"Set pitch 0 degrees","rect":{"x":1205.484375,"y":12,"width":44,"height":44,"top":12,"right":1249.484375,"bottom":56,"left":1205.484375}},{"name":"Set pitch 60 degrees","rect":{"x":1251.484375,"y":12,"width":44,"height":44,"top":12,"right":1295.484375,"bottom":56,"left":1251.484375}},{"name":"Layers","rect":{"x":1305.484375,"y":12,"width":44,"height":44,"top":12,"right":1349.484375,"bottom":56,"left":1305.484375}}],"attribution":{"x":1043.15625,"y":882,"width":396.84375,"height":18,"top":882,"right":1440,"bottom":900,"left":1043.15625}},{"viewport":[390,844],"scroll":[390,844],"map":{"x":0,"y":166,"width":1440,"height":832,"top":166,"right":1440,"bottom":998,"left":0},"controls":[{"name":"Zoom in","rect":{"x":14,"y":56,"width":44,"height":44,"top":56,"right":58,"bottom":100,"left":14}},{"name":"Zoom out","rect":{"x":60,"y":56,"width":44,"height":44,"top":56,"right":104,"bottom":100,"left":60}},{"name":"Reset north","rect":{"x":113,"y":55,"width":44,"height":44,"top":55,"right":157,"bottom":99,"left":113}},{"name":"Set pitch 0 degrees","rect":{"x":166,"y":56,"width":44,"height":44,"top":56,"right":210,"bottom":100,"left":166}},{"name":"Set pitch 60 degrees","rect":{"x":212,"y":56,"width":44,"height":44,"top":56,"right":256,"bottom":100,"left":212}},{"name":"Layers","rect":{"x":266,"y":56,"width":44,"height":44,"top":56,"right":310,"bottom":100,"left":266}}],"attribution":{"x":16,"y":808,"width":374,"height":36,"top":808,"right":390,"bottom":844,"left":16}},{"viewport":[320,568],"scroll":[320,568],"map":{"x":0,"y":166,"width":390,"height":678,"top":166,"right":390,"bottom":844,"left":0},"controls":[{"name":"Zoom in","rect":{"x":14,"y":56,"width":44,"height":44,"top":56,"right":58,"bottom":100,"left":14}},{"name":"Zoom out","rect":{"x":60,"y":56,"width":44,"height":44,"top":56,"right":104,"bottom":100,"left":60}},{"name":"Reset north","rect":{"x":113,"y":55,"width":44,"height":44,"top":55,"right":157,"bottom":99,"left":113}},{"name":"Set pitch 0 degrees","rect":{"x":166,"y":56,"width":44,"height":44,"top":56,"right":210,"bottom":100,"left":166}},{"name":"Set pitch 60 degrees","rect":{"x":212,"y":56,"width":44,"height":44,"top":56,"right":256,"bottom":100,"left":212}},{"name":"Layers","rect":{"x":266,"y":56,"width":44,"height":44,"top":56,"right":310,"bottom":100,"left":266}}],"attribution":{"x":16,"y":532,"width":304,"height":36,"top":532,"right":320,"bottom":568,"left":16}},{"viewport":[844,390],"scroll":[844,390],"map":{"x":0,"y":68,"width":844,"height":322,"top":68,"right":844,"bottom":390,"left":0},"controls":[{"name":"Zoom in","rect":{"x":457.484375,"y":12,"width":44,"height":44,"top":12,"right":501.484375,"bottom":56,"left":457.484375}},{"name":"Zoom out","rect":{"x":503.484375,"y":12,"width":44,"height":44,"top":12,"right":547.484375,"bottom":56,"left":503.484375}},{"name":"Reset north","rect":{"x":556.484375,"y":11,"width":44,"height":44,"top":11,"right":600.484375,"bottom":55,"left":556.484375}},{"name":"Set pitch 0 degrees","rect":{"x":609.484375,"y":12,"width":44,"height":44,"top":12,"right":653.484375,"bottom":56,"left":609.484375}},{"name":"Set pitch 60 degrees","rect":{"x":655.484375,"y":12,"width":44,"height":44,"top":12,"right":699.484375,"bottom":56,"left":655.484375}},{"name":"Layers","rect":{"x":709.484375,"y":12,"width":44,"height":44,"top":12,"right":753.484375,"bottom":56,"left":709.484375}}],"attribution":{"x":447.15625,"y":372,"width":396.84375,"height":18,"top":372,"right":844,"bottom":390,"left":447.15625}}]},{"check":"denied, timeout, unavailable and invalid fixes leave map and retry usable","result":"pass"},{"check":"POI choice during map loading survives readiness","result":["none","none"]},{"check":"optional POI outage preserves loaded basemap","result":"pass"},{"check":"initialization failure offers deliberate successful retry","result":"pass"},{"check":"unsupported WebGL presents actionable canonical error","result":"pass"},{"check":"missing geolocation preserves loaded map and actionable feedback","result":"pass"},{"check":"teardown removes map/overlays and ignores late fix","result":{"removed":true,"markers":0,"overlays":0}}],"limits":["Physical mobile/touch and real-device geolocation not tested","MapServer backend upstream disconnection not tested; local-node offline acceptance remains pending"]}
+### Ran Playwright code
+```js
+await (async (page) => {
+  const out = 'output/playwright';
+  const results = [], requests = [], errors = [];
+  page.on('request', request => requests.push({ url: request.url(), method: request.method() }));
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.__fixes = [];
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
+      getCurrentPosition(ok, bad, policy) { window.__fixes.push({ ok, bad, policy }); },
+    } });
+    if (location.search.includes('verify=no-geolocation')) Object.defineProperty(navigator, 'geolocation', { configurable: true, value: undefined });
+    if (location.search.includes('verify=no-webgl')) {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function(kind, ...args) {
+        return String(kind).includes('webgl') ? null : original.call(this, kind, ...args);
+      };
+    }
+    let lib;
+    Object.defineProperty(window, 'maplibregl', { configurable: true,
+      get: () => lib,
+      set(value) {
+        lib = value;
+        const Original = value.Map;
+        value.Map = class extends Original { constructor(options) { super(options); window.__map = this; } };
+      },
+    });
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('https://map.pbb.ph/');
+  await page.waitForFunction(() => window.__map?.loaded());
+  const initial = await page.evaluate(() => ({
+    center: window.__map.getCenter().toArray(), zoom: window.__map.getZoom(),
+    policy: window.__fixes[0].policy, count: window.__fixes.length,
+    pending: document.querySelector('.ui-navbar-action').disabled,
+    poi: window.__map.queryRenderedFeatures({ layers: ['pbb-poi-points'] }).length,
+    sources: Object.keys(window.__map.getStyle().sources),
+  }));
+  if (initial.zoom !== 12 || !initial.pending || initial.count !== 1 || initial.poi < 1) throw Error('Initial map/location/POI check failed');
+  results.push({ check: 'fallback renders independently while one fix is pending; POIs default visible', result: initial });
+  await page.screenshot({ path: `${out}/desktop-pending.png` });
+  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await page.waitForFunction(() => !window.__map.isMoving());
+  const explored = await page.evaluate(() => window.__map.getZoom());
+  await page.evaluate(() => window.__fixes[0].ok({ coords: { longitude: 123.8854, latitude: 10.3157, accuracy: 65 } }));
+  await page.getByRole('img', { name: 'Your reported location', exact: true }).waitFor();
+  const late = await page.evaluate(() => ({ zoom: window.__map.getZoom(), source: !!window.__map.getSource('pbb-accuracy') }));
+  if (Math.abs(late.zoom - explored) > 0.01 || !late.source) throw Error('Late initial location stole the camera or missed accuracy circle');
+  results.push({ check: 'late initial fix preserves exploration and displays marker/circle', result: late });
+  await page.getByRole('button', { name: 'Locate', exact: true }).click();
+  if (!(await page.getByRole('button', { name: 'Locating…', exact: true }).isDisabled())) throw Error('Locate must be disabled while pending');
+  await page.evaluate(() => window.__fixes[1].ok({ coords: { longitude: 123.8854, latitude: 10.3157, accuracy: 40 } }));
+  await page.waitForFunction(() => !window.__map.isMoving() && Math.abs(window.__map.getZoom() - 15) < 0.01);
+  await page.getByRole('button', { name: 'Set pitch 60 degrees', exact: true }).click();
+  await page.waitForFunction(() => window.__map.loaded() && !window.__map.isMoving());
+  await page.screenshot({ path: `${out}/desktop-location-3d.png` });
+  const detail = await page.evaluate(() => ({
+    zoom: window.__map.getZoom(), pitch: window.__map.getPitch(), terrain: window.__map.getTerrain(),
+    buildings: window.__map.queryRenderedFeatures({ layers: ['buildings-3d'] }).length,
+    pois: window.__map.queryRenderedFeatures({ layers: ['pbb-poi-points', 'pbb-poi-labels'] }).length,
+  }));
+  if (detail.buildings < 1 || detail.pois < 1) throw Error('Detailed buildings or POIs did not render');
+  results.push({ check: 'explicit Locate recenters; terrain/buildings/POIs render at detail zoom', result: detail });
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Points of interest', exact: true }).uncheck();
+  const visibility = await page.evaluate(() => ['pbb-poi-points', 'pbb-poi-labels'].map(id => window.__map.getLayoutProperty(id, 'visibility')));
+  if (visibility.some(value => value !== 'none')) throw Error('POI toggle did not hide whole group');
+  await page.getByRole('checkbox', { name: 'Points of interest', exact: true }).check();
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
+  results.push({ check: 'POI toggle affects complete group', result: visibility });
+  await page.evaluate(() => window.__map.jumpTo({ bearing: 45 }));
+  const beforeCompass = await page.evaluate(() => window.__map.getCenter().toArray());
+  await page.getByRole('button', { name: 'Reset north', exact: true }).click();
+  await page.waitForFunction(() => !window.__map.isMoving());
+  const compass = await page.evaluate(() => ({ bearing: window.__map.getBearing(), center: window.__map.getCenter().toArray() }));
+  if (Math.abs(compass.bearing) > 0.01 || compass.center.some((value, i) => Math.abs(value - beforeCompass[i]) > 0.00001)) throw Error('Compass changed position or failed to reset');
+  await page.getByRole('region', { name: 'Map. Use arrow keys to pan, plus or minus to zoom, and Shift with arrow keys to rotate or pitch.', exact: true }).press('ArrowRight');
+  await page.waitForFunction(() => !window.__map.isMoving());
+  const panned = await page.evaluate(() => window.__map.getCenter().toArray());
+  if (panned[0] === beforeCompass[0]) throw Error('Keyboard pan did not move map');
+  results.push({ check: 'compass resets bearing without relocation; keyboard pan works', result: compass });
+  const layouts = [];
+  for (const [width, height] of [[1440, 900], [390, 844], [320, 568], [844, 390]]) {
+    await page.setViewportSize({ width, height });
+    const layout = await page.evaluate(() => ({ viewport: [innerWidth, innerHeight],
+      scroll: [document.documentElement.scrollWidth, document.documentElement.scrollHeight],
+      map: document.querySelector('canvas.maplibregl-canvas').getBoundingClientRect().toJSON(),
+      controls: [...document.querySelectorAll('.ui-map-controls__button')].map(button => ({
+        name: button.getAttribute('aria-label'), rect: button.getBoundingClientRect().toJSON(),
+      })), attribution: document.querySelector('.maplibregl-ctrl-attrib').getBoundingClientRect().toJSON(),
+    }));
+    if (layout.scroll[0] !== width || layout.scroll[1] !== height) throw Error(`Page overflow at ${width}`);
+    if (layout.controls.some(c => c.rect.left < 0 || c.rect.right > width || c.rect.width < 44 || c.rect.height < 44)) throw Error(`Control clipped at ${width}`);
+    await page.screenshot({ path: `${out}/layout-${width}x${height}.png` });
+    layouts.push(layout);
+  }
+  results.push({ check: 'responsive layouts, 44px controls and attribution', result: layouts });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  // Synthetic denial, timeout, unavailable and invalid data require no real-device permission.
+  for (const code of [1, 3, 2]) {
+    await page.getByRole('button', { name: 'Locate', exact: true }).click();
+    await page.evaluate(code => window.__fixes.at(-1).bad({ code }), code);
+    if (!(await page.getByRole('button', { name: 'Locate', exact: true }).isEnabled())) throw Error('Location failure left Locate busy');
+  }
+  await page.getByRole('button', { name: 'Locate', exact: true }).click();
+  await page.evaluate(() => window.__fixes.at(-1).ok({ coords: { longitude: 400, latitude: 10, accuracy: 10 } }));
+  if (!(await page.getByRole('button', { name: 'Locate', exact: true }).isEnabled())) throw Error('Invalid location left Locate busy');
+  results.push({ check: 'denied, timeout, unavailable and invalid fixes leave map and retry usable', result: 'pass' });
+  let releaseTiles;
+  const gate = new Promise(resolve => { releaseTiles = resolve; });
+  await page.route('**/tiles/vector/**', async route => { await gate; await route.continue(); });
+  await page.reload();
+  await page.getByRole('button', { name: 'Layers', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Layers', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Points of interest', exact: true }).uncheck();
+  releaseTiles();
+  await page.waitForFunction(() => window.__map?.loaded());
+  const earlyVisibility = await page.evaluate(() => ['pbb-poi-points', 'pbb-poi-labels'].map(id => window.__map.getLayoutProperty(id, 'visibility')));
+  if (earlyVisibility.some(value => value !== 'none')) throw Error('Loading-time POI choice was lost');
+  await page.unroute('**/tiles/vector/**');
+  results.push({ check: 'POI choice during map loading survives readiness', result: earlyVisibility });
+  await page.route('**/tiles/poi/**', route => route.abort('failed'));
+  await page.reload();
+  await page.waitForFunction(() => window.__map?.loaded());
+  await page.getByText('Points of interest are unavailable for this area.', { exact: false }).waitFor();
+  results.push({ check: 'optional POI outage preserves loaded basemap', result: 'pass' });
+  await page.unroute('**/tiles/poi/**');
+  await page.route('**/assets/maps/hotline-dark.json', route => route.abort('failed'));
+  await page.reload();
+  await page.getByRole('heading', { name: 'Map could not open', exact: true }).waitFor();
+  await page.unroute('**/assets/maps/hotline-dark.json');
+  await page.getByRole('button', { name: 'Retry map', exact: true }).click();
+  await page.waitForFunction(() => window.__map?.loaded());
+  results.push({ check: 'initialization failure offers deliberate successful retry', result: 'pass' });
+  await page.goto('https://map.pbb.ph/?verify=no-webgl');
+  await page.getByRole('heading', { name: 'Map could not open', exact: true }).waitFor();
+  await page.getByText('WebGL is unavailable.', { exact: false }).waitFor();
+  results.push({ check: 'unsupported WebGL presents actionable canonical error', result: 'pass' });
+  await page.goto('https://map.pbb.ph/?verify=no-geolocation');
+  await page.waitForFunction(() => window.__map?.loaded());
+  await page.getByText('Location is unavailable in this browser.', { exact: false }).waitFor();
+  results.push({ check: 'missing geolocation preserves loaded map and actionable feedback', result: 'pass' });
+  await page.goto('https://map.pbb.ph/');
+  await page.waitForFunction(() => window.__map?.loaded());
+  const last = await page.evaluate(() => {
+    const map = window.__map;
+    window.dispatchEvent(new Event('pagehide'));
+    window.__fixes.at(-1).ok({ coords: { longitude: 123, latitude: 10, accuracy: 1 } });
+    return { removed: map._removed, markers: document.querySelectorAll('.ui-map-marker').length, overlays: document.querySelectorAll('.ui-busy-overlay').length };
+  });
+  if (!last.removed || last.markers || last.overlays) throw Error('Teardown leaked map resources');
+  results.push({ check: 'teardown removes map/overlays and ignores late fix', result: last });
+  const external = requests.filter(request => {
+    const url = new URL(request.url);
+    return ['http:', 'https:'].includes(url.protocol) && !['map.pbb.ph', 'mapserver.pbb.ph'].includes(url.hostname);
+  });
+  if (external.length || requests.some(request => request.method !== 'GET')) throw Error('Unexpected external runtime dependency or location mutation');
+  if (errors.length) throw Error(`Uncaught browser errors: ${errors.join('; ')}`);
+  const report = { date: '2026-10-10', browser: 'Chromium via Playwright CLI', syntheticLocation: true,
+    externalRuntimeRequests: external, requestCount: requests.length, uncaughtErrors: errors, checks: results,
+    limits: ['Physical mobile/touch and real-device geolocation not tested', 'MapServer backend upstream disconnection not tested; local-node offline acceptance remains pending'] };
+  return report;
+}
+)(page);
+```
+### Events
+- New console entries: .playwright-cli\console-2026-10-09T23-13-55-465Z.log#L12
