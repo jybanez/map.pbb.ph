@@ -18,6 +18,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   let mode = "select", selected = null, draft = [], draftRedo = [];
   let undoStack = [], redoStack = [], drag = null, lock = null, destroyed = false;
   let ownedSource = false, ownedLayers = new Set(), suppressClick = null, hydrating = false, styleQueued = false;
+  let revision = 0, requestingDelete = false;
   const oldCursor = canvas.style.cursor;
   const historyLimit = Number.isInteger(options.historyLimit) && options.historyLimit > 0 ? options.historyLimit : 100;
 
@@ -84,8 +85,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     return { modes: destroyed ? ["pan"] : [...MODES], editing: "drag-existing-vertices", measurement: false,
       actions: { finish: !destroyed && (mode === "line" ? draft.length >= 2 : mode === "polygon" && draft.length >= 3), cancel: !destroyed && (mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!undoStack.length) && !drag, redo: !destroyed && (!!draftRedo.length || !!redoStack.length) && !drag, delete: !destroyed && selected !== null && !drag, clear: !destroyed && !!features.length && !drag } };
   }
-  function refresh() { render(); emit("measure", null); }
-  function select(id) { selected = id === null ? null : String(id); render(); emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); }
+  function refresh() { revision++; render(); emit("measure", null); }
+  function select(id) { revision++; selected = id === null ? null : String(id); render(); emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); }
   function publishChanges(before) {
     before.filter(f => !features.some(n => String(n.id) === String(f.id))).forEach(f => emit("delete", f.id));
     features.forEach(f => { const old = before.find(p => String(p.id) === String(f.id)); if (!old) emit("create", f); else if (!equal(old, f)) emit("update", f); });
@@ -96,11 +97,12 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const validated = validateFeatures(next);
     if (equal(validated, features)) return;
     const before = clone(features); undoStack.push(before); if (undoStack.length > historyLimit) undoStack.shift(); redoStack = [];
-    features = validated; render(); publishChanges(before);
+    revision++; features = validated; render(); publishChanges(before);
   }
   function abortDrag() {
     if (!drag) return;
     const previousDrag = drag; drag = null;
+    revision++;
     features = previousDrag.before; try { canvas.releasePointerCapture(previousDrag.pointerId); } catch (_) { /* already released */ }
     restoreNavigation(); render();
   }
@@ -148,6 +150,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     event.preventDefault(); event.stopImmediatePropagation();
     lockNavigation(["dragPan", "dragRotate", "touchZoomRotate", "doubleClickZoom"]);
     drag = { before: clone(features), path: vertex.path, pointerId: event.pointerId, moved: false };
+    revision++;
     canvas.setPointerCapture(event.pointerId);
   }
   function pointerMove(event) {
@@ -159,7 +162,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (feature.geometry.type === "Point") feature.geometry.coordinates = coordinate;
     else if (feature.geometry.type === "LineString") feature.geometry.coordinates[drag.path[0]] = coordinate;
     else { const [r, i] = drag.path; feature.geometry.coordinates[r][i] = coordinate; if (i === 0) feature.geometry.coordinates[r][feature.geometry.coordinates[r].length - 1] = [...coordinate]; }
-    drag.moved = true; render(); event.preventDefault();
+    revision++; drag.moved = true; render(); event.preventDefault();
   }
   function pointerUp(event) {
     if (!drag || drag.pointerId !== event.pointerId) return;
@@ -184,25 +187,56 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (destroyed || drag) return;
     if (draft.length) { draftRedo.push(draft.pop()); refresh(); return; }
     if (!undoStack.length) return;
-    const before = clone(features); redoStack.push(before); features = undoStack.pop(); publishChanges(before);
+    const before = clone(features); redoStack.push(before); revision++; features = undoStack.pop(); publishChanges(before);
   }
   function redo() {
     if (destroyed || drag) return;
     if (draftRedo.length) { draft.push(draftRedo.pop()); refresh(); return; }
     if (draft.length || !redoStack.length) return;
-    const before = clone(features); undoStack.push(before); features = redoStack.pop(); publishChanges(before);
+    const before = clone(features); undoStack.push(before); revision++; features = redoStack.pop(); publishChanges(before);
   }
   function setFeatures(input) {
     if (destroyed) return;
     const next = validateFeatures(input); // Validate atomically before cancelling interaction.
     abortDrag(); draft = []; draftRedo = []; undoStack = []; redoStack = [];
-    const before = features; features = next; publishChanges(before);
+    const before = features; revision++; features = next; publishChanges(before);
   }
-  function deleteSelected() { if (!destroyed && !drag && selected !== null) commit(features.filter(f => String(f.id) !== selected)); }
-  function clear() { if (!destroyed && !drag) { draft = []; draftRedo = []; commit([]); refresh(); } }
+  function requestDeletion(action) {
+    if (destroyed || drag || requestingDelete || (action === "delete" && selected === null)) return false;
+    // A draft-only clear retains the historical behavior but also goes through the gate.
+    if (action === "clear" && !features.length && !draft.length && !draftRedo.length) return false;
+    const expectedRevision = revision;
+    const featureIds = Object.freeze(action === "delete" ? features.filter(f => String(f.id) === selected).map(f => f.id) : features.map(f => f.id));
+    let consumed = false;
+    const confirm = () => {
+      // Calling from inside the hook cannot recursively bypass confirmation.
+      if (requestingDelete) return false;
+      if (consumed) return false;
+      consumed = true;
+      if (destroyed || drag || revision !== expectedRevision) return false;
+      if (action === "delete") commit(features.filter(f => String(f.id) !== String(featureIds[0])));
+      else { draft = []; draftRedo = []; commit([]); refresh(); }
+      return true;
+    };
+    const request = Object.freeze({ action, featureIds, revision: expectedRevision, confirm,
+      cancel() { if (consumed) return false; consumed = true; return true; } });
+    if (typeof options.beforeDelete !== "function") return confirm();
+    let allowed = false;
+    requestingDelete = true;
+    try {
+      const result = options.beforeDelete(request);
+      allowed = result === true;
+      // Async hooks never authorize/replay a mutation; isolate a rejected Promise.
+      if (result instanceof Promise) result.catch(error => { request.cancel(); reportError(error); });
+    } catch (error) { request.cancel(); reportError(error); }
+    finally { requestingDelete = false; }
+    return allowed ? confirm() : false;
+  }
+  function deleteSelected() { return requestDeletion("delete"); }
+  function clear() { return requestDeletion("clear"); }
   function destroy(removed = false) {
     if (destroyed) return;
-    abortDrag(); restoreNavigation(); destroyed = true;
+    abortDrag(); restoreNavigation(); revision++; destroyed = true;
     mapOffs.splice(0).forEach(off => off()); domOffs.splice(0).forEach(off => off()); listeners.clear();
     canvas.style.cursor = oldCursor;
     if (!removed) {
@@ -227,7 +261,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   bindDom(globalThis, "blur", () => { if (drag) abortDrag(); });
   try { if (map.isStyleLoaded()) hydrate(); } catch (error) { destroy(); throw error; }
   return { on, setMode, setFeatures, validateFeatures, getFeatures: () => clone(features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy,
-    getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), destroyed, sourceId, layerIds: [...layers] }) };
+    getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), revision, destroyed, sourceId, layerIds: [...layers] }) };
 }
 
 function validatePosition(position) {

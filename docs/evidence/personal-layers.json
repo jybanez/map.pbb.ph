@@ -1,11 +1,11 @@
 {
   "task": 206,
   "review": "pending Alfred independent review",
-  "runtime": "20261011-personal-layers1",
-  "shell": "589f4fde4b825069ca63",
+  "runtime": "20261011-personal-layers2",
+  "shell": "4ce6dbf1531f4b9fad73",
   "files": 42,
-  "bytes": 4187189,
-  "helperCommit": "d7f82af6cc5d17ddccd305ceb23c8e35575e6260",
+  "bytes": 4188350,
+  "helperCommit": "77ac709a250ab7b6873c4a2e2a7bc59d2d972823",
   "helperArtifacts": 3,
   "nodeTests": {
     "passed": 55,
@@ -67,5 +67,12 @@
     "Full browser-process restart unverified",
     "Injected failures distinguish controlled scenarios from actual quota exhaustion"
   ],
-  "deletionPolicyApproval": 9414
+  "deletionPolicyApproval": [
+    9416,
+    9426,
+    9427,
+    9439
+  ],
+  "canonicalBeforeDelete": true,
+  "deleteBackspaceAppCapture": false
 }

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-const repo='C:/wamp64/www/hotline-helpers', revision='d7f82af6cc5d17ddccd305ceb23c8e35575e6260';
+const repo='C:/wamp64/www/hotline-helpers', revision='77ac709a250ab7b6873c4a2e2a7bc59d2d972823';
 const vendor=JSON.parse(readFileSync('vendor/manifest.json','utf8'));
 const artifacts=new Map();
 for(const document of ['maplibre-drawing-runtime','map-layer-icon-runtime']){
@@ -13,6 +13,6 @@ for(const [path,expected] of artifacts){
  const hash=createHash('sha256').update(bytes).digest('hex');if(hash!==expected)throw Error(path);
  const target=`vendor/helpers/${path}`;mkdirSync(target.slice(0,target.lastIndexOf('/')),{recursive:true});writeFileSync(target,bytes);vendor.files[target]=hash;
 }
-vendor.personalLayers={revision,mainUiRevision:'0.21.289',adapterRevision:'0.21.288',iconRevision:'0.21.287'};
+vendor.personalLayers={revision,mainUiRevision:'0.21.290',adapterRevision:'0.21.290',iconRevision:'0.21.287'};
 writeFileSync('vendor/manifest.json',JSON.stringify(vendor,null,2)+'\n');
 console.log('Adopted verified reviewed personal-layer runtime; game and MapLibre unchanged.');

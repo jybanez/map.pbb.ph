@@ -1,5 +1,5 @@
-import { createPoiCategories } from './poi-categories.js?v=20261011-personal-layers1';
-import { POI_LAYERS } from './map-style.js?v=20261011-personal-layers1';
+import { createPoiCategories } from './poi-categories.js?v=20261011-personal-layers2';
+import { POI_LAYERS } from './map-style.js?v=20261011-personal-layers2';
 
 export function createPoiFilter({createModal,createMapControls,createMenu,uiLoader,excluded,sourceLayer,onChange}) {
   const state=createPoiCategories(excluded);

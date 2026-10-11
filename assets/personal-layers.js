@@ -1,4 +1,4 @@
-import { createPersonalLayerStore, validateLayerDocument } from './personal-layer-store.js?v=20261011-personal-layers1';
+import { createPersonalLayerStore, validateLayerDocument } from './personal-layer-store.js?v=20261011-personal-layers2';
 export function createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,uiAlert,toast,onChange,onEditingChange,store=createPersonalLayerStore(),idPrefix='pbb-personal-readonly'}) {
   const panel=document.createElement('div'); panel.className='pbb-personal-editor'; panel.hidden=true;region.append(panel);
   const status=document.createElement('p');status.setAttribute('role','status');
@@ -61,17 +61,17 @@ export function createPersonalLayers({region,uiLoader,createModal,createActionMo
       onSubmit:async values=>{if(disposed||map!==context)return false;instance.setBusy(true,{message:'Saving personal layer…'});try{const next=structuredClone(documentState);if(layer)next.layers.find(l=>l.id===layer.id).name=values.name.trim();else next.layers.push({id:crypto.randomUUID(),name:values.name.trim(),visible:true,features:[]});await commit(next);return true;}catch(error){instance.setFormError(error.message);return false;}finally{instance.setBusy(false);}}
     });form.open();
   }
-  function requestConfirmation({title,content,valid,action,label='Delete'}){
+  function requestConfirmation({title,content,valid,action,label='Delete',onDismiss}){
     if(confirmation||disposed||writing||dirty||blocked)return;
     let instance;confirmation=instance=createActionModal({title,content,workspaceBridge:false,autoBusy:false,closeOnBackdrop:true,closeOnEscape:true,
-      onClose:()=>{if(confirmation===instance)confirmation=null;instance.destroy();},
+      onClose:()=>{onDismiss?.();if(confirmation===instance)confirmation=null;instance.destroy();},
       actions:[{id:'cancel',label:'Cancel',onClick:()=>true},{id:'confirm',label,variant:'danger',onClick:async()=>{
         if(disposed||writing||dirty||blocked||!valid()){
           const error=document.createElement('p');error.setAttribute('role','alert');error.textContent='The drawing or layer changed. Close this confirmation and choose the action again.';instance.setContent(error);instance.setActions([{id:'cancel',label:'Close',onClick:()=>true}]);return false;
         }
         instance.setBusy(true,{message:'Applying confirmed change…'});
         try{await action();return true;}catch(error){const p=document.createElement('p');p.setAttribute('role','alert');p.textContent=error.message;instance.setContent(p);instance.setActions([{id:'cancel',label:'Close',onClick:()=>true}]);return false;}finally{instance.setBusy(false);}
-      }}]});instance.open();
+      }}]});instance.open();return true;
   }
   function deleteLayer(layer){
     if(active)return;const context=map,revision=documentState.revision,snapshot=JSON.stringify(layer);
@@ -82,10 +82,16 @@ export function createPersonalLayers({region,uiLoader,createModal,createActionMo
     const current=adapter;if(!current)return;
     const context=map,layerId=active,epoch=editorEpoch,revision=documentState.revision,state=current.getState(),snapshot=JSON.stringify(state);
     if(method==='deleteSelected'&&(state.selectedFeatureId===null||state.selectedFeatureId===undefined))return;
-    requestConfirmation({title:({deleteSelected:'Delete drawing',clear:'Clear layer',undo:'Undo drawing action',redo:'Redo drawing action'})[method],content:method==='deleteSelected'?'Delete the selected drawing?':method==='clear'?'Delete all drawings in this layer?':'Apply this history action? It may remove or restore personal drawings.',label:['deleteSelected','clear'].includes(method)?'Delete':'Apply',
+    requestConfirmation({title:({undo:'Undo drawing action',redo:'Redo drawing action'})[method],content:method==='deleteSelected'?'Delete the selected drawing?':method==='clear'?'Delete all drawings in this layer?':'Apply this history action? It may remove or restore personal drawings.',label:['deleteSelected','clear'].includes(method)?'Delete':'Apply',
       valid:()=>current===adapter&&context===map&&layerId===active&&epoch===editorEpoch&&revision===documentState.revision&&snapshot===JSON.stringify(current.getState()),action:async()=>{current[method]();await Promise.resolve();await persist();if(blocked||dirty)throw Error(status.textContent||'Personal layers were not saved.');}});
   }
-  function deleteFeature(){confirmedEditorAction('deleteSelected');}
+  function beforeDelete(request){
+    const current=adapter,context=map,layerId=active,epoch=editorEpoch,revision=documentState.revision,snapshot=JSON.stringify(current?.getState());
+    const opened=requestConfirmation({title:request.action==='clear'?'Clear layer':'Delete drawing',content:request.action==='clear'?'Delete all drawings in this layer?':'Delete the selected drawing?',onDismiss:()=>request.cancel(),
+      valid:()=>current===adapter&&context===map&&layerId===active&&epoch===editorEpoch&&revision===documentState.revision&&snapshot===JSON.stringify(current.getState()),
+      action:async()=>{if(!request.confirm())throw Error('The drawing changed. Choose the action again.');await Promise.resolve();await persist();if(blocked||dirty)throw Error(status.textContent||'Personal layers were not saved.');}});
+    if(!opened)request.cancel();return false;
+  }
   function stopEditing(){
     if(!adapter)return;confirmation?.close({reason:'editor-exit'});editorEpoch++;const layer=documentState.layers.find(l=>l.id===active);if(layer){const features=adapter.getFeatures();if(JSON.stringify(features)!==JSON.stringify(layer.features)){layer.features=features;dirty=true;void persist();}}
     tools?.destroy();tools=null;adapter.destroy();adapter=null;active=null;editorControls?.destroy();editorControls=null;panel.hidden=true;panel.replaceChildren();life?.abort();onEditingChange?.(false);changed();
@@ -96,11 +102,11 @@ export function createPersonalLayers({region,uiLoader,createModal,createActionMo
     onEditingChange?.(true);panel.hidden=false;
     const heading=document.createElement('p');heading.textContent=`Editing ${layer.name}`;panel.append(heading,status);
     try{
-      adapter=createAdapter(map,{features:layer.features,onError:error=>toast.show(error.message,{type:'error'})});
+      adapter=createAdapter(map,{features:layer.features,beforeDelete,onError:error=>toast.show(error.message,{type:'error'})});
       for(const event of ['create','update','delete'])adapter.on(event,geometryChanged);
       for(const event of ['create','update','delete','select','modechange','measure'])adapter.on(event,()=>{editorEpoch++;});
-      const host=document.createElement('div');panel.append(host);const boundary={...adapter,undo:()=>confirmedEditorAction('undo'),redo:()=>confirmedEditorAction('redo')};tools=createTools(host,{adapter:boundary,features:layer.features,modes:['select','pan','point','line','polygon'],actions:['finish','cancel','undo','redo'],orientation:'horizontal',labels:'always'});
-      const actions=document.createElement('div');panel.append(actions);editorControls=createMapControls(actions,{controls:['delete-drawing','clear-drawings','export-layers','done'],orientation:'horizontal',actions:[{id:'clear-drawings',label:'Clear layer',icon:'actions.delete',onActivate:()=>confirmedEditorAction('clear')},{id:'export-layers',label:'Export personal layers',icon:'actions.download',onActivate:exportBackup},{id:'delete-drawing',label:'Delete selected drawing',icon:'actions.delete',onActivate:()=>void deleteFeature()},{id:'done',label:'Done editing',icon:'actions.check',onActivate:()=>{if(adapter?.getState().draft.length){toast.show('Finish or cancel the unfinished drawing before choosing Done.',{type:'warn',dismissible:true});return;}stopEditing();}}]});render();onChange?.();
+      const host=document.createElement('div');panel.append(host);const boundary={...adapter,undo:()=>confirmedEditorAction('undo'),redo:()=>confirmedEditorAction('redo')};tools=createTools(host,{adapter:boundary,features:layer.features,modes:['select','pan','point','line','polygon'],actions:['finish','cancel','undo','redo','delete','clear'],orientation:'horizontal',labels:'always'});
+      const actions=document.createElement('div');panel.append(actions);editorControls=createMapControls(actions,{controls:['export-layers','done'],orientation:'horizontal',actions:[{id:'export-layers',label:'Export personal layers',icon:'actions.download',onActivate:exportBackup},{id:'done',label:'Done editing',icon:'actions.check',onActivate:()=>{if(adapter?.getState().draft.length){toast.show('Finish or cancel the unfinished drawing before choosing Done.',{type:'warn',dismissible:true});return;}stopEditing();}}]});render();onChange?.();
     }catch(error){stopEditing();toast.show(error.message,{type:'error'});}
   }
   function showRows(){
@@ -117,13 +123,12 @@ export function createPersonalLayers({region,uiLoader,createModal,createActionMo
   }
   const key=event=>{
     if(!adapter||event.target!==map?.getCanvas())return;
-    if(['Delete','Backspace'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();deleteFeature();}
-    else if((event.ctrlKey||event.metaKey)&&['z','y'].includes(event.key.toLowerCase())){event.preventDefault();event.stopImmediatePropagation();confirmedEditorAction(event.key.toLowerCase()==='y'||event.shiftKey?'redo':'undo');}
+    if((event.ctrlKey||event.metaKey)&&['z','y'].includes(event.key.toLowerCase())){event.preventDefault();event.stopImmediatePropagation();confirmedEditorAction(event.key.toLowerCase()==='y'||event.shiftKey?'redo':'undo');}
   };
   window.addEventListener('keydown',key,true);
   const unload=event=>{if(dirty||writing){event.preventDefault();event.returnValue='';}};window.addEventListener('beforeunload',unload);
-  return {open,isEditing:()=>!!active,getLayers:()=>loaded?documentState.layers.map(l=>({id:l.id,label:l.name,checked:l.visible,disabled:writing||blocked||!!active})):[],
-    async setVisibility(id,visible){if(!loaded||active||writing||dirty||blocked){onChange?.();return;}const next=structuredClone(documentState);const layer=next.layers.find(l=>l.id===id);if(!layer)return;layer.visible=visible;try{await commit(next);}catch(error){toast.show(error.message,{type:'error'});onChange?.();}},
+  return {open,isEditing:()=>!!active,getLayers:()=>loaded?documentState.layers.map(l=>({id:`personal-layer:${l.id}`,label:l.name,checked:l.visible,disabled:writing||blocked||!!active})):[],
+    async setVisibility(id,visible){if(!loaded||active||writing||dirty||blocked){onChange?.();return;}const next=structuredClone(documentState);const layer=next.layers.find(l=>`personal-layer:${l.id}`===id);if(!layer)return;layer.visible=visible;try{await commit(next);}catch(error){toast.show(error.message,{type:'error'});onChange?.();}},
     setMap(next){confirmation?.close({reason:'context-change'});mapToken++;openToken++;modal.close();form?.close();stopEditing();if(map){map.off('style.load',render);map.off('styledata',styleData);for(const id of [...renderLayers].reverse())if(map.getLayer(id))map.removeLayer(id);if(map.getSource(source))map.removeSource(source);}map=next;if(map){map.on('style.load',render);map.on('styledata',styleData);void load().then(()=>{if(map===next)render();}).catch(error=>{if(disposed||map!==next)return;status.textContent=error.message;toast.show(`Personal layers could not load. ${error.message}`,{type:'error',persistent:true});});}},
     destroy(){disposed=true;confirmation?.destroy();confirmation=null;mapToken++;openToken++;stopEditing();life?.abort();form?.destroy();clearGrid();modal.destroy();map?.off('style.load',render);map?.off('styledata',styleData);if(map){for(const id of [...renderLayers].reverse())if(map.getLayer(id))map.removeLayer(id);if(map.getSource(source))map.removeSource(source);}panel.remove();store.close();window.removeEventListener('keydown',key,true);window.removeEventListener('beforeunload',unload);}
   };
