@@ -654,6 +654,11 @@ Object.assign(ICON_DEFINITIONS, {
   "team.command": alias("team", "comms.radio"),
 
   "map.boundary": alias("map", "places.map"),
+  "map.layer": icon("map", [
+    path("M12 3l9 5-9 5-9-5 9-5Z"),
+    path("M3 12l9 5 9-5"),
+    path("M3 16l9 5 9-5"),
+  ]),
   "map.cluster": icon("map", [
     circle(9, 10, 3),
     circle(15, 10, 3),

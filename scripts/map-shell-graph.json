@@ -32,7 +32,9 @@
     "ui.map.location.person",
     "ui.signal.strength",
     "ui.tree.grid",
-    "ui.checkbox"
+    "ui.checkbox",
+    "ui.map.drawing",
+    "ui.map.drawing.maplibre"
   ],
-  "policy": "Strict canonical bundle selection for every used ui factory/dependency, validated against pinned bundle exports. Only Helper loader/main JS/main CSS; no modular fallback, game/inspection/drawing upgrade. MapLibre worker/person mesh embedded; WMM follows static imports."
+  "policy": "Strict three-artifact bundled Helper289, reviewed drawing adapter288 and map.layer icon287. No modular fallback; application coordinates local personal layers."
 }

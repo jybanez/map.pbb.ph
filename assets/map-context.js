@@ -1,5 +1,5 @@
-import { poiName } from './poi-name.js?v=20261011-map-cache6';
-export function installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed=()=>true }) {
+import { poiName } from './poi-name.js?v=20261011-personal-layers1';
+export function installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed=()=>true,isInteractionBlocked=()=>false }) {
   const canvas = map.getCanvas();
   const pointerSurface = map.getCanvasContainer();
   const anchor = document.createElement('span');
@@ -99,7 +99,7 @@ export function installMapContext({ map, createMenu, createModal, toast, markExp
     openAt({lat:p.lat,lng:((p.lng+180)%360+360)%360-180},x,y);
   }
   function openAt(point,x,y,trigger=anchor) {
-    if(disposed || modal.getState().open || !Number.isFinite(point?.lat) || !Number.isFinite(point?.lng))return;
+    if(disposed || isInteractionBlocked() || modal.getState().open || !Number.isFinite(point?.lat) || !Number.isFinite(point?.lng))return;
     close();captured={lat:point.lat,lng:point.lng};menuInvoker=trigger===anchor?null:trigger;
     anchor.style.left=`${x}px`; anchor.style.top=`${y}px`;
     // Closed Helper menus retain their rendered items; recreate through the complete

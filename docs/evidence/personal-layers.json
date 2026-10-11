@@ -1,0 +1,71 @@
+{
+  "task": 206,
+  "review": "pending Alfred independent review",
+  "runtime": "20261011-personal-layers1",
+  "shell": "589f4fde4b825069ca63",
+  "files": 42,
+  "bytes": 4187189,
+  "helperCommit": "d7f82af6cc5d17ddccd305ceb23c8e35575e6260",
+  "helperArtifacts": 3,
+  "nodeTests": {
+    "passed": 55,
+    "failed": 0
+  },
+  "browser": {
+    "engine": "Chromium HTTPS",
+    "widths": [
+      1200,
+      375
+    ],
+    "geometry": [
+      "Point",
+      "LineString",
+      "Polygon"
+    ],
+    "createRenameEdit": true,
+    "confirmedHistoryDeletionClear": true,
+    "cancelPreserves": true,
+    "draftExitGuard": true,
+    "navbarLockPoiIndependent": true,
+    "styleRehydration": true,
+    "offlineReloadVisibility": true,
+    "navigationRestored": true,
+    "pageErrors": []
+  },
+  "storage": {
+    "realIndexedDbCAS": true,
+    "numericZeroRetained": true,
+    "injectedDenialQuotaVisible": true,
+    "corruptSchemaPreserved": true,
+    "noAutomaticReplay": true,
+    "pendingReadCancellation": true,
+    "pendingSaveContextCancellation": true,
+    "recoverableBackupFeatures": 2
+  },
+  "bundle": {
+    "failureModes": 5,
+    "modularFallbackRequests": 0,
+    "coldOfflineFactories": 20,
+    "terrainPersonPoiDirection": true
+  },
+  "scripts": [
+    "verify-personal-layers.js",
+    "verify-personal-storage.js",
+    "verify-personal-policy.js",
+    "verify-personal-pending.js",
+    "verify-personal-confirmation.js",
+    "verify-bundle-only.js"
+  ],
+  "screenshots": [
+    "output/playwright/personal-editor-1200.png",
+    "output/playwright/personal-editor-375.png",
+    "output/playwright/personal-manager-1200.png",
+    "output/playwright/personal-manager-375.png"
+  ],
+  "limits": [
+    "Physical touch/Safari/native/assistive technology unverified",
+    "Full browser-process restart unverified",
+    "Injected failures distinguish controlled scenarios from actual quota exhaustion"
+  ],
+  "deletionPolicyApproval": 9414
+}

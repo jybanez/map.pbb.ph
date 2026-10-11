@@ -1,0 +1,60 @@
+async page => {
+  const browser=page.context().browser(),results=[];
+  for(const width of [1200,375]){
+    const context=await browser.newContext({viewport:{width,height:850}}),errors=[],requests=[];
+    context.on('request',r=>{if(r.url().includes('/vendor/helpers/'))requests.push(new URL(r.url()).pathname);});
+    await context.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const Map=v.Map;v.Map=class extends Map{constructor(options){super(options);window.__map=this;}};}});});
+    const tab=await context.newPage();tab.on('pageerror',e=>errors.push(e.message));await tab.goto('https://map.pbb.ph/');
+    await tab.waitForFunction(()=>window.__map?.getSource('pbb-personal-readonly'),null,{timeout:60000});
+    const read=()=>tab.evaluate(async()=>{const {createPersonalLayerStore}=await import('./assets/personal-layer-store.js');const s=createPersonalLayerStore();try{return await s.read();}finally{s.close();}});
+    const wait=async predicate=>{for(let n=0;n<100;n++){const value=await read();if(predicate(value))return value;await tab.waitForTimeout(100);}throw Error('Personal persistence timeout');};
+    const manager=()=>tab.getByRole('dialog').filter({has:tab.getByRole('heading',{name:'Personal layers',exact:true})});
+    await tab.getByRole('button',{name:'Manage personal layers',exact:true}).click();
+    await tab.getByRole('button',{name:'Create layer',exact:true}).click();
+    await tab.getByRole('button',{name:'Create',exact:true}).click();
+    await tab.getByRole('heading',{name:'Check personal layer',exact:true}).waitFor();
+    if(await tab.getByLabel('Layer name',{exact:true}).getAttribute('aria-invalid')!=='true')throw Error('Missing accessible validation');
+    if((await read()).layers.length)throw Error('Invalid form wrote data');
+    await tab.getByRole('button',{name:'OK',exact:true}).click();await tab.getByRole('heading',{name:'Check personal layer',exact:true}).waitFor({state:'hidden'});await tab.waitForTimeout(300);await tab.getByLabel('Layer name',{exact:true}).fill('Weekend places');
+    await tab.getByRole('button',{name:'Create',exact:true}).click();await tab.getByRole('button',{name:'Edit Weekend places',exact:true}).waitFor();await tab.getByRole('heading',{name:'Create personal layer',exact:true}).waitFor({state:'hidden'});await tab.waitForTimeout(300);
+    await tab.getByRole('button',{name:'Rename Weekend places',exact:true}).click();await tab.getByRole('heading',{name:'Rename personal layer',exact:true}).waitFor();await tab.getByLabel('Layer name',{exact:true}).fill('My places');await tab.getByRole('button',{name:'Rename',exact:true}).click();await wait(v=>v.layers[0]?.name==='My places');await tab.getByRole('heading',{name:'Rename personal layer',exact:true}).waitFor({state:'hidden'});await tab.waitForTimeout(300);
+    await tab.getByRole('button',{name:'Edit My places',exact:true}).click();await tab.getByRole('button',{name:'Point',exact:true}).waitFor();
+    const box=await tab.locator('canvas.maplibregl-canvas').boundingBox(),px=box.x+box.width*.5,py=box.y+box.height*.33;
+    await tab.getByRole('button',{name:'Point',exact:true}).click();await tab.mouse.click(px,py);
+    await wait(v=>v.layers[0]?.features.length===1);
+    await tab.getByRole('button',{name:'Line',exact:true}).click();await tab.mouse.click(px-40,py+60);await tab.mouse.click(px+45,py+65);await tab.getByRole('button',{name:'Finish drawing',exact:true}).click();await wait(v=>v.layers[0].features.length===2);
+    await tab.getByRole('button',{name:'Polygon',exact:true}).click();await tab.mouse.click(px-45,py-55);await tab.mouse.click(px+45,py-55);await tab.mouse.click(px+10,py-10);await tab.getByRole('button',{name:'Finish drawing',exact:true}).click();
+    const three=await wait(v=>v.layers[0].features.length===3);
+    await tab.getByRole('button',{name:'Undo drawing action',exact:true}).click();await tab.getByRole('button',{name:'Apply',exact:true}).click();await tab.waitForTimeout(350);await wait(v=>v.layers[0].features.length===2);await tab.getByRole('button',{name:'Redo drawing action',exact:true}).click();await tab.getByRole('button',{name:'Apply',exact:true}).click();await tab.waitForTimeout(350);await wait(v=>v.layers[0].features.length===3);
+    // Real pointer edit: select original point and drag its existing vertex.
+    await tab.getByRole('button',{name:'Select',exact:true}).click();await tab.mouse.click(px,py);await tab.mouse.move(px,py);await tab.mouse.down();await tab.mouse.move(px+20,py+18,{steps:8});await tab.mouse.up();
+    const edited=await wait(v=>JSON.stringify(v.layers[0].features[0].geometry)!==JSON.stringify(three.layers[0].features[0].geometry));
+    await tab.mouse.click(px+20,py+18);await tab.getByRole('button',{name:'Delete selected drawing',exact:true}).click();await tab.getByRole('heading',{name:'Delete drawing',exact:true}).waitFor();await tab.getByRole('button',{name:'Cancel',exact:true}).click();await tab.waitForTimeout(350);if((await read()).layers[0].features.length!==3)throw Error('Cancel deleted feature');
+    await tab.getByRole('button',{name:'Delete selected drawing',exact:true}).click();await tab.getByRole('button',{name:'Delete',exact:true}).click();await wait(v=>v.layers[0].features.length===2);await tab.waitForTimeout(350);await tab.getByRole('button',{name:'Undo drawing action',exact:true}).click();await tab.getByRole('button',{name:'Apply',exact:true}).click();await tab.waitForTimeout(350);await wait(v=>v.layers[0].features.length===3);
+    await tab.evaluate(()=>{const style=window.__map.getStyle();for(const id of Object.keys(style.sources))if(id.startsWith('helper-drawing-')||id.startsWith('pbb-personal-'))delete style.sources[id];style.layers=style.layers.filter(l=>!l.id.startsWith('helper-drawing-')&&!l.id.startsWith('pbb-personal-'));window.__map.setStyle(style);});
+    await tab.waitForFunction(()=>window.__map.getSource('pbb-personal-readonly')&&Object.keys(window.__map.getStyle().sources).some(id=>id.startsWith('helper-drawing-')));
+    await tab.getByRole('button',{name:'Clear layer',exact:true}).click();await tab.getByRole('button',{name:'Cancel',exact:true}).click();await tab.waitForTimeout(350);if((await read()).layers[0].features.length!==3)throw Error('Clear cancel changed data');
+    await tab.getByRole('button',{name:'Undo drawing action',exact:true}).click();await tab.getByRole('button',{name:'Cancel',exact:true}).click();await tab.waitForTimeout(350);if((await read()).layers[0].features.length!==3)throw Error('Undo cancel changed data');
+    await tab.getByRole('button',{name:'Clear layer',exact:true}).click();await tab.getByRole('button',{name:'Delete',exact:true}).click();await wait(v=>v.layers[0].features.length===0);await tab.waitForTimeout(350);await tab.getByRole('button',{name:'Undo drawing action',exact:true}).click();await tab.getByRole('button',{name:'Apply',exact:true}).click();await wait(v=>v.layers[0].features.length===3);await tab.waitForTimeout(350);
+    await tab.getByRole('button',{name:'Layers',exact:true}).click();if(!await tab.getByLabel('My places',{exact:true}).isDisabled()||await tab.getByLabel('Points of interest',{exact:true}).isDisabled())throw Error('Personal editing lock broke navbar controls');await tab.getByRole('button',{name:'Layers',exact:true}).click();
+    await tab.getByRole('button',{name:'Line',exact:true}).click();await tab.mouse.click(px+60,py+85);await tab.getByRole('button',{name:'Done editing',exact:true}).click();await tab.getByText('Finish or cancel the unfinished drawing before choosing Done.',{exact:true}).waitFor();await tab.getByRole('button',{name:'Cancel drawing',exact:true}).click();
+    await tab.screenshot({path:`output/playwright/personal-editor-${width}.png`});
+    await tab.getByRole('button',{name:'Done editing',exact:true}).click();
+    const restored=await tab.evaluate(()=>({pan:window.__map.dragPan.isEnabled(),keyboard:window.__map.keyboard.isEnabled(),rotate:window.__map.dragRotate.isEnabled(),searchInert:document.getElementById('map-search')?.inert}));
+    if(!restored.pan||!restored.keyboard||!restored.rotate||restored.searchInert)throw Error(JSON.stringify(restored));
+    await tab.getByRole('button',{name:'Layers',exact:true}).click();await tab.getByLabel('My places',{exact:true}).uncheck();await wait(v=>v.layers[0].visible===false);
+    await tab.waitForFunction(()=>navigator.serviceWorker.controller,null,{timeout:60000});
+    await context.setOffline(true);await tab.reload();await tab.waitForFunction(()=>window.__map?.getSource('pbb-personal-readonly'),null,{timeout:60000});
+    const offline=await read();if(offline.layers[0].visible||offline.layers[0].features.length!==3)throw Error(JSON.stringify(offline));
+    await tab.getByRole('button',{name:'Manage personal layers',exact:true}).click();await tab.getByRole('button',{name:'Edit My places',exact:true}).waitFor();await tab.waitForTimeout(400);
+    const layout=await tab.evaluate(()=>{const table=document.querySelector('.pbb-personal-modal .ui-tree-grid-table'),wrap=table.parentElement,r=wrap.getBoundingClientRect();return{width:table.getBoundingClientRect().width,available:r.width,allActionsVisible:[...table.querySelectorAll('button')].every(b=>{const x=b.getBoundingClientRect();return x.left>=r.left&&x.right<=r.right+1;})};});if(layout.width<layout.available-4||!layout.allActionsVisible)throw Error(JSON.stringify({width,layout}));
+    await tab.screenshot({path:`output/playwright/personal-manager-${width}.png`});
+    await tab.getByRole('button',{name:'Delete My places',exact:true}).click();await tab.getByRole('button',{name:'Cancel',exact:true}).click();await tab.waitForTimeout(350);if((await read()).layers.length!==1)throw Error('Cancelled layer deletion wrote');
+    await tab.getByRole('button',{name:'Delete My places',exact:true}).click();await tab.getByRole('button',{name:'Delete',exact:true}).click();await wait(v=>v.layers.length===0);
+    const only=[...new Set(requests)],unexpected=only.filter(p=>!['/vendor/helpers/js/ui/ui.loader.js','/vendor/helpers/dist/helpers.ui.bundle.min.js','/vendor/helpers/dist/helpers.ui.bundle.min.css'].includes(p));
+    if(errors.length||unexpected.length)throw Error(JSON.stringify({errors,unexpected}));
+    results.push({width,geometryTypes:three.layers[0].features.map(f=>f.geometry.type),pointEdited:true,styleRehydration:true,undoRedo:true,confirmedDelete:true,historyConfirmation:true,clearCancellation:true,clearConfirmedUndo:true,draftExitGuard:true,navbarLock:true,cancelPreserves:true,offlineRestored:true,visibilityRestored:true,handlers:restored,helperPaths:only,pageErrors:errors});
+    await context.setOffline(false);await context.close();
+  }
+  return results;
+}

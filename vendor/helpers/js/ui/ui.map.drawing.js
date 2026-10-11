@@ -251,11 +251,22 @@ export function createMapDrawingTools(container, options = {}) {
   }
 
   function setFeatures(features = []) {
-    currentFeatures = normalizeFeatures(features);
-    currentOptions.features = currentFeatures.map(clonePlain);
+    const preflight = currentOptions.adapter?.validateFeatures?.(features);
+    const normalized = normalizeFeatures(features);
     if (currentOptions.adapter?.setFeatures) {
-      currentOptions.adapter.setFeatures(currentFeatures.map(clonePlain));
+      // Keep legacy normalized defaults, but preserve explicit GeoJSON ID types.
+      const engineFeatures = (Array.isArray(features) ? features : []).map((feature, index) => {
+        const next = normalizeFeature(feature, index);
+        if (!next) return null;
+        if (typeof feature.id === "number") next.id = feature.id;
+        if (feature.properties === null) next.properties = null;
+        return next;
+      }).filter(Boolean);
+      // An adapter rejection must not commit invalid toolbar state.
+      currentOptions.adapter.setFeatures(Array.isArray(preflight) ? preflight : engineFeatures);
     }
+    currentFeatures = normalized;
+    currentOptions.features = currentFeatures.map(clonePlain);
     render();
   }
 
@@ -504,7 +515,7 @@ function normalizeFeatureId(payload) {
   if (!payload || typeof payload !== "object") {
     return "";
   }
-  return String(payload.id || payload.featureId || payload.feature?.id || "");
+  return String(payload.id ?? payload.featureId ?? payload.feature?.id ?? "");
 }
 
 function normalizeMeasurement(measurement) {

@@ -86,3 +86,20 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .ui-menu.pbb-poi-actions-menu { z-index:2200; }
 .pbb-header-controls { display:flex; align-items:center; gap:8px; }
 .pbb-map-signal { display:flex; align-items:center; }
+
+.pbb-personal-control {position:absolute;top:16px;right:max(16px,env(safe-area-inset-right));z-index:5;}
+.pbb-personal-editor {position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:min(680px,calc(100% - 24px));z-index:6;background:#0d1726;border:1px solid #354761;border-radius:8px;padding:10px;}
+.pbb-personal-editor p {margin:0 0 8px;color:#d7e3f5;}
+.pbb-personal-editor .ui-map-drawing {max-width:100%;flex-wrap:wrap;}
+.pbb-personal-editor .ui-map-drawing-group {flex-wrap:wrap;}
+
+.pbb-personal-editing .pbb-location-toast {bottom:auto;top:120px;max-height:30dvh;overflow-y:auto;}
+
+.pbb-personal-control .ui-map-controls__button,.pbb-personal-editor .ui-map-controls__button,.pbb-personal-modal .ui-map-controls__button {width:44px;min-height:44px;}
+.pbb-personal-modal .ui-tree-grid-table {width:100%;min-width:0;}
+.pbb-personal-modal .ui-tree-grid-cell,.pbb-personal-modal .ui-tree-grid-col {padding:8px 4px;overflow-wrap:anywhere;}
+@media(max-width:600px){.pbb-personal-modal .ui-tree-grid-cell,.pbb-personal-modal .ui-tree-grid-col {font-size:12px;}}
+
+.pbb-personal-modal .ui-tree-grid-table col:nth-child(1){width:32%;}
+.pbb-personal-modal .ui-tree-grid-table col:nth-child(2){width:20%;}
+.pbb-personal-modal .ui-tree-grid-table col:nth-child(3){width:48%;}

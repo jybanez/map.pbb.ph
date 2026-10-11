@@ -127,3 +127,7 @@ Known limitations: Actual offline local-node cache geography/zoom coverage and u
 - [x] Named POI class/subclass filter, mixed checkboxes, stable colors and normalized display labels; shared map/search/nearby filtering.
 - [x] Three sequential geographic accuracy ripples with synchronized translucent fill and reduced-motion/lifecycle handling; accepted review 9267.
 - [ ] Physical-device validation and final owner acceptance. Automated checks do not complete these items.
+
+## Owner-authorized personal layers (task206)
+
+Owner9407 and Alfred9409 authorize named local personal layers with reviewed Helper289/adapter288/icon287. Implementation and reproducible desktop/mobile-width/offline/storage-failure evidence are submitted for Alfred review; see [personal-layer status and verification](personal-layers-status.md). Authored IndexedDB is independent of disposable map cache; canonical management/forms/drawing and confirmed destructive history preserve validation, cancellation and stale-target protection. No account upload or automatic GPS trail. Physical Safari/native/touch/full-process restart and independent acceptance remain pending.

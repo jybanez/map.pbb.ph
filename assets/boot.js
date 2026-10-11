@@ -1,4 +1,4 @@
-import { mountApp } from './app.js?v=20261011-map-cache6';
+import { mountApp } from './app.js?v=20261011-personal-layers1';
 const status = document.getElementById('boot-status');
 mountApp().then(() => { status.hidden = true; }).catch(error => {
   console.error('PBB Map startup:', error);

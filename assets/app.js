@@ -1,16 +1,17 @@
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-map-cache6';
-import { createPoiFilter } from './poi-filter.js?v=20261011-map-cache6';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261011-map-cache6';
-import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.285';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261011-map-cache6';
-import { registerMapShell } from './map-shell.js?v=20261011-map-cache6';
-import { config } from './config.js?v=20261011-map-cache6';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-map-cache6';
-import { createLocationController } from './location.js?v=20261011-map-cache6';
-import { installMapContext } from './map-context.js?v=20261011-map-cache6';
-import { createMapSearch } from './map-search.js?v=20261011-map-cache6';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-map-cache6';
-import { createDirectionOptions } from './direction-options.js?v=20261011-map-cache6';
+import { createPersonalLayers } from './personal-layers.js?v=20261011-personal-layers1';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-personal-layers1';
+import { createPoiFilter } from './poi-filter.js?v=20261011-personal-layers1';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261011-personal-layers1';
+import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.289';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261011-personal-layers1';
+import { registerMapShell } from './map-shell.js?v=20261011-personal-layers1';
+import { config } from './config.js?v=20261011-personal-layers1';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-personal-layers1';
+import { createLocationController } from './location.js?v=20261011-personal-layers1';
+import { installMapContext } from './map-context.js?v=20261011-personal-layers1';
+import { createMapSearch } from './map-search.js?v=20261011-personal-layers1';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-personal-layers1';
+import { createDirectionOptions } from './direction-options.js?v=20261011-personal-layers1';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
@@ -46,7 +47,7 @@ export async function mountApp() {
   zoomContainer.id = 'zoom-control';
   region.appendChild(zoomContainer);
   let map = null, controls = null, zoomControls = null, marker = null, position = null, recenterPending = false;
-  let contextActions = null;
+  let contextActions = null; let personal = null;
   let disposed = false, ready = false, poiVisible = true, generation = 0, abort = null, startupTimer = null;
   let locationState = { status: 'idle' }, locationToast = null;
   const warned = new Set();
@@ -65,7 +66,7 @@ export async function mountApp() {
   void resources.store.reconcile();
   async function recoverResources() {
     clearTimeout(recoveryTimer); recoveryTimer = null;
-    if (disposed || recovering || document.hidden) return;
+    if (disposed || recovering || document.hidden || personal?.isEditing()) return;
     recovering = true;
     try { if (await resources.recover() && !disposed) void initialize(); }
     finally { recovering = false; }
@@ -79,7 +80,7 @@ export async function mountApp() {
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261011-map-cache6').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261011-personal-layers1').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -121,6 +122,9 @@ export async function mountApp() {
   const search = createMapSearch({createSearchField,createMenu,createIcon,createEventBag,createMapMarker,markExploration,poiAllowed:p=>poiFilter.visible(p),onDismiss:()=>dismissSearch(),
     onDestinationActivate:({point,x,y,trigger})=>contextActions?.openAt(point,x,y,trigger),
     onDestinationUnavailable:()=>contextActions?.close(),onSearchFocus:()=>contextActions?.close()});
+  personal=createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,uiAlert,toast,onChange:()=>syncControls(),onEditingChange:editing=>{if(editing)markExploration();else if(missingNotice)queueMicrotask(()=>{if(map&&!disposed&&!personal?.isEditing())void recoverResources();});document.body.classList.toggle('pbb-personal-editing',editing);contextActions?.close();search.closeResults();search.container.inert=editing;updateSearchAction();}});
+  const personalHost=document.createElement('div');personalHost.className='pbb-personal-control';region.append(personalHost);
+  const personalControl=createMapControls(personalHost,{controls:['personal-layers'],actions:[{id:'personal-layers',label:'Manage personal layers',title:'Manage personal layers',icon:'map.layer',onActivate:()=>personal.open()}]});
   function navbarOptions() {
     const brandIcon = document.createElement('img');
     brandIcon.src = new URL('./pbb-map-icon-navbar.png', import.meta.url).href;
@@ -134,11 +138,11 @@ export async function mountApp() {
   const navbar = createNavbar(header, {}, navbarOptions());
   const searchMobile = window.matchMedia('(max-width: 720px)');
   let searchExpanded=false;
-  function searchAction() {return {id:'search',label:searchExpanded?'Close map search':'Open map search',icon:searchExpanded?'actions.close':'actions.search',visible:searchMobile.matches,expanded:searchExpanded,ariaControls:'map-search',onActivate:()=>searchExpanded?dismissSearch():revealSearch()};}
+  function searchAction() {return {id:'search',label:searchExpanded?'Close map search':'Open map search',icon:searchExpanded?'actions.close':'actions.search',visible:searchMobile.matches,disabled:personal?.isEditing(),expanded:searchExpanded,ariaControls:'map-search',onActivate:()=>searchExpanded?dismissSearch():revealSearch()};}
   function enableAction(){return{id:'enable-direction',label:'Enable direction',icon:'actions.add',visible:direction.needsActivation?.()===true,onActivate:()=>{void direction.request(true);}};}
   function directionAction(){return{id:'direction-status',label:'Direction diagnostics',icon:'status.info',onActivate:()=>diagnostics.open()};}
   function optionsAction(){const state=direction.getOptionsState?.()||{};return{id:'direction-options',label:'Direction options',icon:'actions.settings',visible:state.missing||state.selected,onActivate:()=>directionOptions.open()};}
-  function mapActions(){return [searchAction(),{id:'poi-filter',label:'Filter points of interest',icon:'data.filter',onActivate:()=>poiFilter.open()},enableAction(),...(config.showDirectionTools ? [directionAction(),optionsAction()] : [])];}
+  function mapActions(){return [searchAction(),{id:'poi-filter',label:'Filter points of interest',icon:'data.filter',disabled:personal?.isEditing(),onActivate:()=>poiFilter.open()},enableAction(),...(config.showDirectionTools ? [directionAction(),optionsAction()] : [])];}
   function updateSearchAction(){zoomControls?.update({actions:mapActions()});}
   function dismissSearch(returnFocus=true) {
     if(!searchMobile.matches)return;
@@ -183,16 +187,21 @@ export async function mountApp() {
     if (zoomControls) zoomControls.update(zoomOptions); else zoomControls = createMapControls(zoomContainer, zoomOptions);
     const options = { map, orientation: 'horizontal', controls: ['compass', 'pitch', 'layers'],
       pitchPresets: [{ value: 0, label: '2D' }, { value: 60, label: '3D' }],
-      layers: [{ id: 'pbb-poi-group', label: 'Points of interest', checked: poiVisible }],
+      layers: [{ id: 'pbb-poi-group', label: 'Points of interest', checked: poiVisible },...(personal?.getLayers()||[])],
       onResetNorth: () => { markExploration(); map.easeTo({ bearing: 0, duration: reducedMotion ? 0 : 300 }); },
       onPitchChange: ({ pitch }) => { markExploration(); map.easeTo({ pitch, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 600 }); },
-      onLayerToggle: ({ checked }) => {
+      onLayerToggle: ({ layerId, checked }) => {
+        if(layerId!=='pbb-poi-group'){void personal?.setVisibility(layerId,checked);return;}
         poiVisible = checked;poiFilter.setMaster(checked);
         if (!ready) return;
         POI_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', checked ? 'visible' : 'none'); });
       },
     };
     if (controls) controls.update(options); else controls = createMapControls(mapControlsHost, options);
+    // Verified canonical gap: normalizeLayers has no disabled field. Preserve its
+    // native inputs and apply only this application's personal-layer lock.
+    for(const layer of personal?.getLayers()||[])for(const input of mapControlsHost.querySelectorAll('input[data-layer-id]'))if(input.dataset.layerId===layer.id)input.disabled=layer.disabled;
+
   }
 
   function markExploration() {
@@ -256,6 +265,7 @@ export async function mountApp() {
     welcome?.close();directionOptions.close();directionControlKey='';
     person?.destroy(); person = null;
     accuracyRipple.setMap(null);poiFilter.setMap(null);search.setMap(null);
+    personal?.setMap(null);
     contextActions?.destroy(); contextActions = null;
     ready = false;
     clearTimeout(startupTimer);
@@ -307,7 +317,7 @@ export async function mountApp() {
         keyboard: true, dragRotate: true, touchPitch: true, transformRequest: resources.transformRequest });
       map.getCanvas().setAttribute('aria-label', 'Map. Use arrow keys to pan, plus or minus to zoom, and Shift with arrow keys to rotate or pitch.');
       map.on('style.load', () => { if (!disposed && id === generation && ready) displayPosition(); });
-      contextActions = installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed:p=>poiFilter.visible(p) });
+      contextActions = installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed:p=>poiFilter.visible(p),isInteractionBlocked:()=>personal?.isEditing() });
       map.on('movestart', event => {
         if (event.originalEvent) { location.markNavigation(); recenterPending = false; }
       });
@@ -345,7 +355,7 @@ export async function mountApp() {
 
   function activateMap(id) {
     if (disposed || id !== generation || ready || !map) return;
-    ready = true; accuracyRipple.setMap(map); search.setMap(map); poiFilter.setMap(map);
+    ready = true; accuracyRipple.setMap(map); search.setMap(map); poiFilter.setMap(map); personal?.setMap(map);
     clearTimeout(startupTimer); busy.hide();
     POI_LAYERS.forEach(layer => { if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', poiVisible ? 'visible' : 'none'); });
     displayPosition(); syncDirectionUI();
@@ -366,6 +376,7 @@ export async function mountApp() {
     window.visualViewport?.removeEventListener('resize', onViewportResize);
     window.removeEventListener('pagehide', onPageHide);
     searchMobile.removeEventListener('change', placeSearch);
+    personal?.destroy();personalControl.destroy();personalHost.remove();
     poiFilter.destroy();search.destroy(); navbar.destroy(); locateControl.destroy(); locateContainer.remove(); zoomContainer.remove(); feedback.destroy(); busy.destroy(); toast.destroy();
   }
   window.addEventListener('pagehide', onPageHide);
