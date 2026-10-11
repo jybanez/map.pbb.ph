@@ -86,5 +86,3 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .ui-menu.pbb-poi-actions-menu { z-index:2200; }
 .pbb-header-controls { display:flex; align-items:center; gap:8px; }
 .pbb-map-signal { display:flex; align-items:center; }
-.pbb-shell-update { position:fixed; bottom:16px; right:16px; z-index:1000; }
-.pbb-shell-update .ui-map-controls__button { width:auto; padding-inline:12px; }

@@ -1,16 +1,16 @@
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-map-cache5';
-import { createPoiFilter } from './poi-filter.js?v=20261011-map-cache5';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261011-map-cache5';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-map-cache6';
+import { createPoiFilter } from './poi-filter.js?v=20261011-map-cache6';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261011-map-cache6';
 import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.285';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261011-map-cache5';
-import { registerMapShell } from './map-shell.js?v=20261011-map-cache5';
-import { config } from './config.js?v=20261011-map-cache5';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-map-cache5';
-import { createLocationController } from './location.js?v=20261011-map-cache5';
-import { installMapContext } from './map-context.js?v=20261011-map-cache5';
-import { createMapSearch } from './map-search.js?v=20261011-map-cache5';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-map-cache5';
-import { createDirectionOptions } from './direction-options.js?v=20261011-map-cache5';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261011-map-cache6';
+import { registerMapShell } from './map-shell.js?v=20261011-map-cache6';
+import { config } from './config.js?v=20261011-map-cache6';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-map-cache6';
+import { createLocationController } from './location.js?v=20261011-map-cache6';
+import { installMapContext } from './map-context.js?v=20261011-map-cache6';
+import { createMapSearch } from './map-search.js?v=20261011-map-cache6';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-map-cache6';
+import { createDirectionOptions } from './direction-options.js?v=20261011-map-cache6';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
@@ -74,12 +74,12 @@ export async function mountApp() {
   const onRecoveryVisible = () => { if (!document.hidden) void recoverResources(); };
   window.addEventListener('online', onConnectionHint);
   document.addEventListener('visibilitychange', onRecoveryVisible);
-  const shell = registerMapShell({ createMapControls, toast });
+  const shell = registerMapShell();
   const directionNotice=message=>{if(!disposed){syncDirectionUI();welcome?.consider();if(message)toast.show(message,{type:'warn',duration:5000,dismissible:true});}};
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261011-map-cache5').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261011-map-cache6').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});

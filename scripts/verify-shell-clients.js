@@ -1,17 +1,16 @@
 async page => {
-  const target = 'https://map.pbb.ph/output/playwright/shell-failure/';
-  const [a,b] = page.context().pages().filter(item => item.url() === target);
-  if (!a || !b) throw Error('Open the two fixture clients before preparing the update.');
-  await a.evaluate(async () => {const r=await navigator.serviceWorker.getRegistration();await r.update();await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('No waiting update')),30000);const poll=()=>{if(r.waiting){clearTimeout(timer);resolve();}else setTimeout(poll,100);};poll();});});
-  const action = async tab => tab.evaluate(async () => {const r=await navigator.serviceWorker.getRegistration();const channel=new MessageChannel();const reply=new Promise(resolve=>{channel.port1.onmessage=e=>{channel.port1.close();resolve(e.data);};});r.waiting.postMessage({action:'activate-shell',version:1},[channel.port2]);return reply;});
-  const refused = await action(a); if (refused.accepted) throw Error('Multi-tab activation was not refused');
-  await b.close(); const accepted = await action(a); if (!accepted.accepted) throw Error('Single-tab activation refused');
-  await a.evaluate(async () => {await new Promise(resolve=>{const poll=async()=>{const r=await navigator.serviceWorker.getRegistration();if(!r.waiting&&r.active?.state==='activated')resolve();else setTimeout(poll,50);};poll();});});
-  const old = await a.evaluate(async () => (await (await fetch('./data.json',{cache:'no-store'})).json()).generation);
-  const c = await a.context().newPage();await c.goto(target);
-  const next = await c.evaluate(async () => (await (await fetch('./data.json',{cache:'no-store'})).json()).generation);
-  if(old!=='old'||next!=='new')throw Error(JSON.stringify({old,next}));
-  const text=await c.locator('p').innerText();
-  await a.close(); await c.evaluate(async()=>{await(await navigator.serviceWorker.getRegistration()).unregister();});await c.close();
-  return {multiTabRefused:!refused.accepted,singleTabAccepted:accepted.accepted,oldClientGeneration:old,newClientGeneration:next,newNavigation:text};
+  const target='https://map.pbb.ph/output/playwright/shell-failure/';
+  const tabs=page.context().pages().filter(p=>p.url()===target);
+  const a=tabs[0];
+  await a.evaluate(async()=>{const r=await navigator.serviceWorker.getRegistration();const changed=new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Automatic takeover timeout')),30000);navigator.serviceWorker.addEventListener('controllerchange',()=>{clearTimeout(timer);resolve();},{once:true});});await r.update();await changed;});
+  const old=[];
+  for(const tab of tabs)old.push(await tab.evaluate(async()=>({generation:(await(await fetch('./data.json',{cache:'no-store'})).json()).generation,sentinel:window.__sessionSentinel,text:document.querySelector('p').textContent})));
+  if(old.some(v=>v.generation!=='old'||v.sentinel!=='uninterrupted'||v.text!=='Saved shell remains available'))throw Error(JSON.stringify(old));
+  await a.context().setOffline(true);
+  const cold=await a.context().newPage();await cold.goto(target);
+  const next=await cold.evaluate(async()=>({generation:(await(await fetch('./data.json')).json()).generation,text:document.querySelector('p').textContent}));
+  if(next.generation!=='new'||next.text!=='Updated shell ready')throw Error(JSON.stringify(next));
+  await a.context().setOffline(false);
+  await cold.evaluate(async()=>{await(await navigator.serviceWorker.getRegistration()).unregister();});await cold.close();
+  return {liveClients:tabs.length,oldClients:old,newOfflineNavigation:next,automatic:true,forcedReload:false};
 }

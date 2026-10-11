@@ -15,7 +15,7 @@ self.addEventListener('install', event => event.waitUntil((async () => {
   // A harmless re-install of the identical graph must never destroy its active cache.
   if ((await caches.keys()).includes(name)) {
     const existing = await caches.open(name);
-    if ((await Promise.all(manifest.files.map(file => existing.match(new URL(file.url, root).href)))).every(Boolean)) return;
+    if ((await Promise.all(manifest.files.map(file => existing.match(new URL(file.url, root).href)))).every(Boolean)) { await self.skipWaiting(); return; }
   }
   const cache = await caches.open(name);
   try {
@@ -34,14 +34,17 @@ self.addEventListener('install', event => event.waitUntil((async () => {
       } } catch (error) { failure ||= error; stop.abort(); }
     }));
     if (failure) throw failure;
-    // No skipWaiting: old clients keep their complete graph until an explicit safe update.
+    // Activate only after every asset passes integrity verification. Existing client
+    // bindings survive takeover; new navigations bind to this complete generation.
+    await self.skipWaiting();
   } catch (error) { await caches.delete(name); throw error; }
 })()));
 self.addEventListener('activate', event => event.waitUntil((async () => {
   const bindings = await caches.open(bindingName);
   const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   const living = new Set(clients.filter(client => new URL(client.url).pathname.startsWith(root.pathname)).map(client => bindingKey(client.id)));
-  for (const key of await bindings.keys()) if (!living.has(key.url)) await bindings.delete(key);
+  // Retain bindings: a navigation can create a client after the matchAll snapshot.
+  // Deleting its binding here could silently switch a live page to another graph.
   for (const client of clients) if (living.has(bindingKey(client.id)) && !await bindings.match(bindingKey(client.id))) await bind(client.id);
   await self.clients.claim();
   // Old shell caches retained: never delete resources still needed by older clients.
@@ -66,15 +69,4 @@ self.addEventListener('fetch', event => {
     const response = await cache.match(cacheUrl);
     return response || fetch(event.request); // Evicted shell honestly falls back to network.
   })().catch(() => fetch(event.request)));
-});
-self.addEventListener('message', event => {
-  if (event.data?.action !== 'activate-shell' || event.data?.version !== 1 || !event.ports[0] || !event.source?.url) return;
-  const url = new URL(event.source.url);
-  if (url.origin !== root.origin || !url.pathname.startsWith(root.pathname)) return;
-  event.waitUntil((async () => {
-    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const accepted = clients.filter(client => new URL(client.url).pathname.startsWith(root.pathname)).length <= 1;
-    event.ports[0].postMessage({ version: 1, accepted });
-    if (accepted) await self.skipWaiting();
-  })());
 });

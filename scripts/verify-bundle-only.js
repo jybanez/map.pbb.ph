@@ -34,7 +34,9 @@ async page => {
   await warm.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 60000 });
   await warm.waitForTimeout(2500);
   result.installed = await warm.evaluate(async () => {
-    const cache = await caches.open('pbb-map-shell-57948e688ae99e5e109a');
+    const manifestText = await (await fetch('./shell-manifest.js', {cache:'no-store'})).text();
+    const version = JSON.parse(manifestText.slice(manifestText.indexOf('{'), manifestText.lastIndexOf('}')+1)).version;
+    const cache = await caches.open(`pbb-map-shell-${version}`);
     const keys = await cache.keys(); return { files: keys.length, helper: keys.filter(k => k.url.includes('/vendor/helpers/')).map(k => new URL(k.url).pathname) };
   });
   await context.setOffline(true); await warm.close(); const cold = await context.newPage(); cold.on('pageerror', e => errors.push(e.message));

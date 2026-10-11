@@ -1,0 +1,1 @@
+async page=>{const b=await page.context().newPage();await b.goto('https://map.pbb.ph/output/playwright/shell-failure/');await b.evaluate(()=>{window.__sessionSentinel='uninterrupted';});return {clients:2};}

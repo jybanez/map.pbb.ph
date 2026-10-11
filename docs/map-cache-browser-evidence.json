@@ -166,5 +166,64 @@
     "pageErrors": [],
     "pinnedHelperRevision": "0.21.285",
     "unchangedCachingBackpressure": true
+  },
+  "automaticUpdate205": {
+    "runtime": "20261011-map-cache6",
+    "shell": "7598816cc2e934a695d6",
+    "files": 40,
+    "bytes": 4149773,
+    "singleTab": {
+      "oldClientGeneration": "old",
+      "sessionSentinel": "uninterrupted",
+      "newOfflineNavigation": "new",
+      "forcedReload": false
+    },
+    "twoTabs": {
+      "oldClientGenerations": [
+        "old",
+        "old"
+      ],
+      "sessionSentinels": [
+        "uninterrupted",
+        "uninterrupted"
+      ],
+      "newOfflineNavigation": "new",
+      "forcedReload": false
+    },
+    "failedUpdates": [
+      "missing-file",
+      "SHA-mismatch"
+    ],
+    "failedStagingRemoved": true,
+    "oldOfflineShellRetained": true,
+    "updateButtons": 0,
+    "updateToasts": 0,
+    "updateHosts": 0,
+    "limitations": [
+      "Safari/native/physical-device untested",
+      "full browser-process restart untested",
+      "browser storage eviction remains possible"
+    ],
+    "legacyWorkerMigration": {
+      "from": "59e5e4b",
+      "liveClients": 2,
+      "oldClientGenerations": [
+        "old",
+        "old"
+      ],
+      "newOfflineNavigation": "new",
+      "forcedReload": false
+    },
+    "bundleOnly": {
+      "factories": 18,
+      "terrain": true,
+      "person": true,
+      "personRendered": true,
+      "POIs": 81,
+      "model": true,
+      "bootError": false,
+      "individualHelperRequests": 0,
+      "pageErrors": []
+    }
   }
 }
