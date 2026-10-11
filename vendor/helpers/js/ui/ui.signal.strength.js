@@ -11,7 +11,10 @@ const DEFAULT_OPTIONS = {
   showText: true,
   size: "compact",
   className: "",
+  onStateChange: null,
 };
+
+const STATE_KEYS = Object.keys(DEFAULT_OPTIONS).filter(key => key !== "onStateChange");
 
 export function createSignalStrength(container, options = {}) {
   let currentOptions = normalizeOptions(options);
@@ -19,6 +22,8 @@ export function createSignalStrength(container, options = {}) {
   let barsNode = null;
   let textNode = null;
   let destroyed = false;
+  let notifying = false;
+  const notifications = [];
 
   function renderShell() {
     if (!container || container.nodeType !== 1 || destroyed) {
@@ -86,7 +91,10 @@ export function createSignalStrength(container, options = {}) {
   }
 
   function update(nextOptions = {}) {
+    if (destroyed) return;
+    const previous = snapshot(currentOptions);
     const next = normalizeOptions({ ...currentOptions, ...(nextOptions || {}) });
+    const current = snapshot(next);
     const needsShell = next.showText !== currentOptions.showText;
     currentOptions = next;
     if (needsShell) {
@@ -94,6 +102,28 @@ export function createSignalStrength(container, options = {}) {
     } else {
       sync();
     }
+    if (STATE_KEYS.some(key => previous[key] !== current[key]) && next.onStateChange) {
+      notifications.push({ callback: next.onStateChange, previous, current });
+      notify();
+    }
+  }
+
+  // Reentrant updates commit immediately but deliver events in FIFO order,
+  // without recursively calling observers. Report the first observer error
+  // after queued transitions finish; observer failures never roll back state.
+  function notify() {
+    if (notifying) return;
+    notifying = true;
+    let failed = false;
+    let firstError;
+    try {
+      while (notifications.length && !destroyed) {
+        const { callback, previous, current } = notifications.shift();
+        try { callback({ previous, current }); }
+        catch (error) { if (!failed) { failed = true; firstError = error; } }
+      }
+    } finally { notifying = false; }
+    if (failed) throw firstError;
   }
 
   function getState() {
@@ -102,6 +132,7 @@ export function createSignalStrength(container, options = {}) {
 
   function destroy() {
     destroyed = true;
+    notifications.length = 0;
     clearNode(container);
     root = null;
     barsNode = null;
@@ -134,7 +165,12 @@ function normalizeOptions(input = {}) {
     showText: next.showText !== false,
     size: normalizeSize(next.size),
     className: String(next.className || ""),
+    onStateChange: typeof next.onStateChange === "function" ? next.onStateChange : null,
   };
+}
+
+function snapshot(options) {
+  return Object.freeze(Object.fromEntries(STATE_KEYS.map(key => [key, options[key]])));
 }
 
 function normalizeLevel(value) {

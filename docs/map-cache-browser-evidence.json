@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-11",
+  "runtime": "Desktop Chromium through Playwright CLI on public HTTPS deployment",
+  "resourceBytes": { "vector": 268027, "terrain": 319444, "poi": 90359, "glyph": 82888 },
+  "directResourceProbe": { "hits": 8, "network": 0 },
+  "sameViewReloadNetworkRequests": [2, 0],
+  "coldOffline": { "terrainSource": "terrain", "poiFeatures": 73, "rippleWaves": 3, "zoomAreaControls": 5, "blockingFeedback": false },
+  "partialOffline": { "availabilityWarnings": 1, "zoomAreaControls": 5 },
+  "reconnected": { "poiFeatures": 18701, "blockingFeedback": false },
+  "withoutServiceWorker": { "registeredWorkers": 0, "cachedVectorBytes": 268027, "secondResourceNetworkRequests": 0, "poiFeatures": 81, "terrainAttached": true },
+  "storageFaults": { "quotaAttempts": 2, "previousResponsePreserved": true, "laterWritesDisabled": true, "lruEvictions": 3, "orphansRemoved": 1, "crossClientConsistent": true, "deniedOnlineVectorBytes": 268027, "ninetyDayOfflineCopyPreserved": true },
+  "failedShellUpdate": { "rejected": true, "oldWorkerActive": true, "waitingWorker": false, "oldCacheRetained": true, "failedCacheRemoved": true, "coldOfflineOldShell": true },
+  "shellClientUpdate": { "multiTabRefused": true, "singleTabAccepted": true, "oldClientGeneration": "old", "newClientGeneration": "new" },
+  "finalByteStableShell": { "version": "01145e10dc0bc34523eb", "files": 238, "installed": true, "coldOfflineCanvas": true, "coldOfflineControls": 5, "bootError": false },
+  "updateAction": { "visible": true, "canonicalHelperComponent": true, "refusalFeedback": true },
+  "pageErrors": [],
+  "consoleNotes": "Intentional offline misses produced network errors. Six Chromium WebGL vertex-buffer warnings occurred during tilted Manila recovery; the map rendered and no page exception occurred. Physical GPU/device validation remains separate.",
+  "scopeLimits": ["New page/tab cold reopen, not a full browser-process restart or installed-PWA device reboot", "Safari/iPhone and native wrappers not tested", "Current style has no sprite; JSON/image protocol type behavior covered in tests", "Full-page location recenter can cancel uncached transitional requests; same-view verification marks exploration before simulated fix"]
+}

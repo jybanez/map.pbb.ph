@@ -1,0 +1,5 @@
+{
+  "id": "./", "name": "PBB Map", "short_name": "PBB Map", "start_url": "./", "scope": "./",
+  "display": "standalone", "background_color": "#0b1422", "theme_color": "#101c31",
+  "icons": [{ "src": "./assets/pbb-map-icon-v1.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }]
+}

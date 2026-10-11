@@ -1,5 +1,5 @@
-import { createPoiCategories } from './poi-categories.js?v=20261011-location-ripple4';
-import { POI_LAYERS } from './map-style.js?v=20261011-location-ripple4';
+import { createPoiCategories } from './poi-categories.js?v=20261011-map-cache1';
+import { POI_LAYERS } from './map-style.js?v=20261011-map-cache1';
 
 export function createPoiFilter({createModal,createMapControls,createMenu,uiLoader,excluded,sourceLayer,onChange}) {
   const state=createPoiCategories(excluded);

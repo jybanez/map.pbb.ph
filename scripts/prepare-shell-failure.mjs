@@ -1,0 +1,16 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+const dir = 'output/playwright/shell-failure';
+await mkdir(dir, { recursive: true });
+const upgrade = process.argv.includes('--upgrade');
+const worker = await readFile('map-shell-worker.js', 'utf8'), html = upgrade ? '<!doctype html><title>Shell fixture</title><p>Updated shell ready</p>' : '<!doctype html><title>Shell fixture</title><p>Saved shell remains available</p>';
+const hash = createHash('sha256').update(html).digest('hex');
+const broken = process.argv.includes('--broken');
+const version = broken || upgrade ? JSON.parse(await readFile(`${dir}/fixture.json`, 'utf8')).version : `failure-test-${Date.now()}`;
+await writeFile(`${dir}/fixture.json`, JSON.stringify({version}));
+await writeFile(`${dir}/index.html`, html);
+const data = JSON.stringify({generation:upgrade?'new':'old'});
+await writeFile(`${dir}/data.json`,data);
+await writeFile(`${dir}/map-shell-worker.js`, worker + (broken ? '\n// Deliberately incomplete update fixture.\n' : upgrade ? '\n// Valid update fixture.\n' : ''));
+await writeFile(`${dir}/shell-manifest.js`, `self.PBB_MAP_SHELL=${JSON.stringify({version: broken ? `${version}-broken` : upgrade ? `${version}-updated` : version,files:[{url:'index.html',sha256:hash},{url:'data.json',sha256:createHash('sha256').update(data).digest('hex')},...(broken ? [{url:'missing-runtime.js',sha256:'0'.repeat(64)}] : [])]})};`);
+console.log(`Prepared ${broken ? 'broken update' : 'initial shell'} ${version}`);

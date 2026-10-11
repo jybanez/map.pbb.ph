@@ -1,0 +1,10 @@
+# Stable runtime bytes across Windows/Linux checkouts and shell integrity manifests.
+*.js text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.svg text eol=lf
+*.webmanifest text eol=lf
+# Preserve the original scientific runtime's independently pinned byte checksums.
+vendor/geomagnetism/** -text -eol whitespace=-trailing-space,cr-at-eol

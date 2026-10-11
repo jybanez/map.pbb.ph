@@ -1,6 +1,8 @@
 // Public deployment settings only. The local node must resolve this host to its MapServer.
 export const config = Object.freeze({
   showDirectionTools: false, // Retained diagnostics/options entry points; opt in for future use.
+  dataset: 'pbb-mapserver-20261011-v1', // Bump only for incompatible provider datasets/style, not shell releases.
+  spriteUrls: [], // Explicit JSON/PNG (including retina) URLs if a future approved style uses sprites.
   mapServerUrl: 'https://mapserver.pbb.ph',
   styleUrl: new URL('./maps/hotline-dark.json', import.meta.url).href,
   center: [123.8854, 10.3157],

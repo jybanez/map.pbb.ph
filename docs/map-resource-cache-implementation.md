@@ -1,0 +1,42 @@
+# Automatic device map resources
+
+Task 201 implementation for Alfred review, 2026-10-11. Application revision `20261011-map-cache1`; provider generation `pbb-mapserver-20261011-v1`.
+
+The page owns the MapLibre 4.6.0 `pbbcache` protocol, response Cache Storage and IndexedDB index. Service workers are optional for this loader. Only the shell worker supplies cold browser startup. No offline-map workflow, cache settings, saving prompts, geographic downloads, Account dependency or location-history storage was added.
+
+## Runtime contract
+
+`assets/map-resource-cache.js` routes the configured server's vector, POI, terrain and glyph paths, plus explicitly configured sprite URLs. URL normalization handles glyph spaces while preserving query parameters. Keys include the exact configured server, dataset generation and canonical URL. Binary/image requests return independent ArrayBuffers; sprite JSON returns parsed JSON. MapLibre's image queue performs the actual terrain-image decode. The current style has no sprites; future approved sprite JSON/PNG/retina URLs belong in `config.spriteUrls`.
+
+Readable HTTP 200 GET responses with appropriate MIME are admitted. Redirects, opaque responses, HTML/error content, unexpected origins and resources over 4 MiB are rejected. Bodies are bounded while streaming, and transport has a 15-second deadline. Private/no-store responses may display but are not saved. Successful public MapServer GETs were independently checked: vector protobuf, terrain PNG, POI protobuf and glyph protobuf; CORS was readable in Chromium. The observed server policy is public caching with a one-day max-age. Existing attribution is retained.
+
+A hit displays immediately. Seven-day age triggers an asynchronous request-driven refresh; age never removes a tile. Offline/failed refresh and unsuccessful replacement retain the old bytes. Shared misses have independent consumers: cancelling one does not cancel another; cancelling all aborts transport. Teardown aborts consumers/refreshes and removes the protocol, without deleting device data. UI callbacks cannot break cache/transport recovery.
+
+`assets/map-cache-store.js` writes a new immutable response key before committing the metadata pointer. Only after commit is the previous response removed. Metadata and maintenance serialize through Web Locks and an IndexedDB lease, also available without Web Locks. Reconciliation removes missing pointers and orphaned responses under that same serialization. Writes are best effort with at most 32 queued operations; heavy bursts can skip saves, so one visit is not a coverage guarantee. Reads/touch operations do not delay network display.
+
+Resource budget is 100 MiB or 20% of the reported origin quota, whichever is smaller, with 4,000 indexed responses. LRU pruning does not use age as expiration and protects the response being replaced. A quota failure prunes/retries once, then disables further writes for that controller context. Denied/unavailable storage falls back to online transport quietly. Storage estimates are approximate; browser eviction and external data removal still apply.
+
+Dataset snapshots contain only the built public map style/server generation. If a requested startup base tile proves a new generation unavailable, the loader chooses one saved prior generation and its complete style rather than mixing individual old/new tiles. Servers are isolated. These snapshots do not contain GPS, sensor values, a trail or camera history. Tile URLs themselves reveal requested geographic areas and remain origin-local device data.
+
+## Shell and presentation
+
+`scripts/build-shell-manifest.mjs` inventories the complete local runtime graph, including lazy Helper components, MapLibre, direction code and person assets. Each shell file has a SHA-256; the worker code participates in the shell version. Run the build after any deployed runtime edit, or `node scripts/build-shell-manifest.mjs --check` to detect a stale manifest. The worker is registered at a stable URL with cache-independent update checks. A partial or hash-mismatched install never activates.
+
+Runtime text uses LF enforced by `.gitattributes`, so shell bytes remain reproducible across Windows/Linux checkouts. The byte inventory was refreshed after newline-only normalization. The scientific geomagnetism runtime is exempt from conversion and keeps its independent pinned original checksums. No numerical/model code was changed.
+
+The worker caches only this graph. It never saves MapServer responses, Account calls or sensors. Navigation returns cached HTML directly. Existing clients retain their bound shell graph through worker takeover until navigation/reload; old shell caches are retained for safety. Waiting updates use the complete Helper map-control action plus canonical notification; activation is refused while multiple Map tabs are open. Retained old shells consume separate origin storage and can eventually constrain new installs; automatic deletion of graphs still needed by clients is deliberately avoided.
+
+`map.webmanifest` references the original local icon and native browser install affordances. There is no installation prompt. Caching requires secure origin APIs; opening as an installed PWA does not create additional geographic coverage.
+
+The optional Helper signal component uses the five accepted `0.21.285` runtime artifacts from merged Helper revision `62b019895917d1d8e67fe3fa864763ec97473e8b`, verified against its LF-normalized checksums. It shows bars only immediately before the compass: neutral unknown, four bars for an observed successful MapServer request, zero bars for observed failure. This is reachability, not Wi-Fi measurement or a speed grade, and does not control the cache. Only actually missing requested detail produces one canonical accessible warning. Online/visibility hints and bounded retries recover pending resources; availability does not gate saved mapping. Slow tile loading keeps an already-created map and its controls usable.
+
+## Evidence and limits
+
+- `npm test`: existing 37 tests plus six cache policy tests, 43 passing. Covers exact/query keys, host admission, shared cancellation, 90-day-old reuse, failed replacement, opaque/status/MIME/size exclusion, typed results, observer isolation and coherent generation fallback.
+- `scripts/verify-cache-without-sw.js`: real HTTPS Chromium, service-worker API hidden, zero registered workers, terrain attached, 81 loaded POI features, 268,027-byte cached vector and zero network requests on the second resource load; no page errors.
+- `scripts/verify-cache-storage.js`: real browser Cache Storage/IndexedDB with injected quota failures. Exactly two quota attempts, old response retained, later writes disabled, three LRU evictions, orphan removed, concurrent independent adapters leave matching response/index counts within budget. Denied storage still returns the real 268,027-byte online vector; a 90-day-old saved copy survives failed refresh.
+- `scripts/verify-map-cache.js`: online/repeat requests, actual terrain/POI/glyph bytes, close/reopen with both origins offline, partial misses, recovery, mobile capture, person/ripple and controls. Screenshots are generated in ignored `output/playwright/`.
+- Shell failure reproduction: run `node scripts/prepare-shell-failure.mjs`, `scripts/install-shell-fixture.js` through Playwright CLI, `node scripts/prepare-shell-failure.mjs --broken`, then `scripts/verify-shell-failure.js`. Uses the production worker in an isolated fixture scope. An incomplete update becomes redundant, leaves the old active shell and removes failed staging; a new offline page still renders the saved old shell.
+- Client update reproduction: install a fresh fixture, `scripts/open-shell-clients.js`, prepare `--upgrade`, then `scripts/verify-shell-clients.js`. Actual worker refuses two-client activation, accepts after one closes, serves the old generation to the existing client and the new generation to a new navigation. `scripts/verify-shell-update-ui.js` verifies the complete Helper action is visible and displays a rejected-update response.
+
+Desktop Chromium evidence is not Safari/iPhone installation or actual Capacitor/Cordova WebView validation. No native package exists here and no native storage adapter was invented. Real device binary persistence, restart durability, OS eviction and install/update behavior remain separate validation. Stored coverage is partial and fonts/zoom levels/optional layers may be missing; location permission/sensors remain independent.

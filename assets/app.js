@@ -1,14 +1,16 @@
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-location-ripple4';
-import { createPoiFilter } from './poi-filter.js?v=20261011-location-ripple4';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261011-location-ripple4';
-import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.284';
-import { config } from './config.js?v=20261011-location-ripple4';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-location-ripple4';
-import { createLocationController } from './location.js?v=20261011-location-ripple4';
-import { installMapContext } from './map-context.js?v=20261011-location-ripple4';
-import { createMapSearch } from './map-search.js?v=20261011-location-ripple4';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-location-ripple4';
-import { createDirectionOptions } from './direction-options.js?v=20261011-location-ripple4';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-map-cache1';
+import { createPoiFilter } from './poi-filter.js?v=20261011-map-cache1';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261011-map-cache1';
+import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.285';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261011-map-cache1';
+import { registerMapShell } from './map-shell.js?v=20261011-map-cache1';
+import { config } from './config.js?v=20261011-map-cache1';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-map-cache1';
+import { createLocationController } from './location.js?v=20261011-map-cache1';
+import { installMapContext } from './map-context.js?v=20261011-map-cache1';
+import { createMapSearch } from './map-search.js?v=20261011-map-cache1';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-map-cache1';
+import { createDirectionOptions } from './direction-options.js?v=20261011-map-cache1';
 
 export async function mountApp() {
   const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert] = await Promise.all(
@@ -24,6 +26,16 @@ export async function mountApp() {
   const header = document.getElementById('navbar'), region = document.getElementById('map-region');
   const container = document.getElementById('map'), feedbackContainer = document.getElementById('map-feedback');
   const controlsContainer = document.createElement('div');
+  controlsContainer.className = 'pbb-header-controls';
+  const signalHost = document.createElement('span');
+  signalHost.className = 'pbb-map-signal';
+  const mapControlsHost = document.createElement('div');
+  controlsContainer.append(signalHost, mapControlsHost);
+  let signalIndicator = null;
+  // Optional complete component: its absence or observer errors cannot interrupt mapping.
+  void uiLoader.get('ui.signal.strength', { preferBundles: true }).then(create => {
+    if (!disposed) signalIndicator = create(signalHost, { label: 'MapServer connection', showText: false, level: 0, tone: 'neutral', title: 'MapServer connection unknown', ariaLabel: 'MapServer connection unknown' });
+  }).catch(() => {});
   const locateContainer = document.createElement('div');
   locateContainer.id = 'locate-control';
   region.appendChild(locateContainer);
@@ -38,11 +50,33 @@ export async function mountApp() {
   const optionalNotices = [];
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const toast = createToastStack({ className: 'pbb-location-toast', position: 'bottom-left', max: 3, workspaceBridge: false });
+  let missingNotice = null, recoveryTimer = null, recovering = false;
+  const resources = createMapResourceCache({ server: config.mapServerUrl, dataset: config.dataset, sprites: config.spriteUrls, onState: state => {
+    if (disposed) return;
+    const text = state.connected === null ? 'MapServer connection unknown' : state.connected ? 'MapServer reachable' : 'MapServer unavailable; saved map detail remains usable';
+    try { signalIndicator?.update({ level: state.connected === true ? 4 : 0, tone: state.connected === null ? 'neutral' : state.connected ? 'success' : 'warn', title: text, ariaLabel: text }); } catch {}
+    if (state.missing && !missingNotice) missingNotice = toast.show('Some map detail is unavailable. Reconnect to load more.', { type: 'warn', persistent: true, dismissible: true });
+    if (!state.missing) { missingNotice?.close(); missingNotice = null; }
+    if (state.missing && !recoveryTimer) recoveryTimer = setTimeout(recoverResources, 10000);
+  } });
+  void resources.store.reconcile();
+  async function recoverResources() {
+    clearTimeout(recoveryTimer); recoveryTimer = null;
+    if (disposed || recovering || document.hidden) return;
+    recovering = true;
+    try { if (await resources.recover() && !disposed) void initialize(); }
+    finally { recovering = false; }
+  }
+  const onConnectionHint = () => { void recoverResources(); };
+  const onRecoveryVisible = () => { if (!document.hidden) void recoverResources(); };
+  window.addEventListener('online', onConnectionHint);
+  document.addEventListener('visibilitychange', onRecoveryVisible);
+  const shell = registerMapShell({ createMapControls, toast });
   const directionNotice=message=>{if(!disposed){syncDirectionUI();welcome?.consider();if(message)toast.show(message,{type:'warn',duration:5000,dismissible:true});}};
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261011-location-ripple4').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261011-map-cache1').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -155,7 +189,7 @@ export async function mountApp() {
         POI_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', checked ? 'visible' : 'none'); });
       },
     };
-    if (controls) controls.update(options); else controls = createMapControls(controlsContainer, options);
+    if (controls) controls.update(options); else controls = createMapControls(mapControlsHost, options);
   }
 
   function markExploration() {
@@ -242,6 +276,8 @@ export async function mountApp() {
     const controller = abort;
     startupTimer = setTimeout(() => {
       if (!disposed && id === generation && !ready) {
+        // Slow or missing requested detail must not remove an otherwise usable map/camera.
+        if (map?.style) { activateMap(id); return; }
         // A deadline ends this initialization, including MapLibre's tile work.
         // Late events must never revive it or leave a loaded map behind stale feedback.
         generation++;
@@ -257,10 +293,15 @@ export async function mountApp() {
       gl.getExtension('WEBGL_lose_context')?.loseContext();
       const response = await fetch(config.styleUrl, { signal: controller.signal, credentials: 'same-origin' });
       if (!response.ok) throw new Error('The local map style is missing. Ask the node operator to verify the installation.');
-      const style = buildStyle(await response.json(), config, poiVisible);
+      resources.install(window.maplibregl);
+      resources.beginView();
+      let style = buildStyle(await response.json(), config, poiVisible);
+      const view = camera || config, z = Math.min(14, Math.floor(view.zoom)), scale = 2 ** z, lat = view.center[1] * Math.PI / 180;
+      const x = Math.floor((view.center[0] + 180) / 360 * scale), y = Math.floor((1 - Math.asinh(Math.tan(lat)) / Math.PI) / 2 * scale);
+      style = await resources.prepare(style, `${config.mapServerUrl}/tiles/vector/${z}/${x}/${y}.pbf`, controller.signal);
       if (disposed || id !== generation || controller.signal.aborted) return;
       map = new window.maplibregl.Map({ container, style, ...config, ...(camera || {}), attributionControl: false,
-        keyboard: true, dragRotate: true, touchPitch: true });
+        keyboard: true, dragRotate: true, touchPitch: true, transformRequest: resources.transformRequest });
       map.getCanvas().setAttribute('aria-label', 'Map. Use arrow keys to pan, plus or minus to zoom, and Shift with arrow keys to rotate or pitch.');
       map.on('style.load', () => { if (!disposed && id === generation && ready) displayPosition(); });
       contextActions = installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed:p=>poiFilter.visible(p) });
@@ -268,19 +309,13 @@ export async function mountApp() {
         if (event.originalEvent) { location.markNavigation(); recenterPending = false; }
       });
       map.on('load', () => {
-        if (disposed || id !== generation) return;
-        ready = true;accuracyRipple.setMap(map);
-        search.setMap(map);poiFilter.setMap(map);
-        clearTimeout(startupTimer);
-        busy.hide();
-        POI_LAYERS.forEach(layer => {
-          if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', poiVisible ? 'visible' : 'none');
-        });
-        displayPosition();
-        syncDirectionUI();
+        activateMap(id);
       });
       map.on('error', event => {
         if (disposed || id !== generation) return;
+        // The resource controller presents one canonical partial-availability notice.
+        // Keep terrain sources attached so a later successful request can recover them.
+        if (String(event.error?.message || '').includes('pbbcache:') || event.error?.name === 'AbortError' || event.error?.url?.includes('/tiles/')) return;
         const source = event.sourceId || sourceFromError(event.error);
         const warningKey = source === 'terrain-hillshade' ? 'terrain' : source;
         if (warned.has(warningKey)) return;
@@ -305,6 +340,14 @@ export async function mountApp() {
     }
   }
 
+  function activateMap(id) {
+    if (disposed || id !== generation || ready || !map) return;
+    ready = true; accuracyRipple.setMap(map); search.setMap(map); poiFilter.setMap(map);
+    clearTimeout(startupTimer); busy.hide();
+    POI_LAYERS.forEach(layer => { if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', poiVisible ? 'visible' : 'none'); });
+    displayPosition(); syncDirectionUI();
+  }
+
   const resize = new ResizeObserver(() => map?.resize());
   resize.observe(region);
   const onViewportResize = () => map?.resize();
@@ -314,6 +357,8 @@ export async function mountApp() {
   function destroy() {
     if (disposed) return;
     disposed = true; generation++;
+    clearTimeout(recoveryTimer); window.removeEventListener('online', onConnectionHint); document.removeEventListener('visibilitychange', onRecoveryVisible);
+    resources.destroy(window.maplibregl); signalIndicator?.destroy(); shell.destroy(); missingNotice?.close();
     document.removeEventListener('visibilitychange',welcomeVisible);welcome?.destroy();directionOptions.destroy();diagnostics.destroy();direction.destroy();location.destroy();accuracyRipple.destroy(); removeMap(); resize.disconnect();
     window.visualViewport?.removeEventListener('resize', onViewportResize);
     window.removeEventListener('pagehide', onPageHide);
