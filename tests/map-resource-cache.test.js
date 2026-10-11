@@ -58,9 +58,9 @@ test('admission rejects failure/opaque/redirect/type/oversize and skips private/
 });
 test('binary/image/JSON protocol types and throwing optional observer never gate transport', async () => {
   const store = memory(), sprite = 'https://map.pbb.ph/assets/sprite.json';
-  const cache = loader({ store, sprites: [sprite], onState() { throw new Error('Broken UI'); }, fetcher: async u => u === sprite ? new Response('{"icon":1}', { headers: { 'Content-Type': 'application/json' } }) : u.endsWith('.png') ? new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), { headers: { 'Content-Type': 'image/png' } }) : response() });
+  const cache = loader({ store, imageValidator: async () => {}, sprites: [sprite], onState() { throw new Error('Broken UI'); }, fetcher: async u => u === sprite ? new Response('{"icon":{"x":0,"y":0,"width":1,"height":1,"pixelRatio":1}}', { headers: { 'Content-Type': 'application/json' } }) : u.endsWith('.png') ? new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), { headers: { 'Content-Type': 'image/png' } }) : response() });
   assert.ok((await cache.load(url)).data instanceof ArrayBuffer);
-  assert.deepEqual((await cache.load(sprite, { type: 'json' })).data, { icon: 1 });
+  assert.deepEqual((await cache.load(sprite, { type: 'json' })).data, { icon: { x: 0, y: 0, width: 1, height: 1, pixelRatio: 1 } });
   assert.equal((await cache.load(`${server}/tiles/terrain/12/1/1.png`, { type: 'image' })).data.byteLength, 8);
 });
 test('missing requested detail recovers and coherent dataset fallback uses an entire saved style', async () => {
@@ -73,4 +73,44 @@ test('missing requested detail recovers and coherent dataset fallback uses an en
   await assert.rejects(second.load(`${url}?uncached`)); assert.ok(state.missing > 0);
   online = true; assert.equal(await second.recover(), true); assert.equal(state.missing, 0);
   second.destroy(); first.destroy();
+});
+
+test('old generation misses and aged hits never use current transport; recovery adopts current namespace', async () => {
+  const store = memory(), oldStyle = { name: 'old' }, currentStyle = { name: 'current' };
+  const old = loader({ store, fetcher: async () => response('OLD') });
+  await old.prepare(oldStyle, url, new AbortController().signal);
+  let calls = 0, seedFails = true;
+  const current = loader({ dataset: 'b', store, now: () => 90 * 86400000, fetcher: async u => { calls++; if (u === url && seedFails) throw new Error('Offline seed'); return response('NEW'); } });
+  assert.deepEqual(await current.prepare(currentStyle, url, new AbortController().signal), oldStyle);
+  const before = calls;
+  await current.load(url); await new Promise(resolve => setImmediate(resolve));
+  await assert.rejects(current.load(`${url}?other`));
+  assert.equal(calls, before); assert.equal(store.rows.has(`${server}|a|${url}?other`), false);
+  assert.equal(await current.recover(), false); seedFails = false;
+  assert.equal(await current.recover(), true);
+  assert.equal(new TextDecoder().decode((await current.load(`${url}?other`)).data), 'NEW');
+  assert.equal(store.rows.has(`${server}|a|${url}?other`), false);
+  assert.equal(await store.rows.get(`${server}|a|${url}`).response.clone().text(), 'OLD');
+  assert.deepEqual(await current.prepare(currentStyle, url, new AbortController().signal), currentStyle);
+  old.destroy(); current.destroy();
+});
+test('decoded image dimensions checked and decoded resource always closed', async () => {
+  const saved = globalThis.createImageBitmap; let closed = 0;
+  const imageUrl = `${server}/tiles/terrain/1/1/1.png`;
+  try {
+    globalThis.createImageBitmap = async () => ({ width: 0, height: 1, close() { closed++; } });
+    const store = memory(), cache = loader({ store, fetcher: async () => new Response('bytes', { headers: { 'Content-Type': 'image/png' } }) });
+    await assert.rejects(cache.load(imageUrl)); assert.equal(closed, 1); assert.equal(store.writes, 0);
+    globalThis.createImageBitmap = async () => { throw new Error('Corrupt image'); };
+    await assert.rejects(cache.load(imageUrl)); assert.equal(store.writes, 0); cache.destroy();
+  } finally { globalThis.createImageBitmap = saved; }
+});
+test('malformed sprite JSON cannot replace saved atlas', async () => {
+  const store = memory(), sprite = 'https://map.pbb.ph/sprite.json'; let corrupt = false;
+  const valid = { icon: { x: 0, y: 0, width: 1, height: 1, pixelRatio: 1 } };
+  const cache = loader({ store, sprites: [sprite], now: () => corrupt ? 90 * 86400000 : 0, fetcher: async () => new Response(corrupt ? '{"icon":1}' : JSON.stringify(valid), { headers: { 'Content-Type': 'application/json' } }) });
+  await cache.load(sprite); corrupt = true;
+  assert.deepEqual((await cache.load(sprite, { type: 'json' })).data, valid);
+  await new Promise(resolve => setImmediate(resolve)); assert.equal(store.writes, 1);
+  assert.deepEqual((await cache.load(sprite, { type: 'json' })).data, valid); cache.destroy();
 });

@@ -1,4 +1,4 @@
-import { createMapCacheStore } from './map-cache-store.js?v=20261011-map-cache1';
+import { createMapCacheStore } from './map-cache-store.js?v=20261011-map-cache2';
 
 const AGE = 7 * 86400000;
 const MAX = 4 * 1024 * 1024;
@@ -30,10 +30,24 @@ async function boundedBytes(response, limit, signal) {
   for (const piece of pieces) { bytes.set(piece, offset); offset += piece.byteLength; }
   return bytes;
 }
+async function validateImage(bytes, mime) {
+  if (typeof globalThis.createImageBitmap !== 'function') throw new Error('Image decoder unavailable');
+  const image = await globalThis.createImageBitmap(new Blob([bytes], { type: mime }));
+  try {
+    if (!Number.isInteger(image.width) || !Number.isInteger(image.height) || image.width < 1 || image.height < 1 || image.width > 8192 || image.height > 8192) throw new Error('Invalid map image dimensions');
+  } finally { image.close(); }
+}
+function validateSprite(bytes) {
+  const value = JSON.parse(new TextDecoder().decode(bytes));
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid sprite atlas');
+  for (const icon of Object.values(value)) {
+    if (!icon || typeof icon !== 'object' || !['x', 'y', 'width', 'height'].every(k => Number.isInteger(icon[k]) && icon[k] >= 0) || icon.width < 1 || icon.height < 1 || !Number.isFinite(icon.pixelRatio) || icon.pixelRatio <= 0) throw new Error('Invalid sprite entry');
+  }
+}
 export function createMapResourceCache({ server, dataset, sprites = [], store = createMapCacheStore(),
-  fetcher = globalThis.fetch, now = Date.now, maxBytes = MAX, refreshAge = AGE, onState = () => {} } = {}) {
+  fetcher = globalThis.fetch, now = Date.now, maxBytes = MAX, refreshAge = AGE, onState = () => {}, imageValidator = validateImage } = {}) {
   const flights = new Map(), refreshes = new Map(), missing = new Set();
-  let disposed = false, connected = null, selected = dataset;
+  let disposed = false, connected = null, selected = dataset, startup = null;
   const stats = { hits: 0, network: 0, refreshes: 0, rejected: 0 };
   const kind = url => resourceKind(url, server, sprites);
   const id = url => `${server}|${selected}|${url}`;
@@ -56,8 +70,9 @@ export function createMapResourceCache({ server, dataset, sprites = [], store = 
     }
     const bytes = await boundedBytes(response, maxBytes, transport.signal);
     if (controller.signal.aborted) throw abortError();
-    if (type === 'image' && mime === 'image/png' && !(bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71)) throw new Error('Invalid terrain image');
-    if (type === 'json') JSON.parse(new TextDecoder().decode(bytes));
+    if (type === 'image') await imageValidator(bytes, mime);
+    if (type === 'json') validateSprite(bytes);
+    if (controller.signal.aborted || transport.signal.aborted) throw abortError();
     healthy(url);
     const headers = new Headers(response.headers);
     headers.delete('content-encoding'); headers.delete('content-length');
@@ -75,16 +90,16 @@ export function createMapResourceCache({ server, dataset, sprites = [], store = 
     const promise = network(url, controller, key).catch(() => { if (!controller.signal.aborted) { connected = false; notify(); } }).finally(() => refreshes.delete(key));
     refreshes.set(key, { controller, promise });
   }
-  async function acquire(url, controller, key) {
+  async function acquire(url, controller, key, cacheOnly) {
     let cached = null;
     try { cached = await store.read(key); } catch {} // Optional adapters cannot turn a healthy network into a failed map.
     if (controller.signal.aborted) throw abortError();
     if (cached) {
       stats.hits++; missing.delete(url); notify();
-      if (now() - cached.saved >= refreshAge) refresh(url, key);
+      if (!cacheOnly && now() - cached.saved >= refreshAge) refresh(url, key);
       return cached.response;
     }
-    try { return await network(url, controller, key); }
+    try { if (cacheOnly) throw new Error('Saved dataset detail unavailable'); return await network(url, controller, key); }
     catch (error) { error.url = url; if (!controller.signal.aborted) { connected = false; if (missing.size < 256) missing.add(url); notify(); } throw error; }
   }
   async function load(url, { signal, type } = {}) {
@@ -96,7 +111,7 @@ export function createMapResourceCache({ server, dataset, sprites = [], store = 
     if (!flight) {
       const controller = new AbortController();
       flight = { controller, users: 0, settled: false };
-      flight.promise = acquire(url, controller, key).finally(() => { flight.settled = true; if (flights.get(key) === flight) flights.delete(key); });
+      flight.promise = acquire(url, controller, key, selected !== dataset).finally(() => { flight.settled = true; if (flights.get(key) === flight) flights.delete(key); });
       flights.set(key, flight);
     }
     flight.users++;
@@ -121,6 +136,7 @@ export function createMapResourceCache({ server, dataset, sprites = [], store = 
     install(maplibre) { maplibre.addProtocol('pbbcache', (params, abort) => load(decodeURIComponent(params.url.slice('pbbcache://'.length)), { signal: abort.signal, type: params.type })); },
     // Select one entire saved dataset/style when a requested startup tile proves the new dataset unavailable.
     async prepare(style, seedUrl, signal) {
+      startup = { style, seedUrl: new URL(seedUrl).href };
       selected = dataset;
       try {
         await load(seedUrl, { signal });
@@ -137,6 +153,18 @@ export function createMapResourceCache({ server, dataset, sprites = [], store = 
       }
     },
     async recover() {
+      if (selected !== dataset) {
+        // The unversioned endpoint represents only the configured current generation.
+        // Probe it directly, never through an old namespace or a cached seed.
+        if (!startup) return false;
+        try {
+          await network(startup.seedUrl, new AbortController(), `${server}|${dataset}|${startup.seedUrl}`);
+          selected = dataset;
+          await store.saveDataset({ id: `${server}|${dataset}`, server, dataset, style: startup.style, saved: now() });
+          missing.clear(); notify();
+          return true; // Caller reconstructs the map with prepare() and current style.
+        } catch { return false; }
+      }
       const results = await Promise.allSettled([...missing].slice(0, 8).map(url => load(url)));
       return results.some(result => result.status === 'fulfilled');
     },
