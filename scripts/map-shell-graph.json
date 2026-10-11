@@ -34,5 +34,5 @@
     "ui.tree.grid",
     "ui.checkbox"
   ],
-  "policy": "Primary Helper main bundle; used component modular paths and transitive dependencies retained for explicitly verified modular diagnostics/fallback. No game/inspection/drawing module adoption. MapLibre worker and person mesh embedded; WMM model follows static imports."
+  "policy": "Strict canonical bundle selection for every used ui factory/dependency, validated against pinned bundle exports. Only Helper loader/main JS/main CSS; no modular fallback, game/inspection/drawing upgrade. MapLibre worker/person mesh embedded; WMM follows static imports."
 }

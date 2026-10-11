@@ -132,5 +132,39 @@
       "existingClientGeneration": "old",
       "newNavigationGeneration": "new"
     }
+  },
+  "bundleOnly204": {
+    "shell": {
+      "version": "57948e688ae99e5e109a",
+      "files": 40,
+      "bytes": 4151434,
+      "helperArtifacts": 3,
+      "removedModularFiles": 57,
+      "netSavedBytes": 558962
+    },
+    "factories": 18,
+    "startupAndLazyIndividualHelperRequests": 0,
+    "failureModes": [
+      "missing-bundle",
+      "missing-bundle-css",
+      "broken-bundle",
+      "missing-factory",
+      "missing-lazy-factory"
+    ],
+    "failureIndividualHelperRequests": 0,
+    "visibleFailureFeedback": true,
+    "coldOffline": {
+      "terrain": true,
+      "personLayer": true,
+      "personRendered": true,
+      "POIs": 81,
+      "POIGrid": true,
+      "directionModel": true,
+      "directionForm": true,
+      "bootError": false
+    },
+    "pageErrors": [],
+    "pinnedHelperRevision": "0.21.285",
+    "unchangedCachingBackpressure": true
   }
 }

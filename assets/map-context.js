@@ -1,4 +1,4 @@
-import { poiName } from './poi-name.js?v=20261011-map-cache4';
+import { poiName } from './poi-name.js?v=20261011-map-cache5';
 export function installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed=()=>true }) {
   const canvas = map.getCanvas();
   const pointerSurface = map.getCanvasContainer();

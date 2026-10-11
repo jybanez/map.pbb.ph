@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { posix } from 'node:path';
 import { DEFAULT_COMPONENT_REGISTRY } from '../vendor/helpers/js/ui/ui.loader.js';
+import { helperUiBundleModules } from '../vendor/helpers/dist/helpers.ui.bundle.min.js';
 const sha = data => createHash('sha256').update(data).digest('hex');
 const graph = JSON.parse(readFileSync('scripts/map-shell-graph.json', 'utf8'));
 const paths = new Set(), components = new Set();
@@ -34,8 +35,9 @@ function component(name) {
   if (!entry) throw new Error(`Unknown Helper shell component: ${name}`);
   components.add(name);
   for (const dep of entry.deps || []) component(dep);
-  if (entry.js) include(resolve('vendor/helpers/js/ui/ui.loader.js', entry.js));
-  for (const css of entry.css || []) include(resolve('vendor/helpers/js/ui/ui.loader.js', css));
+  if (!name.startsWith('ui.')) throw new Error(`Component outside pinned bundle prefix: ${name}`);
+  const module = helperUiBundleModules[entry.js.split('?')[0]];
+  if (!module || (entry.export && typeof module[entry.export] !== 'function')) throw new Error(`Pinned Helper bundle missing factory: ${name}`);
 }
 for (const root of graph.roots) include(root);
 for (const name of graph.helperComponents) component(name);
