@@ -9,7 +9,7 @@ export function createMapCacheStore({ cacheStorage = globalThis.caches, indexedD
   storage = globalThis.navigator?.storage, locks = globalThis.navigator?.locks, origin = globalThis.location?.origin,
   budget = LIMIT, maxEntries = 4000, now = Date.now, cacheName = CACHE, databaseName = DATABASE } = {}) {
   let opening, db, cache, disabled = false, queue = Promise.resolve(), pending = 0;
-  const diagnostics = { writes: 0, failures: 0, evictions: 0, reconciled: 0 };
+  const diagnostics = { writes: 0, failures: 0, evictions: 0, reconciled: 0, skippedQueue: 0, skippedDisabled: 0, skippedBudget: 0 };
   async function open() {
     if (!opening) opening = (async () => {
       if (!cacheStorage || !indexedDB || !origin) throw new Error('Device storage unavailable');
@@ -65,7 +65,8 @@ export function createMapCacheStore({ cacheStorage = globalThis.caches, indexedD
     return locks?.request ? locks.request('pbb-map-resource-maintenance-v1', run) : run();
   }
   function schedule(fn) {
-    if (disabled || pending >= 32) return Promise.resolve(false);
+    if (disabled) { diagnostics.skippedDisabled++; return Promise.resolve(false); }
+    if (pending >= 32) { diagnostics.skippedQueue++; return Promise.resolve(false); }
     pending++;
     const job = queue.then(async () => { await open(); if (disabled) return false; return exclusive(fn); })
       .catch(error => { diagnostics.failures++; if (['QuotaExceededError', 'SecurityError', 'InvalidStateError'].includes(error?.name)) disabled = true; return false; }).finally(() => pending--);
@@ -96,9 +97,9 @@ export function createMapCacheStore({ cacheStorage = globalThis.caches, indexedD
     },
     write(id, response, bytes) {
       return schedule(async check => {
-        if (bytes > budget) return false;
+        if (bytes > budget) { diagnostics.skippedBudget++; return false; }
         const old = await record(id);
-        if (!await prune(check, Math.max(0, bytes - (old?.bytes || 0)), id)) return false;
+        if (!await prune(check, Math.max(0, bytes - (old?.bytes || 0)), id)) { diagnostics.skippedBudget++; return false; }
         const key = `${origin}/__pbb_map_cache_v1__/${crypto.randomUUID()}`;
         const put = () => cache.put(key, response.clone());
         let committed = false;
