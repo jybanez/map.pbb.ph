@@ -1,0 +1,38 @@
+{
+  "roots": [
+    "index.html",
+    "map.webmanifest",
+    "assets/boot.js",
+    "assets/app.css",
+    "assets/map.svg",
+    "assets/pbb-map-icon-v1.png",
+    "assets/pbb-map-icon-navbar.png",
+    "assets/maps/hotline-dark.json",
+    "vendor/maplibre/4.6.0/maplibre-gl.js",
+    "vendor/maplibre/4.6.0/maplibre-gl.css",
+    "vendor/helpers/js/ui/ui.loader.js",
+    "vendor/helpers/dist/helpers.ui.bundle.min.js",
+    "vendor/helpers/dist/helpers.ui.bundle.min.css"
+  ],
+  "helperComponents": [
+    "ui.navbar",
+    "ui.map.controls",
+    "ui.map.markers",
+    "ui.toast",
+    "ui.empty.state",
+    "ui.busy.overlay",
+    "ui.icons",
+    "ui.menu",
+    "ui.modal",
+    "ui.search",
+    "ui.events.createEventBag",
+    "ui.action.modal",
+    "ui.form.modal",
+    "ui.dialog.alert",
+    "ui.map.location.person",
+    "ui.signal.strength",
+    "ui.tree.grid",
+    "ui.checkbox"
+  ],
+  "policy": "Primary Helper main bundle; used component modular paths and transitive dependencies retained for explicitly verified modular diagnostics/fallback. No game/inspection/drawing module adoption. MapLibre worker and person mesh embedded; WMM model follows static imports."
+}

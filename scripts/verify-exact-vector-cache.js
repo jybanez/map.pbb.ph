@@ -2,7 +2,7 @@ async page => {
   await page.goto('https://map.pbb.ph/');
   await page.waitForTimeout(5000);
   return await page.evaluate(async () => {
-    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache3');
+    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache4');
     const server = 'https://mapserver.pbb.ph', url = server + '/tiles/vector/13/6914/3860.pbf', dataset = 'pbb-mapserver-20261011-v1';
     let calls = 0, offline = false, admission;
     const cache = createMapResourceCache({ server, dataset, fetcher: async (u, options) => {

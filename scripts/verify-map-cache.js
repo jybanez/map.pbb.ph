@@ -13,7 +13,7 @@ async page => {
   await page.waitForFunction(() => navigator.serviceWorker?.controller, null, { timeout: 60000 });
   await page.waitForTimeout(3000);
   const warm = await page.evaluate(async () => {
-    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache1');
+    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache4');
     const cache = createMapResourceCache({ server: 'https://mapserver.pbb.ph', dataset: 'pbb-mapserver-20261011-v1' });
     const urls = ['https://mapserver.pbb.ph/tiles/vector/12/3457/1929.pbf', 'https://mapserver.pbb.ph/tiles/terrain/12/3457/1929.png', 'https://mapserver.pbb.ph/tiles/poi/12/3457/1929.pbf', 'https://mapserver.pbb.ph/tiles/glyphs/Open Sans Regular,Arial Unicode MS Regular/0-255.pbf'];
     const bytes = []; for (const url of urls) bytes.push((await cache.load(url)).data.byteLength);

@@ -1,4 +1,4 @@
-import { createMapCacheStore } from './map-cache-store.js?v=20261011-map-cache3';
+import { createMapCacheStore } from './map-cache-store.js?v=20261011-map-cache4';
 
 const AGE = 7 * 86400000;
 const MAX = 4 * 1024 * 1024;
@@ -47,6 +47,30 @@ function validateSprite(bytes) {
 export function createMapResourceCache({ server, dataset, sprites = [], store = createMapCacheStore(),
   fetcher = globalThis.fetch, now = Date.now, maxBytes = MAX, refreshAge = AGE, onState = () => {}, imageValidator = validateImage } = {}) {
   const flights = new Map(), refreshes = new Map(), missing = new Set();
+  // At most eight bounded response bodies can await optional storage. Queued
+  // transports retain URLs/controllers only, and cancel without fetching.
+  let activeTransports = 0;
+  const waitingTransports = [];
+  function transportSlot(signal) {
+    if (signal.aborted || disposed) return Promise.reject(abortError());
+    if (waitingTransports.length >= 1024) return Promise.reject(new Error('Map request backlog limit reached'));
+    return new Promise((resolve, reject) => {
+      const entry = { signal, resolve, reject };
+      entry.cancel = () => { const i = waitingTransports.indexOf(entry); if (i >= 0) waitingTransports.splice(i, 1); reject(abortError()); };
+      signal.addEventListener('abort', entry.cancel, { once: true });
+      waitingTransports.push(entry); drainTransports();
+    });
+  }
+  function drainTransports() {
+    while (activeTransports < 8 && waitingTransports.length) {
+      const entry = waitingTransports.shift();
+      entry.signal.removeEventListener('abort', entry.cancel);
+      if (entry.signal.aborted || disposed) { entry.reject(abortError()); continue; }
+      activeTransports++;
+      let released = false;
+      entry.resolve(() => { if (!released) { released = true; activeTransports--; drainTransports(); } });
+    }
+  }
   let disposed = false, connected = null, selected = dataset, startup = null;
   const stats = { hits: 0, network: 0, refreshes: 0, rejected: 0 };
   const kind = url => resourceKind(url, server, sprites);
@@ -54,6 +78,8 @@ export function createMapResourceCache({ server, dataset, sprites = [], store = 
   function notify() { try { onState({ connected, missing: missing.size }); } catch { /* Presentation never gates transport. */ } }
   function healthy(url) { const recovery = connected === false; connected = true; missing.delete(url); notify(); return recovery; }
   async function network(url, controller, key) {
+    const release = await transportSlot(controller.signal);
+    let writing = false;
     stats.network++;
     const transport = new AbortController(), cancel = () => transport.abort();
     controller.signal.addEventListener('abort', cancel, { once: true });
@@ -78,10 +104,16 @@ export function createMapResourceCache({ server, dataset, sprites = [], store = 
     headers.delete('content-encoding'); headers.delete('content-length');
     const saved = new Response(bytes, { headers, status: 200 });
     if (!/\b(no-store|private)\b/i.test(response.headers.get('Cache-Control') || '')) {
-      try { void Promise.resolve(store.write(key, saved.clone(), bytes.byteLength)).catch(() => {}); } catch {}
+      try {
+        const job = store.write(key, saved.clone(), bytes.byteLength);
+        writing = true;
+        // Release storage pressure when persistence settles; render returned bytes
+        // immediately rather than waiting for optional device storage.
+        void Promise.resolve(job).catch(() => {}).finally(release);
+      } catch {}
     }
     return saved;
-    } finally { clearTimeout(timer); controller.signal.removeEventListener('abort', cancel); }
+    } finally { clearTimeout(timer); controller.signal.removeEventListener('abort', cancel); if (!writing) release(); }
   }
   function refresh(url, key) {
     if (refreshes.has(key) || disposed) return;

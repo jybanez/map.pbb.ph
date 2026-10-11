@@ -10,7 +10,7 @@ async page => {
   await page.goto('https://map.pbb.ph/');
   await page.waitForFunction(() => window.__map?.loaded(), null, { timeout: 60000 });
   const result = await page.evaluate(async () => {
-    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache1');
+    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache4');
     const cache = createMapResourceCache({ server: 'https://mapserver.pbb.ph', dataset: 'pbb-mapserver-20261011-v1' });
     const url = 'https://mapserver.pbb.ph/tiles/vector/12/3457/1929.pbf';
     await cache.load(url); await cache.store.flush(); const first = cache.stats.network;

@@ -1,7 +1,7 @@
 async page => {
   return await page.evaluate(async () => {
-    const { createMapCacheStore } = await import('./assets/map-cache-store.js?v=20261011-map-cache1');
-    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache1');
+    const { createMapCacheStore } = await import('./assets/map-cache-store.js?v=20261011-map-cache4');
+    const { createMapResourceCache } = await import('./assets/map-resource-cache.js?v=20261011-map-cache4');
     const assert = (value, message) => { if (!value) throw Error(message); };
     const prefix = `pbb-test-${crypto.randomUUID()}`, server = 'https://mapserver.pbb.ph', url = `${server}/tiles/vector/12/3457/1929.pbf`;
     const options = { cacheName: prefix, databaseName: prefix, budget: 64, maxEntries: 3, storage: { estimate: async () => ({ quota: 1000000 }) } };

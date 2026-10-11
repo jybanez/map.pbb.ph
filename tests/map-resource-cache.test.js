@@ -114,3 +114,19 @@ test('malformed sprite JSON cannot replace saved atlas', async () => {
   await new Promise(resolve => setImmediate(resolve)); assert.equal(store.writes, 1);
   assert.deepEqual((await cache.load(sprite, { type: 'json' })).data, valid); cache.destroy();
 });
+
+test('tile bursts backpressure on persistence without delaying displayed bytes; queued cancellation stays fetch-free', async () => {
+  const store = memory(); let held = [], outstanding = 0, maximum = 0, calls = 0;
+  const original = store.write.bind(store);
+  store.write = async (...args) => { outstanding++; maximum = Math.max(maximum, outstanding); await new Promise(resolve => held.push(resolve)); const result = await original(...args); outstanding--; return result; };
+  const cache = loader({ store, fetcher: async () => { calls++; return response(); } });
+  const jobs = Array.from({ length: 64 }, (_, i) => cache.load(`${url}?burst=${i}`));
+  const cancelled = new AbortController(), pending = cache.load(`${url}?cancelled`, { signal: cancelled.signal });
+  cancelled.abort(); await assert.rejects(pending, { name: 'AbortError' });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls, 8); assert.equal(store.writes, 0);
+  assert.ok((await jobs[0]).data instanceof ArrayBuffer); // Visible before storage completes.
+  for (let i = 0; i < 8; i++) { held.splice(0).forEach(resolve => resolve()); await new Promise(resolve => setImmediate(resolve)); }
+  await Promise.all(jobs); held.splice(0).forEach(resolve => resolve()); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(maximum, 8); assert.equal(calls, 64); assert.equal(store.rows.size, 64); cache.destroy();
+});
