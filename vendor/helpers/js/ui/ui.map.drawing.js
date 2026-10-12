@@ -1,3 +1,4 @@
+import { createIcon } from "./ui.icons.js?v=0.21.297";
 import { createElement, clearNode } from "./ui.dom.js";
 import { createEventBag } from "./ui.events.js";
 
@@ -49,10 +50,10 @@ const MODE_META = {
 const ACTION_META = {
   finish: { label: "Finish drawing", shortLabel: "Finish", symbol: "✓", method: "finish" },
   cancel: { label: "Cancel drawing", shortLabel: "Cancel", symbol: "×", method: "cancel" },
-  undo: { label: "Undo drawing action", shortLabel: "Undo", symbol: "↶", method: "undo" },
-  redo: { label: "Redo drawing action", shortLabel: "Redo", symbol: "↷", method: "redo" },
+  undo: { label: "Undo drawing action", shortLabel: "Undo", icon: "actions.undo", method: "undo" },
+  redo: { label: "Redo drawing action", shortLabel: "Redo", icon: "actions.redo", method: "redo" },
   delete: { label: "Delete selected drawing", shortLabel: "Delete", symbol: "⌫", method: "deleteSelected" },
-  clear: { label: "Clear drawings", shortLabel: "Clear", symbol: "⌧", method: "clear" },
+  clear: { label: "Clear drawings", shortLabel: "Clear", icon: "actions.clear", method: "clear" },
 };
 
 export function createMapDrawingTools(container, options = {}) {
@@ -175,11 +176,13 @@ export function createMapDrawingTools(container, options = {}) {
         },
         dataset: { action },
       });
-      button.appendChild(createElement("span", {
+      const artwork = createElement("span", {
         className: "ui-map-drawing-button-icon",
-        text: meta.symbol,
+        text: meta.icon ? "" : meta.symbol,
         attrs: { "aria-hidden": "true" },
-      }));
+      });
+      if (meta.icon) artwork.appendChild(createIcon(meta.icon, { size: 18 }));
+      button.appendChild(artwork);
       button.appendChild(createElement("span", {
         className: "ui-map-drawing-button-label",
         text: meta.shortLabel || meta.label,

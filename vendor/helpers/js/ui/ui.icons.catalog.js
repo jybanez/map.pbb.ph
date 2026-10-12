@@ -1,4 +1,7 @@
 export const ICON_DEFINITIONS = {
+  "actions.undo": icon("actions", [path("M4 10h9a7 7 0 0 1 7 7v3"), polyline("9 5 4 10 9 15")]),
+  "actions.redo": icon("actions", [path("M20 10h-9a7 7 0 0 0-7 7v3"), polyline("15 5 20 10 15 15")]),
+  "actions.clear": icon("actions", [path("M3 15 13 5a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-7 7H8Z"), line(8, 10, 17, 19), line(3, 20, 21, 20)]),
   "actions.integration": icon("actions", [
     path("M7 8h10v3a5 5 0 0 1-10 0V8Z"),
     line(9, 4, 9, 8),
