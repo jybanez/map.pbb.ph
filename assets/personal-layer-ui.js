@@ -56,7 +56,7 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
     }else for(const c of pageControls){c.setActionState('add',{disabled:writing||blocked});c.setActionState('edit',{disabled:!selected||writing||blocked});c.setActionState('delete',{disabled:!selected||writing||blocked});c.setActionState('export',{visible:blocked});}rail.inert=writing||blocked;objectHost.inert=writing||blocked;
   }
   async function open(){
-    if(disposed)return;if(!card.hidden){if(!session)hideCard();return;}const token=++openToken,context=map;card.hidden=false;busy.show({text:'Reading personal layers…'});await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+    if(disposed)return;if(session){requestClose();return;}if(!card.hidden){hideCard();return;}const token=++openToken,context=map;card.hidden=false;busy.show({text:'Reading personal layers…'});await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
     try{await load();if(disposed||token!==openToken||card.hidden||context!==map)return;busy.hide();if(session)showEditor();else showManage();}
     catch(error){if(disposed||token!==openToken||card.hidden)return;busy.hide();blocked=true;feedback(`Personal layers could not load. ${error.message} Close and reopen to retry; saved data has not been replaced.`,true);card.append(status);}
   }
