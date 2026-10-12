@@ -1,0 +1,20 @@
+.ui-color-picker { display:grid; grid-template-columns:minmax(0,1fr) 3rem 3rem; align-items:center; gap:.65rem; min-width:0; color:var(--ui-text); }
+.ui-color-picker label { font-size:.875rem; }
+.ui-color-picker-rgb { width:3rem; height:2.5rem; padding:.15rem; border:1px solid var(--ui-border); border-radius:var(--ui-radius-sm, .4rem); background:var(--ui-bg-soft); cursor:pointer; }
+.ui-color-picker-swatch { width:3rem; height:2.5rem; border:1px solid var(--ui-border); border-radius:.4rem; overflow:hidden; background:repeating-conic-gradient(#999 0% 25%, #fff 0% 50%) 50% / 12px 12px; }
+.ui-color-picker-swatch > span { display:block; width:100%; height:100%; }
+.ui-color-picker-alpha { grid-column:1 / -1; display:grid; grid-template-columns:auto minmax(0,1fr) 4rem; gap:.65rem; align-items:center; }
+.ui-color-picker-alpha input { width:100%; min-width:0; accent-color:var(--ui-accent); }
+.ui-color-picker-alpha output { text-align:right; font-variant-numeric:tabular-nums; font-size:.875rem; }
+.ui-color-picker-displays { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,1fr); gap:.65rem; }
+.ui-color-picker-displays label { display:grid; gap:.25rem; min-width:0; }
+.ui-color-picker-display { display:grid; gap:.25rem; min-width:0; font-size:.875rem; }
+.ui-color-picker-display-fields { display:grid; grid-template-columns:minmax(0,1fr) 2.25rem; align-items:end; gap:.4rem; min-width:0; }
+.ui-color-picker-display.is-rgba .ui-color-picker-display-fields { grid-template-columns:repeat(4,minmax(0,1fr)) 2.25rem; }
+.ui-color-picker .ui-color-picker-copy { width:2.25rem; height:2.25rem; padding:0; color:var(--ui-text); background:var(--ui-bg-soft); border-color:var(--ui-border-strong); }
+.ui-color-picker-copy-status { margin:0; font-size:.8rem; overflow-wrap:anywhere; }
+.ui-color-picker-copy-status:empty { display:none; }
+.ui-color-picker-displays input { width:100%; min-width:0; box-sizing:border-box; font-family:monospace; }
+.ui-color-picker input:focus-visible, .ui-color-picker-copy:focus-visible { outline:2px solid var(--ui-accent); outline-offset:3px; }
+.ui-color-picker.is-disabled .ui-color-picker-rgb, .ui-color-picker.is-disabled .ui-color-picker-alpha { opacity:.6; }
+.ui-color-picker [hidden] { display:none !important; }

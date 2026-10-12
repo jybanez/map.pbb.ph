@@ -34,7 +34,11 @@
     "ui.tree.grid",
     "ui.checkbox",
     "ui.map.drawing",
-    "ui.map.drawing.maplibre"
+    "ui.map.drawing.maplibre",
+    "ui.navigation.stack",
+    "ui.select",
+    "ui.inline.text",
+    "ui.color.picker"
   ],
-  "policy": "Strict three-artifact bundled Helper289, reviewed drawing adapter288 and map.layer icon287. No modular fallback; application coordinates local personal layers."
+  "policy": "Strict three-artifact reviewed Helper294; canonical personal-layer navigation, inline editing, color picker and adapter. No modular fallback."
 }

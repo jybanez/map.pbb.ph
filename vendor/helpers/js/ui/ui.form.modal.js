@@ -4,11 +4,14 @@ import { createActionModal } from "./ui.modal.js?v=0.21.235";
 import { createNumberStepper } from "./ui.number.stepper.js";
 import { createPasswordField } from "./ui.password.js?v=0.21.64";
 import { createSelect } from "./ui.select.js";
+import { createColorPicker } from "./ui.color.picker.js?v=0.21.294";
 import { createToggleGroup } from "./ui.toggle.group.js";
 import { createDatepicker } from "./ui.datepicker.js?v=0.21.197";
 import { createTreeSelect } from "./ui.tree.select.js";
 
 const FORM_MODAL_STYLE_PATHS = [
+  "../../css/ui/ui.icons.css",
+  "../../css/ui/ui.color.picker.css?v=0.21.294",
   "../../css/ui/ui.tokens.css",
   "../../css/ui/ui.field.error.css?v=0.21.195",
   "../../css/ui/ui.components.css",
@@ -96,7 +99,9 @@ export function createFormModal(options = {}) {
 
   function destroyHostedFieldInstances() {
     fields.forEach((field) => {
-      if (field?.type === "ui.toggle.group") {
+      if (field?.type === "ui.color.picker") {
+        field.control?.__uiColorPickerInstance?.destroy?.();
+      } else if (field?.type === "ui.toggle.group") {
         field.control?.__uiToggleGroupInstance?.destroy?.();
       } else if (field?.type === "ui.datepicker") {
         field.control?.__uiDatepickerInstance?.destroy?.();
@@ -234,7 +239,7 @@ export function createFormModal(options = {}) {
     if (type === "display") {
       return renderDisplayItem(item);
     }
-    if (type === "hidden" || type === "input" || type === "textarea" || type === "select" || type === "checkbox" || type === "ui.select" || type === "ui.treeselect" || type === "ui.datepicker" || type === "ui.toggle.group" || type === "number-stepper" || type === "avatar") {
+    if (type === "hidden" || type === "input" || type === "textarea" || type === "select" || type === "checkbox" || type === "ui.select" || type === "ui.treeselect" || type === "ui.datepicker" || type === "ui.toggle.group" || type === "ui.color.picker" || type === "number-stepper" || type === "avatar") {
       return renderField(item, type, rowIndex, itemIndex);
     }
     console.warn(`[createFormModal] Unsupported item type "${type}".`);
@@ -388,7 +393,7 @@ export function createFormModal(options = {}) {
         errorEl: null,
       });
       return control;
-    } else if (type === "ui.select" || type === "ui.treeselect" || type === "ui.datepicker" || type === "ui.toggle.group" || type === "number-stepper") {
+    } else if (type === "ui.select" || type === "ui.treeselect" || type === "ui.datepicker" || type === "ui.toggle.group" || type === "ui.color.picker" || type === "number-stepper") {
       if (labelText) {
         label.textContent = labelText;
         wrapper.appendChild(label);
@@ -418,10 +423,12 @@ export function createFormModal(options = {}) {
       });
       wrapper.appendChild(helpEl);
       appendDescribedBy(getFieldAriaTarget({ type, control }), helpEl.id);
+      if (type === "ui.color.picker") appendDescribedBy(control.__uiColorPickerInstance.alphaInput, helpEl.id);
     }
 
-    if ((type === "ui.select" || type === "ui.treeselect" || type === "ui.datepicker" || type === "ui.toggle.group" || type === "number-stepper") && errorEl) {
+    if ((type === "ui.select" || type === "ui.treeselect" || type === "ui.datepicker" || type === "ui.toggle.group" || type === "ui.color.picker" || type === "number-stepper") && errorEl) {
       appendDescribedBy(getFieldAriaTarget({ type, control }), errorEl.id);
+      if (type === "ui.color.picker") appendDescribedBy(control.__uiColorPickerInstance.alphaInput, errorEl.id);
     }
 
     if (errorEl) {
@@ -466,6 +473,22 @@ export function createFormModal(options = {}) {
         },
       });
       return control;
+    }
+
+    if (type === "ui.color.picker") {
+      const host = createElement("div", { className: "ui-form-modal-color-picker-host" });
+      host.__uiColorPickerInstance = createColorPicker(host, {
+        id, value: value === "" || value == null ? "#000000" : value,
+        label: item.label || name, ariaLabel: item.ariaLabel || item.label || name,
+        showAlpha: item.showAlpha ?? true, showRgba: item.showRgba ?? true, showHex: item.showHex ?? true,
+        disabled: Boolean(item.disabled), readonly: Boolean(item.readonly), busy: Boolean(modal?.isBusy?.()),
+        onInput() { handleFieldChange(name); },
+        onChange() { handleFieldChange(name); },
+      });
+      // The outer form label owns the RGB control; retain one visible label.
+      host.querySelector("label").hidden = true;
+      host.__uiColorPickerInstance.element.style.gridTemplateColumns = "minmax(0, 1fr) 3rem";
+      return host;
     }
 
     if (type === "ui.toggle.group") {
@@ -1047,6 +1070,7 @@ export function createFormModal(options = {}) {
         return;
       }
       setFieldError(getFieldAriaTarget(field), field.errorEl, errors[name]);
+      if (field.type === "ui.color.picker") setFieldError(field.control.__uiColorPickerInstance.alphaInput, field.errorEl, errors[name]);
     });
   }
 
@@ -1056,6 +1080,7 @@ export function createFormModal(options = {}) {
       return;
     }
     setFieldError(getFieldAriaTarget(field), field.errorEl, "");
+    if (field.type === "ui.color.picker") setFieldError(field.control.__uiColorPickerInstance.alphaInput, field.errorEl, "");
   }
 
   function clearErrors() {
@@ -1163,6 +1188,11 @@ export function createFormModal(options = {}) {
       }
     });
     modal.setBusy(busy, options);
+    // Apply the complete color component's state after the modal restores its
+    // native controls, preserving schema disabled/readonly states on unbusy.
+    fields.forEach(field => {
+      if (field.type === "ui.color.picker") field.control.__uiColorPickerInstance.setBusy(Boolean(busy));
+    });
   }
 
   function buildModalConfig() {
@@ -1619,6 +1649,7 @@ function appendDescribedBy(control, id) {
 function normalizeItemType(type) {
   const value = String(type || "").trim().toLowerCase();
   if (value === "toggle-group") return "ui.toggle.group";
+  if (value === "color-picker") return "ui.color.picker";
   if (value === "datepicker") return "ui.datepicker";
   if (value === "ui.treeselect" || value === "ui.tree.select") {
     return "ui.treeselect";
@@ -1644,6 +1675,7 @@ function matchesVisibleWhenEntry(actualValue, expectedValue) {
 }
 
 function getFieldValue(field) {
+  if (field.type === "ui.color.picker") return field.control.__uiColorPickerInstance.getValue();
   if (field.type === "ui.toggle.group") return field.control.__uiToggleGroupInstance.getValue();
   if (field.type === "ui.datepicker") return field.control.__uiDatepickerInstance.getValue();
   if (field.type === "ui.select") {
@@ -1668,6 +1700,10 @@ function getFieldValue(field) {
 }
 
 function setFieldValue(field, value) {
+  if (field.type === "ui.color.picker") {
+    field.control.__uiColorPickerInstance.setValue(value);
+    return;
+  }
   if (field.type === "ui.toggle.group") {
     const instance = field.control.__uiToggleGroupInstance;
     instance.setItems(instance.getItems().map((item) => ({
@@ -1723,6 +1759,7 @@ function getFieldAriaTarget(field) {
   if (!field) {
     return null;
   }
+  if (field.type === "ui.color.picker") return field.control.__uiColorPickerInstance.input;
   if (field.type === "ui.toggle.group") return field.control;
   if (field.type === "ui.datepicker") return field.control;
   if (field.type === "ui.select") {

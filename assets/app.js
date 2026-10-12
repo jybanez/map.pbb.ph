@@ -1,17 +1,17 @@
-import { createPersonalLayers } from './personal-layers.js?v=20261011-personal-layers2';
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261011-personal-layers2';
-import { createPoiFilter } from './poi-filter.js?v=20261011-personal-layers2';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261011-personal-layers2';
-import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.290';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261011-personal-layers2';
-import { registerMapShell } from './map-shell.js?v=20261011-personal-layers2';
-import { config } from './config.js?v=20261011-personal-layers2';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261011-personal-layers2';
-import { createLocationController } from './location.js?v=20261011-personal-layers2';
-import { installMapContext } from './map-context.js?v=20261011-personal-layers2';
-import { createMapSearch } from './map-search.js?v=20261011-personal-layers2';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261011-personal-layers2';
-import { createDirectionOptions } from './direction-options.js?v=20261011-personal-layers2';
+import { createPersonalLayers } from './personal-layer-ui.js?v=20261012-personal-ui1';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261012-personal-ui1';
+import { createPoiFilter } from './poi-filter.js?v=20261012-personal-ui1';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261012-personal-ui1';
+import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.294';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261012-personal-ui1';
+import { registerMapShell } from './map-shell.js?v=20261012-personal-ui1';
+import { config } from './config.js?v=20261012-personal-ui1';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261012-personal-ui1';
+import { createLocationController } from './location.js?v=20261012-personal-ui1';
+import { installMapContext } from './map-context.js?v=20261012-personal-ui1';
+import { createMapSearch } from './map-search.js?v=20261012-personal-ui1';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261012-personal-ui1';
+import { createDirectionOptions } from './direction-options.js?v=20261012-personal-ui1';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
@@ -80,7 +80,7 @@ export async function mountApp() {
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261011-personal-layers2').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261012-personal-ui1').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -122,9 +122,9 @@ export async function mountApp() {
   const search = createMapSearch({createSearchField,createMenu,createIcon,createEventBag,createMapMarker,markExploration,poiAllowed:p=>poiFilter.visible(p),onDismiss:()=>dismissSearch(),
     onDestinationActivate:({point,x,y,trigger})=>contextActions?.openAt(point,x,y,trigger),
     onDestinationUnavailable:()=>contextActions?.close(),onSearchFocus:()=>contextActions?.close()});
-  personal=createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,uiAlert,toast,onChange:()=>syncControls(),onEditingChange:editing=>{if(editing)markExploration();else if(missingNotice)queueMicrotask(()=>{if(map&&!disposed&&!personal?.isEditing())void recoverResources();});document.body.classList.toggle('pbb-personal-editing',editing);contextActions?.close();search.closeResults();search.container.inert=editing;updateSearchAction();}});
+  personal=createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,toast,onChange:()=>syncControls(),onEditingChange:editing=>{if(editing)markExploration();else if(missingNotice)queueMicrotask(()=>{if(map&&!disposed&&!personal?.isEditing())void recoverResources();});document.body.classList.toggle('pbb-personal-editing',editing);contextActions?.close();search.closeResults();search.container.inert=editing;updateSearchAction();}});
   const personalHost=document.createElement('div');personalHost.className='pbb-personal-control';region.append(personalHost);
-  const personalControl=createMapControls(personalHost,{controls:['personal-layers'],actions:[{id:'personal-layers',label:'Manage personal layers',title:'Manage personal layers',icon:'map.layer',onActivate:()=>personal.open()}]});
+  const personalControl=createMapControls(personalHost,{controls:['personal-layers'],actions:[{id:'personal-layers',label:'Manage personal layers',title:'Manage personal layers',icon:'map.layer',onActivate:({button})=>{personal.setLauncher(button);void personal.open();}}]});
   function navbarOptions() {
     const brandIcon = document.createElement('img');
     brandIcon.src = new URL('./pbb-map-icon-navbar.png', import.meta.url).href;
