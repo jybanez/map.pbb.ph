@@ -27,3 +27,7 @@ Immediate beginEdit returns false; app must remove its automatic explicit-sessio
 ## Candidate superseded — Helper9773
 
 Candidate ca737db / tree b36a54bc is obsolete and must not be adopted or merged. Concurrent PR167 merged main a909be1bc66e6b881412897ec565937cf87670a9, creating generated bundle/loader conflicts and shared main UI cache303 collision. Helper is preparing a replacement exact head preserving PR167, with combined main UI cache304 and drawing/icons/game303, CSS297/picker294. Prior API notes are design preparation only, not valid runtime provenance. Await replacement review, independent acceptance and verified merge. No obsolete assets were adopted; app remains on accepted runtime302.
+
+## Rebased candidate update — Helper9775
+
+Helper reports local candidate b6363e644f1a90488c472b660e6b2d64dcf58db5 onto a909be1. The new main already has main UI304; combined main UI is therefore305 (superseding the prior proposed304 note), while drawing/icons/game remain303. Markdown source/CSS revisions are preserved, with no reported diff against new main. Full drawing new/legacy source/bundle matrix, Markdown regression and contracts are still running before push/replacement review request. This is a local verification update, not an accepted merged runtime. Application runtime302 remains unchanged; adoption waits replacement exact-head review, acceptance and verified merge.
