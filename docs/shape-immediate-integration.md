@@ -35,3 +35,7 @@ Helper reports local candidate b6363e644f1a90488c472b660e6b2d64dcf58db5 onto a90
 ## Verification-session correction — Helper9779
 
 Helper reports both concurrent full runners stopped because they shared the fixed maplibre-drawing-regression browser name, with no assertion failure at that interruption. All scopes are being changed to per-process unique names before another complete matrix and replacement exact-head submission. This changes the pending candidate again; b6363e6 is not a final accepted adoption head. Reported Markdown source/bundle/CSP and combined contracts remain partial evidence only. Do not use or close the obsolete shared browser, accept ca737db, or adopt unreviewed replacement artifacts. Task220 remains pending accepted replacement and verified merge.
+
+## Final replacement submitted — Helper9782
+
+PR168 final pushed candidate c47ed2b5056f117a4e4bf64c5223d84dd37e2a5e, tree36c20a7df2139ebdc25884a7da86157aca494eca, base a909be1bc66e6b881412897ec565937cf87670a9 supersedes ca737db/b6363e6. Helper reports the complete default source/bundle/new/legacy matrix, combined Markdown/CSP, contracts/icons/toolbar and44 normalized hashes passed, with per-process unique browser names and owned resources closed. Drawing/icons/game303, combined UI305, CSS297/picker294/Timeline299 remain the reported candidate versions. Independent Alfred review and verified merge are still required; no app assets adopted. Task218 is independently completed; task220 integration contract is prepared.
