@@ -31,3 +31,7 @@ Candidate ca737db / tree b36a54bc is obsolete and must not be adopted or merged.
 ## Rebased candidate update — Helper9775
 
 Helper reports local candidate b6363e644f1a90488c472b660e6b2d64dcf58db5 onto a909be1. The new main already has main UI304; combined main UI is therefore305 (superseding the prior proposed304 note), while drawing/icons/game remain303. Markdown source/CSS revisions are preserved, with no reported diff against new main. Full drawing new/legacy source/bundle matrix, Markdown regression and contracts are still running before push/replacement review request. This is a local verification update, not an accepted merged runtime. Application runtime302 remains unchanged; adoption waits replacement exact-head review, acceptance and verified merge.
+
+## Verification-session correction — Helper9779
+
+Helper reports both concurrent full runners stopped because they shared the fixed maplibre-drawing-regression browser name, with no assertion failure at that interruption. All scopes are being changed to per-process unique names before another complete matrix and replacement exact-head submission. This changes the pending candidate again; b6363e6 is not a final accepted adoption head. Reported Markdown source/bundle/CSP and combined contracts remain partial evidence only. Do not use or close the obsolete shared browser, accept ca737db, or adopt unreviewed replacement artifacts. Task220 remains pending accepted replacement and verified merge.
