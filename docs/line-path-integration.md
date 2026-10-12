@@ -20,3 +20,7 @@ Alfred9681 adds these required cases:
 - Document and test canonical vertex-editing behavior separately from segment restrictions.
 
 Adopt only an independently reviewed, merged exact runtime after tree/hash verification. Submit the final task218 application head and actual evidence to Alfred; no self-completion, push or deployment is implied.
+
+## Proposed implementation9691
+
+Helper submitted PR166 exact7c95a391b8a402c742adf66724992a6ee0d562c7 for Alfred review; main remains d782a75 pending acceptance/merge. Proposed runtime302 adapter/core/icons/main/game, CSS297/picker294. Canonical Path icon map.path; getDrawingKind(id) identifies untouched metadata-free imports as paths. Vertex editing retains canonical longitude±180/latitude±90 validation, distinct from segment Mercator restrictions. Helper reports expanded boundary, legacy/new drawing and removal-mid-drag evidence; these are Helper-reported results, not app verification or acceptance. No runtime adopted.
