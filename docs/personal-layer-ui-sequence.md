@@ -49,3 +49,11 @@ The app's complete map-control actions now use canonical `actions.undo`, `action
 The full object suite also passes again on297 at1200/375: numeric0, geometry/style rollback, object Finish separate from Save, one undo unit, alpha0, Save settling active object edits, rotated/tilted/zoomed style rehydration, viewport toolbar bounds and authored offline reload round trip; no page errors and exactly three Helper assets.
 
 Physical touch, Safari/native and assistive-technology acceptance, a full browser-process restart, deployment and indefinite browser storage durability remain unverified.
+
+## Review correction9572
+
+Alfred requested changes on7266dc0 because dirty Close entered modal busy before inline/name and unfinished-shape validation. Save now has a separate preflight that validates inline values through the canonical component, rejects unfinished drawing/object states and checks captured session/map/adapter/lifetime. It rechecks after awaited preflight before entering modal busy and persisting. Invalid input remains non-busy with retained values, accessible field errors, canonical draggable summary and focus behavior; the existing failure latch/no replay is preserved.
+
+`verify-personal-ui-save-close.js` passes1200/375 actual invalid-name and unfinished-shape flows with instrumented zero modal busy transitions and zero IndexedDB writes. A valid Save-and-close enters busy once, commits once and returns to management. The initial test attempt did not dismiss the canonical error alert; corrected user interaction dismisses it before Keep editing. `npm test` passes55/55. Shell manifest is now `bbdd7ba0aa729bd19c3d`, retaining42 assets and29 Helper roots/dependencies.
+
+After the correction, actual IndexedDB quota-failure Save-and-close again retains the modal and draft, preserves the empty saved record, performs one failed attempt without replay, exports the unsaved feature (JSON inspected), and supports explicit Discard. Context/loading/dismissal/late-disposal fixture also passes without page errors. These focused checks supplement the preceding297 full drawing/object/offline evidence; independent review remains required before acceptance or push.

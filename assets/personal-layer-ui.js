@@ -106,8 +106,19 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
     const point=map.project(anchor);objectHost.hidden=false;const width=objectHost.offsetWidth||110,height=objectHost.offsetHeight||44,w=region.clientWidth,h=region.clientHeight,left=Math.max(8,Math.min(w-width-70,point.x-width/2)),above=point.y-height-16,cardBottom=card.hidden?8:card.offsetTop+card.offsetHeight;
     const top=above<cardBottom+8?Math.max(point.y+16,cardBottom+8):above;objectHost.style.left=`${left}px`;objectHost.style.top=`${Math.max(8,Math.min(h-height-8,top))}px`;
   }
-  async function saveLayer(){
-    if(!session||writing||blocked)return false;const edit=session,context=map;if(inline?.getState().active&&!await inline.save())return false;if(session!==edit||map!==context||writing||blocked)return false;const error=nameError(session.layer.name,session.layer.id);if(error){alertError(error);return false;}if(adapter?.getState().draft.length){feedback('Finish or cancel the drawing before saving the layer.',true);return false;}if(adapter?.getState().editSession&&!finishObject()){feedback('Finish or cancel the object before saving the layer.',true);return false;}
+  async function preflightSave(){
+    if(disposed||!session||writing||blocked)return null;const edit=session,context=map,current=adapter,token=mapToken;
+    if(inline?.getState().active&&!await inline.save())return null;
+    if(disposed||session!==edit||map!==context||adapter!==current||mapToken!==token||writing||blocked)return null;
+    const error=nameError(edit.layer.name,edit.layer.id);if(error){alertError(error);return null;}
+    if(current?.getState().draft.length){feedback('Finish or cancel the drawing before saving the layer.',true);return null;}
+    if(current?.getState().editSession&&!finishObject()){feedback('Finish or cancel the object before saving the layer.',true);return null;}
+    return {edit,context,current,token};
+  }
+  async function saveLayer({beforeWrite}={}){
+    const ready=await preflightSave();if(!ready)return false;const {edit,context,current,token}=ready;
+    if(disposed||session!==edit||map!==context||adapter!==current||mapToken!==token||writing||blocked)return false;
+    if(beforeWrite&&beforeWrite()===false)return false;
     session.layer.features=adapter?.getFeatures()||session.layer.features;const next=structuredClone(saved),index=next.layers.findIndex(l=>l.id===edit.layer.id);next.layers[index]=structuredClone(edit.layer);try{await commit(next);if(disposed||session!==edit)return false;edit.baseline=structuredClone(saved.layers.find(l=>l.id===edit.layer.id));feedback('Saved on this device');sync();return context===map;}catch{return false;}
   }
   function detachEditor(){if(!adapter)return;if(inline?.getState().active)session.nameDraft=inline.getState().draft;const state=adapter.getState();if(state.editSession){session.objectDraft={featureId:state.editSession.featureId,feature:adapter.getFeatures().find(f=>String(f.id)===String(state.editSession.featureId))};adapter.rollbackEdit(state.editSession.id);}session.layer.features=adapter.getFeatures();if(state.draft.length)feedback('The map changed during an unfinished drawing. Accepted layer changes remain available; redraw the unfinished shape.',true);map?.off('move',positionObject);map?.off('resize',positionObject);tools?.destroy();tools=null;objectControls?.forEach(c=>c.destroy());objectControls=null;adapter.destroy();adapter=null;rail.hidden=true;objectHost.hidden=true;epoch++;}
@@ -115,7 +126,7 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
   function requestClose(){
     if(!session||writing||confirmation)return;if(!dirty()){leaveEditing();return;}const edit=session,context=map;let instance;confirmation=instance=createActionModal({title:'Unsaved personal layer',content:'Save your layer before leaving editing, or discard changes since the last successful save.',autoBusy:false,workspaceBridge:false,onClose:()=>{if(confirmation===instance)confirmation=null;instance.destroy();},actions:[
       {id:'keep',label:'Keep editing',onClick:()=>true},{id:'discard',label:'Discard',variant:'danger',onClick:()=>{if(session!==edit||map!==context||writing)return false;leaveEditing();return true;}},
-      {id:'save-close',label:'Save and close',disabled:blocked,onClick:async()=>{if(session!==edit||map!==context)return false;instance.setBusy(true);try{if(!await saveLayer()||dirty()){instance.setContent(status.textContent||'The layer could not save. Keep editing to correct it.');return false;}leaveEditing();return true;}finally{instance.setBusy(false);}}}
+      {id:'save-close',label:'Save and close',disabled:blocked,onClick:async()=>{if(disposed||session!==edit||map!==context)return false;let busyStarted=false;try{if(!await saveLayer({beforeWrite:()=>{if(disposed||confirmation!==instance||session!==edit||map!==context)return false;instance.setBusy(true);busyStarted=true;return true;}})||dirty()){instance.setContent(status.textContent||'The layer could not save. Keep editing to correct it.');return false;}leaveEditing();return true;}finally{if(busyStarted)instance.setBusy(false);}}}
     ]});instance.open();
   }
   const key=event=>{if(!adapter||event.target!==map?.getCanvas())return;if((event.ctrlKey||event.metaKey)&&['z','y'].includes(event.key.toLowerCase())){event.preventDefault();event.stopImmediatePropagation();historyAction(event.key.toLowerCase()==='y'||event.shiftKey?'redo':'undo');}};
