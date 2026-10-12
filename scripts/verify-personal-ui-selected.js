@@ -1,0 +1,28 @@
+async page=>{
+ const results=[];
+ for(const width of [1200,375]){
+  const context=await page.context().browser().newContext({viewport:{width,height:850},serviceWorkers:'block'}),errors=[],requests=[];
+  context.on('request',r=>{if(r.url().includes('/vendor/helpers/'))requests.push(new URL(r.url()).pathname);});
+  await context.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const Base=v.Map;v.Map=class extends Base{constructor(o){super(o);window.__map=this;}};}});});
+  const tab=await context.newPage();tab.on('pageerror',e=>errors.push(e.message));await tab.goto('https://map.pbb.ph/');await tab.waitForFunction(()=>window.__map?.getSource('pbb-personal-readonly'),null,{timeout:60000});
+  await tab.evaluate(async()=>{const {createPersonalLayerStore}=await import('./assets/personal-layer-store.js'),s=createPersonalLayerStore(),doc=await s.read(),c=window.__map.getCenter();doc.layers.push({id:'selected',name:'Selection controls',visible:true,features:[{type:'Feature',id:0,properties:null,geometry:{type:'Point',coordinates:[c.lng-.0003,c.lat]}},{type:'Feature',id:'other',properties:null,geometry:{type:'Point',coordinates:[c.lng+.0003,c.lat]}}]});await s.save(doc);s.close();});await tab.reload();await tab.waitForFunction(()=>window.__map?.getSource('pbb-personal-readonly'));await tab.evaluate(()=>window.__map.jumpTo({zoom:17,pitch:0,bearing:0}));
+  const read=()=>tab.evaluate(async()=>{const {createPersonalLayerStore}=await import('./assets/personal-layer-store.js'),s=createPersonalLayerStore();try{return await s.read();}finally{s.close();}}),baseline=await read();
+  const pointer=async id=>{const p=await tab.evaluate(id=>{const m=window.__map,f=m.querySourceFeatures('pbb-personal-readonly').find(f=>String(f.id)==='selected:'+String(id))||window.__seed?.find(f=>String(f.id)===String(id));const point=m.project(f.geometry.coordinates),r=m.getCanvas().getBoundingClientRect();return{x:r.left+point.x,y:r.top+point.y};},id);await tab.mouse.click(p.x,p.y);};
+  await tab.evaluate(features=>window.__seed=features,baseline.layers[0].features);
+  await tab.getByRole('button',{name:'Manage personal layers',exact:true}).click();await tab.getByRole('button',{name:'Personal layer',exact:true}).click();await tab.getByRole('option',{name:'Selection controls',exact:true}).click();await tab.getByRole('button',{name:'Edit layer',exact:true}).click();
+  const selected=async id=>tab.waitForFunction(id=>{const m=window.__map,source=Object.keys(m.getStyle().sources).find(x=>x.startsWith('helper-drawing-'));return m.querySourceFeatures(source).some(f=>String(f.properties.__helperId)===String(id)&&f.properties.__helperSelected);},id);
+  await tab.waitForTimeout(400);await pointer(0);await selected(0);const toolbar=tab.locator('.pbb-personal-object');
+  if(await tab.locator('.pbb-personal-card').getByRole('button',{name:'Delete selected drawing',exact:true}).count()||await toolbar.getByRole('button',{name:'Delete selected drawing',exact:true}).count()!==1)throw Error('Object trash placement incorrect');
+  for(const label of ['Finish object','Cancel object'])if(!await toolbar.getByRole('button',{name:label,exact:true}).isDisabled())throw Error('Clean object '+label+' enabled');
+  if(await toolbar.getByRole('button',{name:'Delete selected drawing',exact:true}).isDisabled())throw Error('Clean object cannot request deletion');
+  await pointer('other');await selected('other');await pointer(0);await selected(0);
+  await toolbar.getByRole('button',{name:'Fill color',exact:true}).click();await tab.locator('input[type=color]').fill('#d04b63');await tab.getByLabel('Fill color opacity',{exact:true}).focus();await tab.getByLabel('Fill color opacity',{exact:true}).press('Home');await tab.getByRole('button',{name:'Apply',exact:true}).click();await tab.waitForTimeout(350);
+  for(const label of ['Finish object','Cancel object'])if(await toolbar.getByRole('button',{name:label,exact:true}).isDisabled())throw Error('Dirty object '+label+' disabled');if(!await toolbar.getByRole('button',{name:'Delete selected drawing',exact:true}).isDisabled())throw Error('Dirty object deletion bypassed resolution');
+  await pointer('other');await selected(0);if(JSON.stringify(await read())!==JSON.stringify(baseline))throw Error('Preview persisted');await toolbar.getByRole('button',{name:'Cancel object',exact:true}).click();await pointer('other');await selected('other');
+  await toolbar.getByRole('button',{name:'Delete selected drawing',exact:true}).click();await tab.getByRole('button',{name:'Cancel',exact:true}).click();await tab.waitForTimeout(350);await toolbar.getByRole('button',{name:'Delete selected drawing',exact:true}).click();await tab.getByRole('button',{name:'Delete',exact:true}).click();await tab.waitForTimeout(350);
+  if(JSON.stringify(await read())!==JSON.stringify(baseline))throw Error('Deletion persisted without layer Save');await tab.getByRole('button',{name:'Undo drawing action',exact:true}).click();await tab.getByRole('button',{name:'Apply',exact:true}).click();await tab.waitForTimeout(350);await pointer('other');await selected('other');
+  await tab.screenshot({path:'output/playwright/personal214-selected-'+width+'.png'});const bounds=await toolbar.boundingBox();if(bounds.x<0||bounds.x+bounds.width>width||bounds.y<66||bounds.y+bounds.height>850)throw Error('Toolbar escaped viewport');
+  if(errors.length||new Set(requests).size!==3)throw Error(JSON.stringify({errors,requests}));results.push({width,trashPlacement:true,cleanSwitching:true,dirtySwitchRejected:true,dirtyDeleteDisabled:true,cleanConfirmedDeleteAndUndo:true,numericZero:true,alphaZeroPreview:true,noAutomaticPersistence:true,pageErrors:errors});await context.close();
+ }
+ return results;
+}

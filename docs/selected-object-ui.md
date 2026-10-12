@@ -1,0 +1,15 @@
+# Selected-object controls — task214
+
+Task214 starts from independently accepted task209 implementation `c541638f4258cb4529e1652d5dd19b3a50f280a9`, acceptance documentation `a427e92986d9fd26b15163beb817af85a1748230`. No task214 acceptance or push is claimed.
+
+The selected-object trash action moves from the layer edit history row into the existing floating object toolbar. Layer deletion remains in the management page. All actions use the complete map-control component and canonical adapter capabilities; no app bypass of edit/selection/deletion guards is implemented. Dirty objects must explicitly Finish or Cancel before switching/deletion; unchanged objects should switch directly and allow one-shot confirmed deletion. Object Finish/Cancel should be disabled when unchanged, while internal supported clean settlement remains available for explicit layer Save and context cleanup.
+
+Helper task215 owns canonical Fill/Stroke artwork, clean pointer/session switching and accurate dirty-aware capabilities. Accepted adapter296 currently blocks deletion whenever an edit session exists, while app selection begins such a session. Integration constraint9601 requests canonical clean-session deletion through the existing beforeDelete hook and dirty deletion disabled until explicit resolution. Canonical icon IDs and reviewed/merged provenance remain pending; no new runtime is adopted before independent review/merge verification.
+
+`scripts/verify-personal-ui-selected.js` prepares actual1200/375 selected-object placement, clean switching, dirty switching/deletion protection, confirmation cancellation/confirmed deletion/Undo, numeric0 and alpha0 preview, no automatic persistence, viewport bounds and exactly three Helper assets. It is pending the reviewed runtime and does not yet constitute passing task214 evidence.
+
+Keep task209's explicit Save, validation-before-busy, CAS/recovery, no uncertain-write replay, context cancellation and offline boundaries. Physical touch/Safari/assistive technology and deployment remain outside validated scope. Unrelated owner/Landing work remains untouched.
+
+Alfred9603 confirms floating placement and canonical clean-session confirmed Delete, with cancellation preserving selection/session; dirty or dragging deletion stays disabled until Finish/Cancel, without another resolution modal. The app consumes canonical capabilities directly.
+
+Independent relocation work is checked against the currently accepted297 runtime: the complete `verify-personal-ui-objects.js` suite passes1200/375 geometry/style rollback, numeric0/alpha0, Finish vs durable Save, history, explicit Save settlement, rotated/tilted/zoomed style reload, viewport bounds, authored offline reload and exactly three Helper assets; fixture page errors are empty. Mobile screenshot inspected with trash in the floating toolbar and absent from the layer history row. `npm test` passes55/55. New clean/dirty selection and icon behavior still require reviewed/merged task215; the relocation checkpoint alone is not final task214 acceptance.
