@@ -9,7 +9,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   const prefix = options.idPrefix || `helper-drawing-${++nextAdapter}`;
   const sourceId = `${prefix}-data`;
   const layers = ["fill", "line", "point", "vertex"].map(name => `${prefix}-${name}`);
-  if (map.getSource(sourceId) || layers.some(id => map.getLayer(id))) throw new Error("Drawing IDs already exist.");
+  if (map.getStyle() && (map.getSource(sourceId) || layers.some(id => map.getLayer(id)))) throw new Error("Drawing IDs already exist.");
   const canvas = map.getCanvas();
   const listeners = new Map();
   const mapOffs = [];
@@ -350,7 +350,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   bindDom(canvas, "pointerdown", pointerDown); bindDom(canvas, "pointermove", pointerMove); bindDom(canvas, "pointerup", pointerUp);
   bindDom(canvas, "pointercancel", () => { if (!dispatchDepth) abortDrag(); }); bindDom(canvas, "lostpointercapture", () => { if (drag && !dispatchDepth) abortDrag(); }); bindDom(canvas, "keydown", keydown);
   bindDom(globalThis, "blur", () => { if (drag && !dispatchDepth) abortDrag(); });
-  try { if (map.isStyleLoaded()) hydrate(); } catch (error) { destroy(); throw error; }
+  // Style availability permits custom resources before base-source tiles finish.
+  try { hydrate(); } catch (error) { destroy(); throw error; }
   return { on, setMode, setFeatures, validateFeatures, beginEdit, acceptEdit, rollbackEdit, updateFeature, getFeatureStyle, getFeatures: () => clone(features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy: () => destroy(),
     getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), editSession: getEditState(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
 }

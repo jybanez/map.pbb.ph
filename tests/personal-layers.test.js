@@ -5,7 +5,7 @@ import {createMapLibreDrawingAdapter} from '../vendor/helpers/js/ui/ui.map.drawi
 function adapter(){
  const canvas=new EventTarget();canvas.style={cursor:'crosshair'};
  const target=new EventTarget();const before=[globalThis.addEventListener,globalThis.removeEventListener];globalThis.addEventListener=target.addEventListener.bind(target);globalThis.removeEventListener=target.removeEventListener.bind(target);
- const events=new Map(),map={on:(name,fn)=>events.set(name,fn),off:name=>events.delete(name),getCanvas:()=>canvas,addSource(){},getSource(){},getLayer(){},isStyleLoaded:()=>false};
+ const events=new Map(),map={on:(name,fn)=>events.set(name,fn),off:name=>events.delete(name),getCanvas:()=>canvas,addSource(){},getSource(){},getLayer(){},getStyle:()=>null,isStyleLoaded:()=>false};
  const a=createMapLibreDrawingAdapter(map);return {a,dispose(){a.destroy();[globalThis.addEventListener,globalThis.removeEventListener]=before;assert.equal(events.size,0);}};
 }
 test('authored document retains numeric zero IDs, hidden visibility, exact geometry and independent clones',()=>{

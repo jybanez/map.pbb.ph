@@ -1,4 +1,4 @@
-import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261012-personal-ui2';
+import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261012-personal-ui3';
 export function createPersonalLayers({region,uiLoader,createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,toast,onChange,onEditingChange,store=createPersonalLayerStore(),idPrefix='pbb-personal-readonly'}){
   const card=document.createElement('section'),rail=document.createElement('div'),objectHost=document.createElement('div'),status=document.createElement('p');
   card.className='pbb-personal-card';card.hidden=true;card.setAttribute('aria-label','Personal layers');rail.className='pbb-personal-rail';rail.hidden=true;objectHost.className='pbb-personal-object';objectHost.hidden=true;status.setAttribute('role','status');region.append(card,rail,objectHost);
