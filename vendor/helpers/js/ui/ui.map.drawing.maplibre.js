@@ -317,9 +317,13 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
         return Math.hypot(x - a.x - t * dx, y - a.y - t * dy) <= 8;
       });
     }
-    if (!vertex && recognizedShape(feature)) {
-      const live = layers.slice(0, 2).filter(id => map.getLayer(id));
-      segment = !!live.length && map.queryRenderedFeatures([[x - 6, y - 6], [x + 6, y + 6]], { layers: live }).some(f => f.properties.__helperId === selected);
+    if (feature?.geometry.type === "Polygon") {
+      // Match selection's topmost feature, rather than dragging through another object.
+      // Rendered fill excludes holes; stroke also permits transparent-fill edge hits.
+      const live = layers.slice(0, 3).filter(id => map.getLayer(id));
+      const hit = live.length ? map.queryRenderedFeatures([[x - 6, y - 6], [x + 6, y + 6]], { layers: live }).find(f => f.properties.__helperKind === "feature") : null;
+      if (hit?.properties.__helperId !== selected && (hit || !vertex)) return;
+      if (!vertex) segment = true;
     }
     if (!vertex && !segment) return;
     event.preventDefault(); event.stopImmediatePropagation();
@@ -357,10 +361,14 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       const original = drag.before.find(f => String(f.id) === drag.featureId);
       const delta = [ll.lng - drag.start.lng, ll.lat - drag.start.lat];
       // Stop at world/Mercator boundaries atomically; never wrap or clamp vertices independently.
-      if (Math.abs(delta[0]) > 180 || original.geometry.coordinates.some(c => Math.abs(c[1]) > 85.0511287798066)) return;
-      const translated = original.geometry.coordinates.map(c => [c[0] + delta[0], c[1] + delta[1]]);
-      try { translated.forEach(validatePosition); } catch (_) { return; }
-      if (translated.some(c => Math.abs(c[1]) > 85.0511287798066)) return;
+      const polygon = original.geometry.type === "Polygon";
+      const positions = polygon ? original.geometry.coordinates.flat() : original.geometry.coordinates;
+      if (Math.abs(delta[0]) > 180 || positions.some(c => Math.abs(c[1]) > 85.0511287798066)) return;
+      const translate = c => [c[0] + delta[0], c[1] + delta[1], ...c.slice(2)];
+      const translated = polygon ? original.geometry.coordinates.map(ring => ring.map(translate)) : positions.map(translate);
+      const candidate = polygon ? translated.flat() : translated;
+      try { candidate.forEach(validatePosition); } catch (_) { return; }
+      if (candidate.some(c => Math.abs(c[1]) > 85.0511287798066)) return;
       feature.geometry.coordinates = translated;
     }
     else if (feature.geometry.type === "Point") feature.geometry.coordinates = coordinate;

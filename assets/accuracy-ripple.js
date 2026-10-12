@@ -1,4 +1,4 @@
-import { accuracyPolygon } from './location.js?v=20261012-personal-ui10';
+import { accuracyPolygon } from './location.js?v=20261013-polygon1';
 
 // Helper has no geographic accuracy-ripple component. This adapter updates one
 // GeoJSON source in metres; MapLibre projects it with terrain, tilt and bearing.

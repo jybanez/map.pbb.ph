@@ -1,4 +1,4 @@
-import { poiName } from './poi-name.js?v=20261012-personal-ui10';
+import { poiName } from './poi-name.js?v=20261013-polygon1';
 export function installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed=()=>true,isInteractionBlocked=()=>false }) {
   const canvas = map.getCanvas();
   const pointerSurface = map.getCanvasContainer();
