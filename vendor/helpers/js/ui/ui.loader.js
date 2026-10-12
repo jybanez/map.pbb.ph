@@ -20,7 +20,7 @@ const UI_DEVICE_PRIMER_REV = "0.21.235";
 const UI_GAME_REV = "0.21.112";
 const UI_INSPECTION_REV = "0.21.1";
 const UI_TIMELINE_REV = "0.21.299";
-const UI_BUNDLE_REV = "0.21.299";
+const UI_BUNDLE_REV = "0.21.301";
 const UI_GAME_BUNDLE_REV = "0.21.298";
 const UI_INSPECTION_BUNDLE_REV = "0.21.1";
 const UI_BUNDLE_JS = `../../dist/helpers.ui.bundle.min.js?v=${UI_BUNDLE_REV}`;
@@ -518,7 +518,7 @@ export const DEFAULT_COMPONENT_REGISTRY = {
     export: "createMapLocationPerson",
   },
   "ui.map.drawing.maplibre": {
-    js: "./ui.map.drawing.maplibre.js?v=0.21.299",
+    js: "./ui.map.drawing.maplibre.js?v=0.21.301",
     css: [],
     deps: [],
     export: "createMapLibreDrawingAdapter",
@@ -632,7 +632,7 @@ export const DEFAULT_COMPONENT_REGISTRY = {
     export: "createChatThread",
   },
   "ui.chat.composer": {
-    js: "./ui.chat.composer.js?v=0.21.271",
+    js: "./ui.chat.composer.js?v=0.21.300",
     css: [UI_TOKENS_CSS, UI_COMPONENTS_CSS, "../../css/ui/ui.chat.composer.css?v=0.21.271"],
     deps: ["ui.action.modal", "ui.toggle.button", "ui.audio.audiograph", "ui.audio.player"],
     export: "createChatComposer",

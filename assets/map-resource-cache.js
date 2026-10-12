@@ -1,4 +1,4 @@
-import { createMapCacheStore } from './map-cache-store.js?v=20261012-personal-ui5';
+import { createMapCacheStore } from './map-cache-store.js?v=20261012-personal-ui6';
 
 const AGE = 7 * 86400000;
 const MAX = 4 * 1024 * 1024;

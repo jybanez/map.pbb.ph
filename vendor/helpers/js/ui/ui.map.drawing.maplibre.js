@@ -101,7 +101,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const dirty = !!edit && !equal(edit.before, features);
     const editable = !destroyed && !!edit && !drag;
     const geometry = features.find(f => String(f.id) === selected)?.geometry.type;
-    return { modes: destroyed ? ["pan"] : edit ? ["select"] : [...MODES], editing: "drag-existing-vertices", editSessions: true, featureStyles: ["fill", "stroke"], measurement: false,
+    return { modes: destroyed ? ["pan"] : edit && (dirty || drag) ? ["select"] : [...MODES], editing: "drag-existing-vertices", editSessions: true, featureStyles: ["fill", "stroke"], measurement: false,
       actions: { fill: editable && geometry !== "LineString", stroke: editable, finish: !destroyed && !drag && (edit ? dirty : (mode === "line" ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (edit ? dirty : mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag, delete: !destroyed && (!edit || !dirty) && selected !== null && !drag, clear: !destroyed && !edit && !!features.length && !drag } };
   }
   function publishState() { if (!destroyed) emit("statechange", { mode, selectedFeatureId: selected, draft: clone(draft), anchor: anchor(), dragging: !!drag, editSession: getEditState(), revision }); }
@@ -134,11 +134,17 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (dispatchDepth) return false;
     if (destroyed) return;
     if (!MODES.includes(next)) throw new RangeError(`Unsupported drawing mode: ${next}`);
-    if (edit) return false;
+    if (edit && (drag || !equal(edit.before, features))) return false;
+    if (edit && next === "select") return true;
+    const endedEdit = edit;
+    edit = null; // Explicit mode choice settles only an unchanged session, without history/persistence.
     abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; restoreNavigation(); mode = next;
     if (!["select", "pan"].includes(mode)) lockNavigation(["dragPan", "doubleClickZoom", "keyboard"]);
     canvas.style.cursor = mode === "pan" || mode === "select" ? oldCursor : "crosshair";
-    if (!refresh()) return false; emit("modechange", mode);
+    if (!refresh()) return false;
+    if (endedEdit) emit("editchange", null);
+    if (destroyed) return false;
+    emit("modechange", mode); return !destroyed;
   }
   function newFeature(type, coordinates) {
     let id; do { id = `${prefix}-${globalThis.crypto.randomUUID()}`; } while (features.some(f => String(f.id) === id));
