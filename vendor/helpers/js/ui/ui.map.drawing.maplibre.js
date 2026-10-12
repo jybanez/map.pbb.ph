@@ -15,6 +15,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   const lineBehavior = options.lineBehavior ?? "legacy-path";
   if (!["segment", "legacy-path"].includes(lineBehavior)) throw new RangeError("lineBehavior must be segment or legacy-path.");
   const editBehavior = options.editBehavior ?? "session";
+  const selectToggle = options.selectToggle === true;
   if (!["session", "immediate"].includes(editBehavior)) throw new RangeError("editBehavior must be session or immediate.");
   let styleChange = null, nextStyleChange = 0;
   const listeners = new Map();
@@ -86,7 +87,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     }
     const drawing = preview && draft.length && ["line", "path"].includes(mode) ? [...draft, preview] : draft;
     if (drawing.length > 1) data.push({ type: "Feature", geometry: { type: "LineString", coordinates: mode === "polygon" && draft.length > 2 ? [...draft, draft[0]] : drawing }, properties: { __helperKind: "draft" } });
-    vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
+    if (!selectToggle || mode === "select") vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
     return { type: "FeatureCollection", features: data };
   }
   function hydrate() {
@@ -112,11 +113,13 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   function render() { if (!destroyed && ownedSource) map.getSource(sourceId)?.setData(renderedData()); }
   function capabilities() {
     const dirty = !!edit && !equal(edit.before, features);
+    const modeTransitionReason = !selectToggle ? null : drag ? "Cancel or release the active edit before changing tools." : styleChange ? "Finish or cancel the color change before changing tools." : draft.length || draftRedo.length ? "Finish or cancel the drawing before changing tools." : dirty ? "Finish or cancel the object edit before changing tools." : null;
+    const transitionBlocked = selectToggle && (!!drag || !!styleChange || !!draft.length || !!draftRedo.length);
     const editable = !destroyed && (!!edit || editBehavior === "immediate" && selected !== null && mode === "select") && !drag && !styleChange;
     const geometry = features.find(f => String(f.id) === selected)?.geometry.type;
     const actionVisibility = { fill: mode === "select" && !!geometry && geometry !== "LineString", finish: edit ? dirty : ["path", "polygon"].includes(mode) || mode === "line" && lineBehavior === "legacy-path", cancel: !!styleChange || !!drag || !!draft.length || !!draftRedo.length || (edit ? dirty : !["select", "pan"].includes(mode)) };
-    return { actionVisibility, modes: destroyed ? ["pan"] : edit && (dirty || drag) ? ["select"] : [...MODES], editing: "drag-existing-vertices", segmentTranslation: true, lineBehavior, drawingKinds: ["line", "path"], editBehavior, editSessions: editBehavior === "session", shapes: ["circle", "rectangle"], styleTransactions: editBehavior === "immediate", featureStyles: ["fill", "stroke"], measurement: false, canPersist: !destroyed && !styleChange && !drag && !draft.length && !draftRedo.length && !dirty,
-      actions: { fill: editable && geometry !== "LineString", stroke: editable, finish: !destroyed && !drag && !styleChange && (edit ? dirty : (["line", "path"].includes(mode) ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (!!styleChange || (edit ? dirty : mode !== "select" || !!draft.length || !!drag)), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag && !styleChange, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag && !styleChange, delete: !destroyed && (!edit || !dirty) && selected !== null && !drag && !styleChange, clear: !destroyed && !edit && !!features.length && !drag && !styleChange } };
+    return { modeTransitionReason, actionVisibility, modes: destroyed ? ["pan"] : transitionBlocked ? [mode] : edit && (dirty || drag) ? ["select"] : [...MODES], selectToggle, selectionEnabled: mode === "select", editing: "drag-existing-vertices", segmentTranslation: true, lineBehavior, drawingKinds: ["line", "path"], editBehavior, editSessions: editBehavior === "session", shapes: ["circle", "rectangle"], styleTransactions: editBehavior === "immediate", featureStyles: ["fill", "stroke"], measurement: false, canPersist: !destroyed && !styleChange && !drag && !draft.length && !draftRedo.length && !dirty,
+      actions: { fill: editable && geometry !== "LineString", stroke: editable, finish: !destroyed && !drag && !styleChange && (edit ? dirty : (["line", "path"].includes(mode) ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (!!styleChange || (edit ? dirty : mode !== "select" || !!draft.length || !!drag)), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag && !styleChange, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag && !styleChange, delete: !destroyed && (!selectToggle || mode === "select") && (!edit || !dirty) && selected !== null && !drag && !styleChange, clear: !destroyed && !edit && !!features.length && !drag && !styleChange } };
   }
   function publishState() { if (!destroyed) emit("statechange", { mode, selectedFeatureId: selected, draft: clone(draft), anchor: anchor(), dragging: !!drag, editSession: getEditState(), styleChange: getStyleChange(), revision }); }
   function refresh() { if (destroyed) return false; revision++; render(); if (destroyed) return false; emit("measure", null); publishState(); return !destroyed; }
@@ -148,6 +151,11 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (dispatchDepth) return false;
     if (destroyed) return;
     if (!MODES.includes(next)) throw new RangeError(`Unsupported drawing mode: ${next}`);
+    if (selectToggle && next === mode) return true;
+    if (selectToggle && next !== mode && capabilities().modeTransitionReason) {
+      emit("moderejected", { requestedMode: next, mode, reason: capabilities().modeTransitionReason });
+      return false;
+    }
     if (styleChange) cancelStyleChange(styleChange.id);
     if (edit && (drag || !equal(edit.before, features))) return false;
     if (edit && next === "select") return true;
@@ -176,7 +184,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     catch (error) { reportError(error); return false; } // Invalid draft stays editable.
     draft = []; draftRedo = []; preview = null; if (!commit([...features, feature])) return false; setMode("select"); return select(feature.id);
   }
-  function cancel() { if (dispatchDepth) return false; if (!destroyed) { if (styleChange) return cancelStyleChange(styleChange.id); if (edit) return rollbackEdit(); abortDrag(); setMode("select"); } }
+  function cancel() { if (dispatchDepth) return false; if (!destroyed) { if (styleChange) return cancelStyleChange(styleChange.id); if (edit) return rollbackEdit(); abortDrag(); if (selectToggle) { draft = []; draftRedo = []; preview = null; } return setMode("select"); } }
   function beginEdit(id = selected) {
     if (editBehavior === "immediate" || dispatchDepth || destroyed || drag || draft.length || draftRedo.length || mode !== "select" || id === null || id === undefined) return false;
     const feature = features.find(f => String(f.id) === String(id));
@@ -299,7 +307,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       } catch (error) { reportError(error); }
       return;
     }
-    if (mode === "point") { const feature = newFeature("Point", coordinate); commit([...features, feature]); }
+    if (mode === "point") { const feature = newFeature("Point", coordinate); if (commit([...features, feature]) && selectToggle) { setMode("select"); select(feature.id); } }
     else { if (!equal(draft.at(-1), coordinate)) draft.push(coordinate); draftRedo = []; preview = null;
       if (mode === "line" && lineBehavior === "segment" && draft.length === 2) finish(); else refresh(); }
   }
@@ -386,6 +394,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   }
   function keydown(event) {
     if (destroyed || event.target !== canvas || event.altKey) return;
+    if (selectToggle && mode === "pan" && event.key !== "Escape") return;
     let handled = true;
     try {
       if (event.key === "Escape") cancel();
@@ -424,6 +433,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const before = features; revision++; features = next; publishChanges(before);
   }
   function requestDeletion(action) {
+    if (selectToggle && mode === "pan" && action === "delete") return false;
     if (dispatchDepth || destroyed || drag || styleChange || requestingDelete || (edit && (action !== "delete" || !equal(edit.before, features))) || (action === "delete" && selected === null)) return false;
     // A draft-only clear retains the historical behavior but also goes through the gate.
     if (action === "clear" && !features.length && !draft.length && !draftRedo.length) return false;

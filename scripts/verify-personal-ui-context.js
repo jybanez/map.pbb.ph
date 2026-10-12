@@ -3,7 +3,7 @@ async page=>{
  await context.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const Base=v.Map;v.Map=class extends Base{constructor(o){super(o);window.__map=this;}};}});});
  const tab=await context.newPage();tab.on('pageerror',e=>errors.push(e.message));await tab.goto('https://map.pbb.ph/');await tab.waitForFunction(()=>window.__map?.getSource('pbb-personal-readonly'),null,{timeout:60000});
  const loading=await tab.evaluate(async()=>{
-  const {createPersonalLayers}=await import('./assets/personal-layer-ui.js'),{uiLoader}=await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.306');
+  const {createPersonalLayers}=await import('./assets/personal-layer-ui.js'),{uiLoader}=await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.307');
   const [createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,createToastStack]=await Promise.all(['ui.action.modal','ui.form.modal','ui.map.controls','ui.busy.overlay','ui.dialog.alert','ui.toast'].map(n=>uiLoader.get(n,{preferBundles:true})));
   const toast=createToastStack({workspaceBridge:false});let release;
   const fixture=createPersonalLayers({region:document.getElementById('map-region'),uiLoader,createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,toast,idPrefix:'fixture-loading',store:{read:()=>new Promise(resolve=>release=resolve),save(){throw Error('Unexpected save');},close(){}}});
@@ -12,7 +12,7 @@ async page=>{
   fixture.destroy();toast.destroy();return{busy,shown,staysClosed,removed:!window.__map.getSource('fixture-loading')};
  });if(Object.values(loading).some(v=>!v))throw Error(JSON.stringify(loading));
  await tab.evaluate(async()=>{
-  const {createPersonalLayers}=await import('./assets/personal-layer-ui.js'),{uiLoader}=await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.306');
+  const {createPersonalLayers}=await import('./assets/personal-layer-ui.js'),{uiLoader}=await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.307');
   const [createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,createToastStack]=await Promise.all(['ui.action.modal','ui.form.modal','ui.map.controls','ui.busy.overlay','ui.dialog.alert','ui.toast'].map(n=>uiLoader.get(n,{preferBundles:true})));
   const toast=createToastStack({workspaceBridge:false}),initial={schema:1,revision:0,layers:[]};window.__writes=0;
   const fixture=createPersonalLayers({region:document.getElementById('map-region'),uiLoader,createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,toast,idPrefix:'fixture-context',store:{read:async()=>initial,save:state=>{window.__writes++;return new Promise(resolve=>{window.__release=()=>{window.__saved=structuredClone({...state,revision:state.revision+1});resolve(window.__saved);};});},close(){}}});

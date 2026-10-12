@@ -20,7 +20,7 @@ const UI_DEVICE_PRIMER_REV = "0.21.235";
 const UI_GAME_REV = "0.21.112";
 const UI_INSPECTION_REV = "0.21.1";
 const UI_TIMELINE_REV = "0.21.299";
-const UI_BUNDLE_REV = "0.21.306";
+const UI_BUNDLE_REV = "0.21.307";
 const UI_GAME_BUNDLE_REV = "0.21.303";
 const UI_INSPECTION_BUNDLE_REV = "0.21.1";
 const UI_BUNDLE_JS = `../../dist/helpers.ui.bundle.min.js?v=${UI_BUNDLE_REV}`;
@@ -518,13 +518,13 @@ export const DEFAULT_COMPONENT_REGISTRY = {
     export: "createMapLocationPerson",
   },
   "ui.map.drawing.maplibre": {
-    js: "./ui.map.drawing.maplibre.js?v=0.21.306",
+    js: "./ui.map.drawing.maplibre.js?v=0.21.307",
     css: [],
     deps: [],
     export: "createMapLibreDrawingAdapter",
   },
   "ui.map.drawing": {
-    js: "./ui.map.drawing.js?v=0.21.303",
+    js: "./ui.map.drawing.js?v=0.21.307",
     css: [UI_TOKENS_CSS, UI_COMPONENTS_CSS, "../../css/ui/ui.map.drawing.css?v=0.21.297"],
     deps: [],
     export: "createMapDrawingTools",

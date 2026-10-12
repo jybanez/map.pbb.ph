@@ -5,6 +5,7 @@ import { createEventBag } from "./ui.events.js";
 const DEFAULT_OPTIONS = {
   modes: ["select", "point", "line", "polygon", "rectangle", "circle"],
   hideUnavailableActions: [],
+  selectToggle: false,
   actions: ["finish", "cancel", "undo", "redo", "delete", "clear"],
   activeMode: "select",
   orientation: "vertical",
@@ -80,6 +81,13 @@ export function createMapDrawingTools(container, options = {}) {
       return;
     }
 
+    const focused = container.contains(document.activeElement) ? document.activeElement : null;
+    const focusMode = focused?.dataset?.mode;
+    const focusAction = focused?.dataset?.action;
+    if (currentOptions.selectToggle && currentOptions.adapter?.getMode) {
+      activeMode = normalizeMode(currentOptions.adapter.getMode(), currentOptions.modes);
+      currentOptions.activeMode = activeMode;
+    }
     events.clear();
     bindAdapterEvents();
     clearNode(container);
@@ -118,11 +126,23 @@ export function createMapDrawingTools(container, options = {}) {
     if (currentOptions.actions.length) {
       root.appendChild(renderActionGroup());
     }
+    if (currentOptions.selectToggle && readCapabilities().modeTransitionReason) {
+      root.appendChild(createElement("span", {
+        className: "ui-map-drawing-status",
+        attrs: { role: "status" },
+        text: readCapabilities().modeTransitionReason,
+      }));
+    }
     const measurement = renderMeasurement();
     if (measurement) {
       root.appendChild(measurement);
     }
     container.appendChild(root);
+    if (currentOptions.selectToggle && (focusMode || focusAction)) {
+      const replacement = Array.from(root.querySelectorAll('button')).find(button =>
+        focusMode ? button.dataset.mode === focusMode : button.dataset.action === focusAction);
+      if (replacement && !replacement.disabled) replacement.focus({ preventScroll: true });
+    }
   }
 
   function renderModeGroup() {
@@ -131,14 +151,17 @@ export function createMapDrawingTools(container, options = {}) {
       attrs: { role: "group", "aria-label": "Drawing modes" },
     });
     currentOptions.modes.forEach((mode) => {
+      if (currentOptions.selectToggle && mode === "pan") return;
       const meta = MODE_META[mode] || { label: mode, symbol: "•" };
       const active = mode === activeMode;
-      const unavailable = isModeDisabled(mode);
+      const targetMode = currentOptions.selectToggle && mode === "select" && active ? "pan" : mode;
+      const unavailable = isModeDisabled(targetMode) || currentOptions.selectToggle && mode === "select" && readCapabilities().selectToggle !== true;
+      const title = currentOptions.selectToggle && mode === "select" ? active ? "Turn selection off to navigate" : "Turn selection on to edit objects" : meta.label;
       const button = createElement("button", {
         className: `ui-map-drawing-button ui-map-drawing-mode${active ? " is-active" : ""}`,
         attrs: {
           type: "button",
-          title: meta.label,
+          title,
           "aria-label": meta.label,
           "aria-pressed": active ? "true" : "false",
           "aria-disabled": unavailable ? "true" : "false",
@@ -157,7 +180,7 @@ export function createMapDrawingTools(container, options = {}) {
         className: "ui-map-drawing-button-label",
         text: meta.label,
       }));
-      events.on(button, "click", () => setMode(mode));
+      events.on(button, "click", () => setMode(targetMode));
       group.appendChild(button);
     });
     return group;
@@ -221,6 +244,14 @@ export function createMapDrawingTools(container, options = {}) {
       return;
     }
 
+    if (currentOptions.selectToggle) {
+      if (isModeDisabled(nextMode)) return false;
+      const adapter = currentOptions.adapter;
+      if (!adapter?.setMode || adapter.setMode(nextMode) === false) { render(); return false; }
+      activeMode = normalizeMode(adapter.getMode?.() || nextMode, currentOptions.modes);
+      currentOptions.activeMode = activeMode;
+      render(); return activeMode === nextMode;
+    }
     activeMode = nextMode;
     currentOptions.activeMode = nextMode;
     if (currentOptions.adapter?.setMode) {
@@ -327,6 +358,7 @@ export function createMapDrawingTools(container, options = {}) {
       measure: handleAdapterMeasure,
       modechange: handleAdapterModeChange,
     };
+    if (currentOptions.selectToggle) eventMap.statechange = () => { activeMode = normalizeMode(adapter.getMode?.() || activeMode, currentOptions.modes); currentOptions.activeMode = activeMode; render(); };
 
     Object.entries(eventMap).forEach(([eventName, handler]) => {
       const off = adapter.on(eventName, handler);
@@ -435,13 +467,14 @@ export function createMapDrawingTools(container, options = {}) {
 
 function normalizeOptions(input = {}) {
   const next = { ...DEFAULT_OPTIONS, ...(input || {}) };
-  const modes = normalizeModes(next.modes);
+  const modes = normalizeModes(next.selectToggle === true ? ["select", "pan", ...normalizeModes(next.modes)] : next.modes);
   const actions = normalizeActions(next.actions);
   return {
     ...next,
     modes,
     actions,
     hideUnavailableActions: normalizeActions(next.hideUnavailableActions),
+    selectToggle: next.selectToggle === true,
     activeMode: normalizeMode(next.activeMode, modes),
     orientation: normalizeChoice(next.orientation, ORIENTATIONS, "vertical"),
     placement: normalizeChoice(next.placement, PLACEMENTS, "map"),
