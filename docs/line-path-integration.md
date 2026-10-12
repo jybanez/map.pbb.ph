@@ -1,6 +1,6 @@
 # Line and Path integration — task218
 
-Task214 was independently accepted at `2dc3cc0ae5c32a45f4b036086146dd3013cd77c3`; acceptance documentation is `c13a4db`. Task218 is separate. Helper task219 owns the canonical implementation. The following contract remains proposed, pending exact-head review and verified merged provenance; no runtime adoption or passing task218 implementation evidence is claimed.
+Task214 was independently accepted at `2dc3cc0ae5c32a45f4b036086146dd3013cd77c3`; acceptance documentation is `c13a4db`. Task218 is separate. Helper task219 owns the canonical implementation. The contract recorded below was proposed before canonical review. The runtime adoption and actual-app evidence section supersedes those historical status statements.
 
 Use the complete drawing adapter with explicit `lineBehavior:'segment'` and the complete toolbar's distinct `path` mode/icon. Line anchors on first click, previews to the pointer and completes exactly two vertices on second click. Path adds segments until Finish or double-click, without duplicate endpoint or map zoom. Omitted option preserves legacy consumers. Newly authored LineStrings use `properties.helperDrawingKind:'line'|'path'`; metadata-free imports remain unchanged and are interpreted as paths. Preserve existing properties, helperStyle, numeric-zero IDs and alpha-zero styles through save/export/offline reload.
 
@@ -24,3 +24,23 @@ Adopt only an independently reviewed, merged exact runtime after tree/hash verif
 ## Proposed implementation9691
 
 Helper submitted PR166 exact7c95a391b8a402c742adf66724992a6ee0d562c7 for Alfred review; main remains d782a75 pending acceptance/merge. Proposed runtime302 adapter/core/icons/main/game, CSS297/picker294. Canonical Path icon map.path; getDrawingKind(id) identifies untouched metadata-free imports as paths. Vertex editing retains canonical longitude±180/latitude±90 validation, distinct from segment Mercator restrictions. Helper reports expanded boundary, legacy/new drawing and removal-mid-drag evidence; these are Helper-reported results, not app verification or acceptance. No runtime adopted.
+
+## Runtime adopted for application verification
+
+Helper9697 confirms Alfred9695 accepted head 7c95a391b8a402c742adf66724992a6ee0d562c7, merged as cfc1d4e7ef327983c710036fd8e4b43e7b0cc3dc with identical tree 4b03f4d4dbf623160a3863a0dd6487cf86511fdc. The adopter independently checked tree equality and all 43 normalized hashes before copying runtime302. Application enables segment Line and distinct canonical Path through the complete adapter/toolbar.
+
+Actual-app testing exposed cleanup after external map removal: the accuracy ripple queried absent style layers, and page teardown removed the map again. Guards now skip those operations after style disposal; personal-layer cleanup also avoids disposed style access. No canonical geometry policy is duplicated.
+
+The app Line/Path fixture uses rendered hit readiness, settles clean selected-object sessions with canonical Pan before testing global history, and places drawing clicks clear of mobile controls. Boundary fixture uses zoom7 at high latitudes because zoom4 constrains the camera and places geometry behind the mobile toolbar; zoom6 still overlaps the expanded manager card. These were fixture corrections, not geometry changes.
+
+## Actual application verification
+
+Passed npm test: 55/55. Syntax checks and shell integrity --check passed. Shell929ce4c800fa81fd076b contains42 assets,4,235,934bytes and29 Helper roots/dependencies.
+
+Passed actual-app Line/Path tests at1200/375: first-anchor live preview, second-click exactly-two-point Line, canonical Path icon and three-point double-click finish without zoom/duplication, two-point explicit Finish, whole-segment translation at bearing30/pitch40, vertex priority, one gesture Undo/Redo, Escape rollback during drag, unchanged legacy ID0/alpha0, explicit Save and offline reload. An inactive metadata-free latitude86 import remains byte-identical through saving another layer and offline reload; this checks preservation, not pointer dragging an unrenderable import.
+
+Passed actual-app longitude/latitude boundary fixtures at1200/375: atomic rejection, invalid-to-valid recovery, wholly rejected no-op without history, last-valid release with one Undo/Redo, Cancel restoration and external map removal during drag with navigation restoration and no persistence. Latitude vertex editing above Mercator but below90 retains the distinct canonical contract. No page errors including context teardown.
+
+Passed regression scripts: drawing, selected, objects, layout, launcher-close, save-close, storage, context and bundle-only. Layout320/375/390/850landscape/1200: rails/card do not intersect; single action row and no horizontal overflow. Storage failure keeps edits/prior saved state without automatic replay. Context tests reject late create/save, retain inline draft and loading cancellation. Bundle failures show actionable feedback with zero modular requests; offline cold startup resolves24 factories, terrain/location-person/POIs/model. Exactly3 Helper asset URLs.
+
+Fresh desktop/mobile Line/Path and320layout screenshots uploaded to the project. Browser tests use Chromium pointer automation at mobile widths; physical touch, Safari and assistive technology remain unvalidated. Task218 requires independent final-head acceptance; no push/deployment or self-completion.

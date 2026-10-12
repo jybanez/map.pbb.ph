@@ -3,7 +3,7 @@ async page=>{
  await context.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const Base=v.Map;v.Map=class extends Base{constructor(o){super(o);window.__map=this;}};}});});
  const tab=await context.newPage();tab.on('pageerror',e=>errors.push(e.message));await tab.goto('https://map.pbb.ph/');await tab.waitForFunction(()=>window.__map?.isStyleLoaded(),null,{timeout:60000});
  await tab.evaluate(async()=>{
-  const {createPersonalLayers}=await import('./assets/personal-layer-ui.js'),{uiLoader}=await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.301');
+  const {createPersonalLayers}=await import('./assets/personal-layer-ui.js'),{uiLoader}=await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.302');
   const [createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,createToastStack]=await Promise.all(['ui.action.modal','ui.form.modal','ui.map.controls','ui.busy.overlay','ui.dialog.alert','ui.toast'].map(n=>uiLoader.get(n,{preferBundles:true})));
   const loader={get:async(...args)=>{const factory=await uiLoader.get(...args);return args[0]==='ui.map.drawing.maplibre'?(...values)=>{const adapter=factory(...values);window.__objectAdapter=adapter;return adapter;}:factory;}};
   const toast=createToastStack({workspaceBridge:false}),c=window.__map.getCenter();window.__objectSaved={schema:1,revision:0,layers:[{id:'context-style',name:'Object context',visible:true,features:[{type:'Feature',id:0,properties:null,geometry:{type:'Point',coordinates:[c.lng,c.lat]}}]}]};window.__objectWrites=0;

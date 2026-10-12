@@ -49,7 +49,7 @@ async page => {
   await cold.getByRole('button', { name: 'Filter points of interest', exact: true }).click();
   await cold.getByRole('columnheader', { name: 'Locations', exact: true }).waitFor();
   result.offline = await cold.evaluate(async names => {
-    const { uiLoader } = await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.301');
+    const { uiLoader } = await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.302');
     for (const name of names) await uiLoader.get(name, { preferBundles: true });
     const { magneticField } = await import('./assets/declination.js');
     const field = magneticField(10.3157,123.8854,0,new Date('2026-10-11'));

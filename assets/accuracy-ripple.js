@@ -1,4 +1,4 @@
-import { accuracyPolygon } from './location.js?v=20261012-personal-ui6';
+import { accuracyPolygon } from './location.js?v=20261012-personal-ui7';
 
 // Helper has no geographic accuracy-ripple component. This adapter updates one
 // GeoJSON source in metres; MapLibre projects it with terrain, tilt and bearing.
@@ -6,11 +6,12 @@ export function createAccuracyRipple({visibility=document,motion=window.matchMed
   const source='pbb-accuracy-ripple',layer=source+'-line',fill=source+'-fill';
   let map=null,position=null,available=false,disposed=false,frame=null,expiry=null,start=0,last=0;
   const fresh=()=>position&&now()-position.timestamp<staleMs&&position.timestamp<=now()+1000;
-  const active=()=>!disposed&&map&&available&&fresh()&&position.accuracy>0&&!visibility.hidden&&!motion.matches;
-  function hide(){if(map?.getLayer(layer))map.setLayoutProperty(layer,'visibility','none');if(map?.getLayer(fill))map.setLayoutProperty(fill,'visibility','none');}
+  const alive=()=>map&&(!map.getStyle||map.getStyle());
+  const active=()=>!disposed&&alive()&&available&&fresh()&&position.accuracy>0&&!visibility.hidden&&!motion.matches;
+  function hide(){if(!alive())return;if(map?.getLayer(layer))map.setLayoutProperty(layer,'visibility','none');if(map?.getLayer(fill))map.setLayoutProperty(fill,'visibility','none');}
   function stop(){if(frame!==null)cancelAnimationFrame(frame);frame=null;clearTimeout(expiry);expiry=null;hide();}
   function ensure(){
-    if(!map||!position)return false;
+    if(!alive()||!position)return false;
     if(!map.getSource(source))map.addSource(source,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
     if(!map.getLayer(fill))map.addLayer({id:fill,type:'fill',source,paint:{'fill-color':'#6ea6ff','fill-opacity':['get','fillOpacity']}},map.getLayer(layer)?layer:undefined);
     if(!map.getLayer(layer))map.addLayer({id:layer,type:'line',source,paint:{'line-color':'#80baff','line-width':2,'line-opacity':['get','opacity']}});
@@ -41,7 +42,7 @@ export function createAccuracyRipple({visibility=document,motion=window.matchMed
     frame=requestAnimationFrame(tick);
   }
   function styleLoaded(){sync();}
-  function removeLayers(){if(!map)return;if(map.getLayer(layer))map.removeLayer(layer);if(map.getLayer(fill))map.removeLayer(fill);if(map.getSource(source))map.removeSource(source);}
+  function removeLayers(){if(!alive())return;if(map.getLayer(layer))map.removeLayer(layer);if(map.getLayer(fill))map.removeLayer(fill);if(map.getSource(source))map.removeSource(source);}
   visibility.addEventListener('visibilitychange',sync);motion.addEventListener('change',sync);
   return {
     setPosition(next){

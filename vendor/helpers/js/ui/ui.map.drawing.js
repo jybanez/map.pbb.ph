@@ -1,4 +1,4 @@
-import { createIcon } from "./ui.icons.js?v=0.21.298";
+import { createIcon } from "./ui.icons.js?v=0.21.302";
 import { createElement, clearNode } from "./ui.dom.js";
 import { createEventBag } from "./ui.events.js";
 
@@ -29,7 +29,7 @@ const DEFAULT_OPTIONS = {
   onSelect: null,
 };
 
-const MODES = new Set(["select", "pan", "point", "line", "polygon", "rectangle", "circle"]);
+const MODES = new Set(["select", "pan", "point", "line", "path", "polygon", "rectangle", "circle"]);
 const ACTIONS = new Set(["fill", "stroke", "finish", "cancel", "undo", "redo", "delete", "clear"]);
 const ORIENTATIONS = new Set(["vertical", "horizontal"]);
 const PLACEMENTS = new Set(["map", "external"]);
@@ -42,6 +42,7 @@ const MODE_META = {
   pan: { label: "Pan", symbol: "✋" },
   point: { label: "Point", symbol: "●" },
   line: { label: "Line", symbol: "╱" },
+  path: { label: "Path", icon: "map.path" },
   polygon: { label: "Polygon", symbol: "⬟" },
   rectangle: { label: "Rectangle", symbol: "▭" },
   circle: { label: "Circle", symbol: "○" },
@@ -144,11 +145,13 @@ export function createMapDrawingTools(container, options = {}) {
         },
         dataset: { mode },
       });
-      button.appendChild(createElement("span", {
+      const artwork = createElement("span", {
         className: "ui-map-drawing-button-icon",
-        text: meta.symbol,
+        text: meta.icon ? "" : meta.symbol,
         attrs: { "aria-hidden": "true" },
-      }));
+      });
+      if (meta.icon) artwork.appendChild(createIcon(meta.icon, { size: 18 }));
+      button.appendChild(artwork);
       button.appendChild(createElement("span", {
         className: "ui-map-drawing-button-label",
         text: meta.label,

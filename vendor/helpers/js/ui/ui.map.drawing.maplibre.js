@@ -1,4 +1,4 @@
-const MODES = ["select", "pan", "point", "line", "polygon"];
+const MODES = ["select", "pan", "point", "line", "path", "polygon"];
 const clone = value => structuredClone(value);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 let nextAdapter = 0;
@@ -11,11 +11,14 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   const layers = ["fill", "line", "point", "vertex"].map(name => `${prefix}-${name}`);
   if (map.getStyle() && (map.getSource(sourceId) || layers.some(id => map.getLayer(id)))) throw new Error("Drawing IDs already exist.");
   const canvas = map.getCanvas();
+  const lineBehavior = options.lineBehavior ?? "legacy-path";
+  if (!["segment", "legacy-path"].includes(lineBehavior)) throw new RangeError("lineBehavior must be segment or legacy-path.");
   const listeners = new Map();
   const mapOffs = [];
   const domOffs = [];
   let features = validateFeatures(options.features || []);
   let mode = "select", selected = null, draft = [], draftRedo = [];
+  let preview = null;
   let undoStack = [], redoStack = [], drag = null, lock = null, destroyed = false;
   let ownedSource = false, ownedLayers = new Set(), suppressClick = null, hydrating = false, styleQueued = false;
   let revision = 0, requestingDelete = false, edit = null, nextEdit = 0, dispatchDepth = 0;
@@ -72,7 +75,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       return { ...clone(feature), properties: { ...clone(feature.properties), ...paint, __helperId: String(feature.id), __helperKind: "feature", __helperSelected: String(feature.id) === selected } };
     });
     draft.forEach((coordinate, i) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "draft", index: i } }));
-    if (draft.length > 1) data.push({ type: "Feature", geometry: { type: "LineString", coordinates: mode === "polygon" && draft.length > 2 ? [...draft, draft[0]] : draft }, properties: { __helperKind: "draft" } });
+    const drawing = preview && draft.length && ["line", "path"].includes(mode) ? [...draft, preview] : draft;
+    if (drawing.length > 1) data.push({ type: "Feature", geometry: { type: "LineString", coordinates: mode === "polygon" && draft.length > 2 ? [...draft, draft[0]] : drawing }, properties: { __helperKind: "draft" } });
     vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
     return { type: "FeatureCollection", features: data };
   }
@@ -101,8 +105,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const dirty = !!edit && !equal(edit.before, features);
     const editable = !destroyed && !!edit && !drag;
     const geometry = features.find(f => String(f.id) === selected)?.geometry.type;
-    return { modes: destroyed ? ["pan"] : edit && (dirty || drag) ? ["select"] : [...MODES], editing: "drag-existing-vertices", editSessions: true, featureStyles: ["fill", "stroke"], measurement: false,
-      actions: { fill: editable && geometry !== "LineString", stroke: editable, finish: !destroyed && !drag && (edit ? dirty : (mode === "line" ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (edit ? dirty : mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag, delete: !destroyed && (!edit || !dirty) && selected !== null && !drag, clear: !destroyed && !edit && !!features.length && !drag } };
+    return { modes: destroyed ? ["pan"] : edit && (dirty || drag) ? ["select"] : [...MODES], editing: "drag-existing-vertices", segmentTranslation: true, lineBehavior, drawingKinds: ["line", "path"], editSessions: true, featureStyles: ["fill", "stroke"], measurement: false,
+      actions: { fill: editable && geometry !== "LineString", stroke: editable, finish: !destroyed && !drag && (edit ? dirty : (["line", "path"].includes(mode) ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (edit ? dirty : mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag, delete: !destroyed && (!edit || !dirty) && selected !== null && !drag, clear: !destroyed && !edit && !!features.length && !drag } };
   }
   function publishState() { if (!destroyed) emit("statechange", { mode, selectedFeatureId: selected, draft: clone(draft), anchor: anchor(), dragging: !!drag, editSession: getEditState(), revision }); }
   function refresh() { if (destroyed) return false; revision++; render(); if (destroyed) return false; emit("measure", null); publishState(); return !destroyed; }
@@ -128,7 +132,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const previousDrag = drag; drag = null;
     revision++;
     features = previousDrag.before; try { canvas.releasePointerCapture(previousDrag.pointerId); } catch (_) { /* already released */ }
-    restoreNavigation(); render(); if (notify) { emit("measure", null); publishState(); }
+    restoreNavigation(); if (notify) { render(); emit("measure", null); publishState(); }
   }
   function setMode(next) {
     if (dispatchDepth) return false;
@@ -138,7 +142,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (edit && next === "select") return true;
     const endedEdit = edit;
     edit = null; // Explicit mode choice settles only an unchanged session, without history/persistence.
-    abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; restoreNavigation(); mode = next;
+    abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; preview = null; restoreNavigation(); mode = next;
     if (!["select", "pan"].includes(mode)) lockNavigation(["dragPan", "doubleClickZoom", "keyboard"]);
     canvas.style.cursor = mode === "pan" || mode === "select" ? oldCursor : "crosshair";
     if (!refresh()) return false;
@@ -154,10 +158,12 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (dispatchDepth) return false;
     if (destroyed || !capabilities().actions.finish) return false;
     if (edit) return acceptEdit();
-    const feature = newFeature(mode === "line" ? "LineString" : "Polygon", mode === "line" ? draft : [[...draft, draft[0]]]);
+    const isLine = ["line", "path"].includes(mode);
+    const feature = newFeature(isLine ? "LineString" : "Polygon", isLine ? draft : [[...draft, draft[0]]]);
+    if (isLine) feature.properties.helperDrawingKind = mode === "line" && lineBehavior === "segment" ? "line" : "path";
     try { validateFeatures([feature]); }
     catch (error) { reportError(error); return false; } // Invalid draft stays editable.
-    draft = []; draftRedo = []; if (!commit([...features, feature])) return false; setMode("select"); return select(feature.id);
+    draft = []; draftRedo = []; preview = null; if (!commit([...features, feature])) return false; setMode("select"); return select(feature.id);
   }
   function cancel() { if (dispatchDepth) return false; if (!destroyed) { if (edit) return rollbackEdit(); abortDrag(); setMode("select"); } }
   function beginEdit(id = selected) {
@@ -209,6 +215,12 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const feature = features.find(f => id !== null && id !== undefined && String(f.id) === String(id));
     return feature ? clone(feature.properties?.helperStyle || {}) : null;
   }
+  function getDrawingKind(id = selected) {
+    const feature = features.find(f => id !== null && id !== undefined && String(f.id) === String(id));
+    if (!feature) return null;
+    if (feature.geometry.type !== "LineString") return feature.geometry.type.toLowerCase();
+    return feature.properties?.helperDrawingKind === "line" && feature.geometry.coordinates.length === 2 ? "line" : "path";
+  }
   function anchor() {
     const coordinates = draft.length ? draft : vertices(features.find(f => String(f.id) === selected)).map(v => v.coordinate);
     if (!coordinates.length) return null;
@@ -228,31 +240,61 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       const hit = live.length ? map.queryRenderedFeatures([[p.x - 6, p.y - 6], [p.x + 6, p.y + 6]], { layers: live }).find(f => f.properties.__helperKind === "feature") : null;
       select(hit?.properties.__helperId ?? null); return;
     }
+    if (mode === "path" && original?.detail > 1) return; // The first click of a double-click already added its endpoint.
     const coordinate = [event.lngLat.lng, event.lngLat.lat]; validatePosition(coordinate);
     if (mode === "point") { const feature = newFeature("Point", coordinate); commit([...features, feature]); }
-    else { if (!equal(draft.at(-1), coordinate)) draft.push(coordinate); draftRedo = []; refresh(); }
+    else { if (!equal(draft.at(-1), coordinate)) draft.push(coordinate); draftRedo = []; preview = null;
+      if (mode === "line" && lineBehavior === "segment" && draft.length === 2) finish(); else refresh(); }
   }
   function pointerDown(event) {
     if (dispatchDepth || destroyed || mode !== "select" || selected === null || drag || event.button !== 0) return;
     const feature = features.find(f => String(f.id) === selected), box = canvas.getBoundingClientRect();
     const x = event.clientX - box.left, y = event.clientY - box.top;
     const vertex = vertices(feature).find(v => { const p = map.project(v.coordinate); return Math.hypot(p.x - x, p.y - y) <= 12; });
-    if (!vertex) return;
+    let segment = false;
+    if (!vertex && feature?.geometry.type === "LineString") {
+      const points = feature.geometry.coordinates.map(c => map.project(c));
+      segment = points.slice(1).some((b, i) => {
+        const a = points[i], dx = b.x - a.x, dy = b.y - a.y, length = dx * dx + dy * dy;
+        const t = length ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / length)) : 0;
+        return Math.hypot(x - a.x - t * dx, y - a.y - t * dy) <= 8;
+      });
+    }
+    if (!vertex && !segment) return;
     event.preventDefault(); event.stopImmediatePropagation();
     lockNavigation(["dragPan", "dragRotate", "touchZoomRotate", "doubleClickZoom"]);
-    drag = { before: clone(features), path: vertex.path, pointerId: event.pointerId, moved: false };
+    drag = { before: clone(features), path: vertex?.path, start: map.unproject([x, y]), featureId: selected, session: edit, pointerId: event.pointerId, moved: false };
     revision++;
     canvas.setPointerCapture(event.pointerId);
     emit("measure", null);
     publishState();
   }
   function pointerMove(event) {
-    if (dispatchDepth || !drag || drag.pointerId !== event.pointerId) return;
+    if (dispatchDepth || destroyed) return;
+    if (!drag) {
+      if (!draft.length || !["line", "path"].includes(mode)) return;
+      const box = canvas.getBoundingClientRect(), ll = map.unproject([event.clientX - box.left, event.clientY - box.top]);
+      const coordinate = [ll.lng, ll.lat];
+      try { validatePosition(coordinate); } catch (_) { return; }
+      preview = coordinate; render(); return;
+    }
+    if (drag.pointerId !== event.pointerId || drag.featureId !== selected || drag.session !== edit) return;
     const box = canvas.getBoundingClientRect(), ll = map.unproject([event.clientX - box.left, event.clientY - box.top]);
     const coordinate = [ll.lng, ll.lat];
     try { validatePosition(coordinate); } catch (_) { return; }
     const feature = features.find(f => String(f.id) === selected);
-    if (feature.geometry.type === "Point") feature.geometry.coordinates = coordinate;
+    if (!feature) { abortDrag(); return; }
+    if (drag.path === undefined) {
+      const original = drag.before.find(f => String(f.id) === drag.featureId);
+      const delta = [ll.lng - drag.start.lng, ll.lat - drag.start.lat];
+      // Stop at world/Mercator boundaries atomically; never wrap or clamp vertices independently.
+      if (Math.abs(delta[0]) > 180 || original.geometry.coordinates.some(c => Math.abs(c[1]) > 85.0511287798066)) return;
+      const translated = original.geometry.coordinates.map(c => [c[0] + delta[0], c[1] + delta[1]]);
+      try { translated.forEach(validatePosition); } catch (_) { return; }
+      if (translated.some(c => Math.abs(c[1]) > 85.0511287798066)) return;
+      feature.geometry.coordinates = translated;
+    }
+    else if (feature.geometry.type === "Point") feature.geometry.coordinates = coordinate;
     else if (feature.geometry.type === "LineString") feature.geometry.coordinates[drag.path[0]] = coordinate;
     else { const [r, i] = drag.path; feature.geometry.coordinates[r][i] = coordinate; if (i === 0) feature.geometry.coordinates[r][feature.geometry.coordinates[r].length - 1] = [...coordinate]; }
     revision++; drag.moved = true; render(); publishState(); event.preventDefault();
@@ -270,7 +312,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     let handled = true;
     try {
       if (event.key === "Escape") cancel();
-      else if (event.key === "Enter") { if (mode === "point" || mode === "line" || mode === "polygon") click({ point: map.project(map.getCenter()), lngLat: map.getCenter() }); }
+      else if (event.key === "Enter") { if (mode === "point" || mode === "line" || mode === "path" || mode === "polygon") click({ point: map.project(map.getCenter()), lngLat: map.getCenter() }); }
       else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") event.shiftKey ? redo() : undo();
       else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") redo();
       else if (event.key === "Delete" || event.key === "Backspace") deleteSelected();
@@ -281,7 +323,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (dispatchDepth) return false;
     if (destroyed || drag) return;
     if (edit) { if (edit.undo.length) { const before = clone(features); edit.redo.push(before); features = edit.undo.pop(); publishChanges(before); } return; }
-    if (draft.length) { draftRedo.push(draft.pop()); refresh(); return; }
+    if (draft.length) { draftRedo.push(draft.pop()); preview = null; refresh(); return; }
     if (!undoStack.length) return;
     const before = clone(features); redoStack.push(before); revision++; features = undoStack.pop(); publishChanges(before);
   }
@@ -298,7 +340,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (destroyed) return;
     const next = validateFeatures(input); // Validate atomically before cancelling interaction.
     if (edit) return false;
-    abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; undoStack = []; redoStack = [];
+    abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; preview = null; undoStack = []; redoStack = [];
     const before = features; revision++; features = next; publishChanges(before);
   }
   function requestDeletion(action) {
@@ -320,7 +362,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
         commit(features.filter(f => String(f.id) !== String(featureIds[0])));
         if (expectedEdit && !destroyed) emit("editchange", null);
       }
-      else { draft = []; draftRedo = []; commit([]); refresh(); }
+      else { draft = []; draftRedo = []; preview = null; commit([]); refresh(); }
       return true;
     };
     const request = Object.freeze({ action, featureIds, revision: expectedRevision, confirm,
@@ -350,8 +392,9 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       [...ownedLayers].reverse().forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
       if (ownedSource && map.getSource(sourceId)) map.removeSource(sourceId);
     }
-    ownedLayers.clear(); ownedSource = false; draft = []; draftRedo = []; undoStack = []; redoStack = [];
+    ownedLayers.clear(); ownedSource = false; draft = []; draftRedo = []; preview = null; undoStack = []; redoStack = [];
   }
+  bindMap("dblclick", event => { if (mode === "path" && !destroyed && !dispatchDepth) { event.preventDefault?.(); finish(); } });
   bindMap("click", click); bindMap("style.load", hydrate);
   // setStyle's diff path can remove custom resources without another style.load.
   bindMap("styledata", () => {
@@ -368,8 +411,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   bindDom(globalThis, "blur", () => { if (drag && !dispatchDepth) abortDrag(); });
   // Style availability permits custom resources before base-source tiles finish.
   try { hydrate(); } catch (error) { destroy(); throw error; }
-  return { on, setMode, setFeatures, validateFeatures, beginEdit, acceptEdit, rollbackEdit, updateFeature, getFeatureStyle, getFeatures: () => clone(features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy: () => destroy(),
-    getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), editSession: getEditState(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
+  return { on, setMode, setFeatures, validateFeatures, beginEdit, acceptEdit, rollbackEdit, updateFeature, getFeatureStyle, getDrawingKind, getFeatures: () => clone(features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy: () => destroy(),
+    getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), preview: clone(preview), editSession: getEditState(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
 }
 
 function validatePosition(position) {
