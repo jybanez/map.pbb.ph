@@ -44,3 +44,7 @@ Passed actual-app longitude/latitude boundary fixtures at1200/375: atomic reject
 Passed regression scripts: drawing, selected, objects, layout, launcher-close, save-close, storage, context and bundle-only. Layout320/375/390/850landscape/1200: rails/card do not intersect; single action row and no horizontal overflow. Storage failure keeps edits/prior saved state without automatic replay. Context tests reject late create/save, retain inline draft and loading cancellation. Bundle failures show actionable feedback with zero modular requests; offline cold startup resolves24 factories, terrain/location-person/POIs/model. Exactly3 Helper asset URLs.
 
 Fresh desktop/mobile Line/Path and320layout screenshots uploaded to the project. Browser tests use Chromium pointer automation at mobile widths; physical touch, Safari and assistive technology remain unvalidated. Task218 requires independent final-head acceptance; no push/deployment or self-completion.
+
+## Independent review status — Alfred9722/9729
+
+Alfred independently passed npm55/55 and the unchanged f926f2f boundary suite at1200/375 for longitude/latitude, including rejection/recovery/history/Cancel/vertex latitude/external removal and error-free teardown. This does not resolve his separate tilted vertex sequence failure9722. Task218 is reopened in_progress; application acceptance is withheld pending mechanism diagnosis and exact-head resubmission. An instrumented diagnostic retry passed locally but is not evidence that the failing mechanism has been fixed.
