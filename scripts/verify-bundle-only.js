@@ -31,9 +31,10 @@ async page => {
   context.on('request', r => { if (r.url().includes('/vendor/helpers/')) requests.push(r.url()); });
   await context.addInitScript(() => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { watchPosition(ok) { window.__fix = ok; return 1; }, clearWatch() {} } });
-    let lib; Object.defineProperty(window, 'maplibregl', { get: () => lib, set(v) { lib = v; const Map = v.Map; v.Map = class extends Map { constructor(options) { super(options); window.__map = this; setTimeout(() => { this.fire('movestart', {originalEvent:{type:'fixture-navigation'}}); window.__fix?.({coords:{latitude:10.3157,longitude:123.8854,accuracy:80},timestamp:Date.now()}); }, 0); } }; } });
+    let lib; Object.defineProperty(window, 'maplibregl', { get: () => lib, set(v) { lib = v; const Map = v.Map; v.Map = class extends Map { constructor(options) { super(options); window.__map = this;  } }; } });
   });
-  const warm = await context.newPage(); warm.on('pageerror', e => errors.push(e.message)); await warm.goto('https://map.pbb.ph/');
+  const deliverLocation=async tab=>{await tab.bringToFront();await tab.waitForFunction(()=>!document.hidden&&typeof window.__fix==='function'&&window.__map?.isStyleLoaded(),null,{timeout:60000});await tab.evaluate(()=>{__map.fire('movestart',{originalEvent:{type:'fixture-navigation'}});__fix({coords:{latitude:10.3157,longitude:123.8854,accuracy:80},timestamp:Date.now()});});};
+  const warm = await context.newPage(); warm.on('pageerror', e => errors.push(e.message)); await warm.goto('https://map.pbb.ph/');await deliverLocation(warm);
   await warm.waitForFunction(() => window.__map?.style && !window.__map._removed && window.__map.getLayer('current-location-person'), null, { timeout: 60000 });
   await warm.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 60000 });
   await warm.waitForTimeout(2500);
@@ -44,12 +45,12 @@ async page => {
     const keys = await cache.keys(); return { files: keys.length, helper: keys.filter(k => k.url.includes('/vendor/helpers/')).map(k => new URL(k.url).pathname) };
   });
   await context.setOffline(true); await warm.close(); const cold = await context.newPage(); cold.on('pageerror', e => errors.push(e.message));
-  await cold.goto('https://map.pbb.ph/');
+  await cold.goto('https://map.pbb.ph/');await deliverLocation(cold);
   await cold.waitForFunction(() => window.__map?.style && !window.__map._removed && window.__map.getLayer('current-location-person'), null, { timeout: 60000 });
   await cold.getByRole('button', { name: 'Filter points of interest', exact: true }).click();
   await cold.getByRole('columnheader', { name: 'Locations', exact: true }).waitFor();
   result.offline = await cold.evaluate(async names => {
-    const { uiLoader } = await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.307');
+    const { uiLoader } = await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.308');
     for (const name of names) await uiLoader.get(name, { preferBundles: true });
     const { magneticField } = await import('./assets/declination.js');
     const field = magneticField(10.3157,123.8854,0,new Date('2026-10-11'));

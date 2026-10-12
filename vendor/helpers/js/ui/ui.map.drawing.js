@@ -6,6 +6,7 @@ const DEFAULT_OPTIONS = {
   modes: ["select", "point", "line", "polygon", "rectangle", "circle"],
   hideUnavailableActions: [],
   selectToggle: false,
+  showModeTransitionStatus: true,
   actions: ["finish", "cancel", "undo", "redo", "delete", "clear"],
   activeMode: "select",
   orientation: "vertical",
@@ -126,7 +127,7 @@ export function createMapDrawingTools(container, options = {}) {
     if (currentOptions.actions.length) {
       root.appendChild(renderActionGroup());
     }
-    if (currentOptions.selectToggle && readCapabilities().modeTransitionReason) {
+    if (currentOptions.selectToggle && currentOptions.showModeTransitionStatus && readCapabilities().modeTransitionReason) {
       root.appendChild(createElement("span", {
         className: "ui-map-drawing-status",
         attrs: { role: "status" },
@@ -475,6 +476,7 @@ function normalizeOptions(input = {}) {
     actions,
     hideUnavailableActions: normalizeActions(next.hideUnavailableActions),
     selectToggle: next.selectToggle === true,
+    showModeTransitionStatus: next.showModeTransitionStatus !== false,
     activeMode: normalizeMode(next.activeMode, modes),
     orientation: normalizeChoice(next.orientation, ORIENTATIONS, "vertical"),
     placement: normalizeChoice(next.placement, PLACEMENTS, "map"),

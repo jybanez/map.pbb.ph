@@ -1,4 +1,4 @@
-import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261013-select1';
+import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261013-compact1';
 export function createPersonalLayers({region,uiLoader,createActionModal,createFormModal,createMapControls,createBusyOverlay,createSkeleton,uiAlert,toast,onChange,onEditingChange,store=createPersonalLayerStore(),idPrefix='pbb-personal-readonly'}){
   const card=document.createElement('section'),rail=document.createElement('div'),objectHost=document.createElement('div'),status=document.createElement('p');
   card.className='pbb-personal-card';card.hidden=true;card.setAttribute('aria-label','Personal layers');rail.className='pbb-personal-rail';rail.hidden=true;objectHost.className='pbb-personal-object';objectHost.hidden=true;status.setAttribute('role','status');region.append(card,rail,objectHost);
@@ -107,7 +107,7 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
   }
   function createEditor(){
     if(!session||!map||adapter)return;adapter=createAdapter(map,{features:session.layer.features,lineBehavior:'segment',editBehavior:'immediate',selectToggle:true,beforeDelete,onError:error=>feedback(error.message,true)});for(const event of ['create','update','delete'])adapter.on(event,geometryChanged);for(const event of ['create','update','delete','select','modechange','measure','statechange','editchange'])adapter.on(event,()=>{epoch++;queueSync();});
-    tools=createTools(rail,{adapter,selectToggle:true,modes:['select','pan','point','line','path','polygon','circle','rectangle'],actions:[],orientation:'vertical',labels:'none'});rail.hidden=false;
+    tools=createTools(rail,{adapter,selectToggle:true,showModeTransitionStatus:false,modes:['select','pan','point','line','path','polygon','circle','rectangle'],actions:[],orientation:'vertical',labels:'none'});rail.hidden=false;
     const left=document.createElement('div'),separator=document.createElement('span'),right=document.createElement('div');separator.className='pbb-personal-divider';separator.setAttribute('role','separator');objectHost.replaceChildren(left,separator,right);
     objectControls=[actionGroup(left,[{id:'finish',label:'Finish object',icon:'actions.check',onActivate:finishObject},{id:'cancel',label:'Cancel object',icon:'actions.close',onActivate:cancelObject}]),actionGroup(right,[{id:'fill',label:'Fill color',icon:'actions.fill',onActivate:()=>colorPrompt('fill')},{id:'stroke',label:'Stroke color',icon:'actions.stroke',onActivate:()=>colorPrompt('stroke')},{id:'delete',label:'Delete selected drawing',icon:'actions.delete',onActivate:()=>adapter?.deleteSelected()}])];map.on('move',positionObject);map.on('resize',positionObject);map.on('remove',hideObject);
     render();
