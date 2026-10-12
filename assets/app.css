@@ -88,13 +88,14 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .pbb-map-signal { display:flex; align-items:center; }
 
 .pbb-personal-control {position:absolute;top:16px;right:max(16px,env(safe-area-inset-right));z-index:5;}
-.pbb-personal-card {position:absolute;top:16px;right:max(70px,calc(env(safe-area-inset-right) + 70px));width:min(290px,calc(100% - 84px));z-index:7;background:#0d1726;border:1px solid #354761;border-radius:8px;padding:8px;box-shadow:0 8px 24px #0006;max-height:calc(100% - 32px);overflow:auto;}
+.pbb-personal-card {position:absolute;top:16px;right:calc(env(safe-area-inset-right) + 70px);width:min(290px,calc(100% - 140px - env(safe-area-inset-left) - env(safe-area-inset-right)));z-index:7;background:#0d1726;border:1px solid #354761;border-radius:8px;padding:8px;box-shadow:0 8px 24px #0006;max-height:calc(100% - 32px);overflow:auto;}
 .pbb-personal-card .ui-navigation-stack-page-body {padding:0;}
 .pbb-personal-card {box-sizing:border-box;}
 .pbb-personal-card[aria-busy="true"] {min-height:104px;}
 .pbb-personal-card .ui-navigation-stack {min-height:0;}
 .pbb-personal-card .ui-navigation-stack-page {position:relative;inset:auto;}
 .pbb-personal-row {display:flex;align-items:center;gap:4px;min-width:0;}
+.pbb-personal-actions {flex-wrap:wrap;}
 .pbb-personal-select,.pbb-personal-name {flex:1;min-width:0;}
 .pbb-personal-end {justify-content:flex-end;}
 .pbb-personal-card p {margin:4px 0 0;font-size:11px;overflow-wrap:anywhere;color:#b9cbe5;}
