@@ -98,12 +98,15 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   }
   function render() { if (!destroyed && ownedSource) map.getSource(sourceId)?.setData(renderedData()); }
   function capabilities() {
+    const dirty = !!edit && !equal(edit.before, features);
+    const editable = !destroyed && !!edit && !drag;
+    const geometry = features.find(f => String(f.id) === selected)?.geometry.type;
     return { modes: destroyed ? ["pan"] : edit ? ["select"] : [...MODES], editing: "drag-existing-vertices", editSessions: true, featureStyles: ["fill", "stroke"], measurement: false,
-      actions: { finish: !destroyed && !drag && (!!edit || (mode === "line" ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (!!edit || mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag, delete: !destroyed && !edit && selected !== null && !drag, clear: !destroyed && !edit && !!features.length && !drag } };
+      actions: { fill: editable && geometry !== "LineString", stroke: editable, finish: !destroyed && !drag && (edit ? dirty : (mode === "line" ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (edit ? dirty : mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag, delete: !destroyed && (!edit || !dirty) && selected !== null && !drag, clear: !destroyed && !edit && !!features.length && !drag } };
   }
   function publishState() { if (!destroyed) emit("statechange", { mode, selectedFeatureId: selected, draft: clone(draft), anchor: anchor(), dragging: !!drag, editSession: getEditState(), revision }); }
   function refresh() { if (destroyed) return false; revision++; render(); if (destroyed) return false; emit("measure", null); publishState(); return !destroyed; }
-  function select(id) { if (destroyed || edit) return false; revision++; selected = id === null ? null : String(id); render(); if (destroyed) return false; emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); publishState(); return !destroyed; }
+  function select(id) { if (destroyed) return false; if (edit) return beginEdit(id); revision++; selected = id === null ? null : String(id); render(); if (destroyed) return false; emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); publishState(); return !destroyed; }
   function publishChanges(before) {
     for (const f of before.filter(f => !features.some(n => String(n.id) === String(f.id)))) { if (destroyed) return; emit("delete", f.id); }
     for (const f of features) { if (destroyed) return; const old = before.find(p => String(p.id) === String(f.id)); if (!old) emit("create", f); else if (!equal(old, f)) emit("update", f); }
@@ -152,9 +155,11 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   }
   function cancel() { if (dispatchDepth) return false; if (!destroyed) { if (edit) return rollbackEdit(); abortDrag(); setMode("select"); } }
   function beginEdit(id = selected) {
-    if (dispatchDepth || destroyed || edit || drag || draft.length || draftRedo.length || mode !== "select" || id === null || id === undefined) return false;
+    if (dispatchDepth || destroyed || drag || draft.length || draftRedo.length || mode !== "select" || id === null || id === undefined) return false;
     const feature = features.find(f => String(f.id) === String(id));
-    if (!feature) return false;
+    if (!feature || (edit && !equal(edit.before, features))) return false;
+    if (edit?.featureId === String(feature.id)) return true;
+    // Clean switches do not touch global history or publish an intermediate close.
     edit = { id: ++nextEdit, featureId: String(feature.id), before: clone(features), undo: [], redo: [] };
     const session = edit;
     selected = edit.featureId;
@@ -291,10 +296,10 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const before = features; revision++; features = next; publishChanges(before);
   }
   function requestDeletion(action) {
-    if (dispatchDepth || destroyed || edit || drag || requestingDelete || (action === "delete" && selected === null)) return false;
+    if (dispatchDepth || destroyed || drag || requestingDelete || (edit && (action !== "delete" || !equal(edit.before, features))) || (action === "delete" && selected === null)) return false;
     // A draft-only clear retains the historical behavior but also goes through the gate.
     if (action === "clear" && !features.length && !draft.length && !draftRedo.length) return false;
-    const expectedRevision = revision;
+    const expectedRevision = revision, expectedEdit = edit;
     const featureIds = Object.freeze(action === "delete" ? features.filter(f => String(f.id) === selected).map(f => f.id) : features.map(f => f.id));
     let consumed = false;
     const confirm = () => {
@@ -302,8 +307,13 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       if (dispatchDepth || requestingDelete) return false;
       if (consumed) return false;
       consumed = true;
-      if (destroyed || edit || drag || revision !== expectedRevision) return false;
-      if (action === "delete") commit(features.filter(f => String(f.id) !== String(featureIds[0])));
+      if (destroyed || drag || revision !== expectedRevision || edit !== expectedEdit || (edit && !equal(edit.before, features))) return false;
+      // Only a confirmed clean-object deletion closes its session; record deletion globally.
+      if (action === "delete") {
+        edit = null;
+        commit(features.filter(f => String(f.id) !== String(featureIds[0])));
+        if (expectedEdit && !destroyed) emit("editchange", null);
+      }
       else { draft = []; draftRedo = []; commit([]); refresh(); }
       return true;
     };

@@ -1,4 +1,6 @@
 export const ICON_DEFINITIONS = {
+  "actions.fill": icon("actions", [path("M4 12 12 4l8 8-8 8Z"), line(4, 12, 20, 12), path("M8 3l5 5"), path("M20 15s-2 2-2 3a2 2 0 0 0 4 0c0-1-2-3-2-3Z")]),
+  "actions.stroke": icon("actions", [rect(4, 4, 16, 16, 2), rect(8, 8, 8, 8, 1)]),
   "actions.undo": icon("actions", [path("M4 10h9a7 7 0 0 1 7 7v3"), polyline("9 5 4 10 9 15")]),
   "actions.redo": icon("actions", [path("M20 10h-9a7 7 0 0 0-7 7v3"), polyline("15 5 20 10 15 15")]),
   "actions.clear": icon("actions", [path("M3 15 13 5a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-7 7H8Z"), line(8, 10, 17, 19), line(3, 20, 21, 20)]),

@@ -1,5 +1,5 @@
-import { poiName } from './poi-name.js?v=20261012-personal-ui4';
-import { distance } from './map-context.js?v=20261012-personal-ui4';
+import { poiName } from './poi-name.js?v=20261012-personal-ui5';
+import { distance } from './map-context.js?v=20261012-personal-ui5';
 
 export function orderSearchResults(results,origin){
   return [...results].sort((a,b)=>a.name.localeCompare(b.name)

@@ -1,4 +1,4 @@
-import { createIcon } from "./ui.icons.js?v=0.21.297";
+import { createIcon } from "./ui.icons.js?v=0.21.298";
 import { createElement, clearNode } from "./ui.dom.js";
 import { createEventBag } from "./ui.events.js";
 
@@ -30,7 +30,7 @@ const DEFAULT_OPTIONS = {
 };
 
 const MODES = new Set(["select", "pan", "point", "line", "polygon", "rectangle", "circle"]);
-const ACTIONS = new Set(["finish", "cancel", "undo", "redo", "delete", "clear"]);
+const ACTIONS = new Set(["fill", "stroke", "finish", "cancel", "undo", "redo", "delete", "clear"]);
 const ORIENTATIONS = new Set(["vertical", "horizontal"]);
 const PLACEMENTS = new Set(["map", "external"]);
 const SIZES = new Set(["sm", "md", "lg"]);
@@ -48,6 +48,8 @@ const MODE_META = {
 };
 
 const ACTION_META = {
+  fill: { label: "Fill color", shortLabel: "Fill", icon: "actions.fill" },
+  stroke: { label: "Stroke color", shortLabel: "Stroke", icon: "actions.stroke" },
   finish: { label: "Finish drawing", shortLabel: "Finish", symbol: "✓", method: "finish" },
   cancel: { label: "Cancel drawing", shortLabel: "Cancel", symbol: "×", method: "cancel" },
   undo: { label: "Undo drawing action", shortLabel: "Undo", icon: "actions.undo", method: "undo" },
