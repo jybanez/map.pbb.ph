@@ -16,10 +16,10 @@ async page=>{
   const moved=(await features())[0].geometry.coordinates,delta=moved[0].map((v,i)=>v-original.geometry.coordinates[0][i]);if(!delta.some(v=>v)||!moved.every((c,n)=>c.every((v,i)=>Math.abs(v-original.geometry.coordinates[n][i]-delta[i])<1e-10)))throw Error('Segment did not translate whole geometry');
 
   await tab.getByRole('button',{name:'Undo drawing action',exact:true}).click();if(JSON.stringify((await features())[0].geometry)!==JSON.stringify(original.geometry))throw Error('Diagnostic Undo failed');await tab.getByRole('button',{name:'Redo drawing action',exact:true}).click();
-  // Hold only worker publication after rollback to reproduce an asynchronous renderer lag.
+  // Hold only worker publication after immediate Undo to reproduce an asynchronous renderer lag.
   await tab.waitForFunction(p=>{const m=window.__map,r=m.getCanvas().getBoundingClientRect(),layers=m.getStyle().layers.filter(l=>l.id.startsWith('helper-drawing-')&&!l.id.endsWith('-vertex')).map(l=>l.id);return !m.queryRenderedFeatures([[p.x-r.left-6,p.y-r.top-6],[p.x-r.left+6,p.y-r.top+6]],{layers}).some(f=>f.properties.__helperId==='0');},p);
   const before=await tab.evaluate(p=>{const m=window.__map,id=Object.keys(m.getStyle().sources).find(id=>id.startsWith('helper-drawing-')),s=m.getSource(id),native=s.setData;s.setData=function(data){this._data=data;window.__held=data;return this;};window.__release=()=>{s.setData=native;native.call(s,window.__held);};return{model:s._data.features.filter(f=>f.properties.__helperKind==='feature'),center:m.getCenter(),target:p};},p);
-  await tab.getByRole('button',{name:'Cancel object',exact:true}).click();
+  await tab.getByRole('button',{name:'Undo drawing action',exact:true}).click();
   const rollback=await features();await tab.mouse.click(p.x,p.y);const afterClick=await features(),vertex=await target(true),cameraBefore=await tab.evaluate(()=>window.__map.getCenter());await drag(true);const missed=await features(),cameraAfter=await tab.evaluate(()=>window.__map.getCenter());
   if(rollback[0].properties.__helperSelected!==true||JSON.stringify(rollback[0].geometry)!==JSON.stringify(original.geometry)||afterClick[0].properties.__helperSelected!==false||JSON.stringify(missed[0].geometry)!==JSON.stringify(original.geometry)||JSON.stringify(cameraBefore)===JSON.stringify(cameraAfter))throw Error('Controlled stale-render transition did not reproduce missed selection and pan');
   const reproduced={before,rollback,afterClick,vertex,cameraBefore,cameraAfter,afterGeometry:missed[0].geometry};

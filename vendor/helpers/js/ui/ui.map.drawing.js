@@ -1,9 +1,10 @@
-import { createIcon } from "./ui.icons.js?v=0.21.302";
+import { createIcon } from "./ui.icons.js?v=0.21.303";
 import { createElement, clearNode } from "./ui.dom.js";
 import { createEventBag } from "./ui.events.js";
 
 const DEFAULT_OPTIONS = {
   modes: ["select", "point", "line", "polygon", "rectangle", "circle"],
+  hideUnavailableActions: [],
   actions: ["finish", "cancel", "undo", "redo", "delete", "clear"],
   activeMode: "select",
   orientation: "vertical",
@@ -38,8 +39,8 @@ const VARIANTS = new Set(["neutral", "info", "success", "warning", "danger", "cr
 const LABEL_MODES = new Set(["auto", "always", "none"]);
 
 const MODE_META = {
-  select: { label: "Select", symbol: "↖" },
-  pan: { label: "Pan", symbol: "✋" },
+  select: { label: "Select", icon: "map.select" },
+  pan: { label: "Pan", icon: "map.pan" },
   point: { label: "Point", symbol: "●" },
   line: { label: "Line", symbol: "╱" },
   path: { label: "Path", icon: "map.path" },
@@ -168,6 +169,8 @@ export function createMapDrawingTools(container, options = {}) {
       attrs: { role: "group", "aria-label": "Drawing actions" },
     });
     currentOptions.actions.forEach((action) => {
+      const caps = readCapabilities();
+      if (currentOptions.hideUnavailableActions.includes(action) && (caps.actionVisibility?.[action] ?? caps.actions?.[action]) === false) return;
       const meta = ACTION_META[action] || { label: action, shortLabel: action, symbol: "•", method: action };
       const unavailable = isActionDisabled(action);
       const button = createElement("button", {
@@ -438,6 +441,7 @@ function normalizeOptions(input = {}) {
     ...next,
     modes,
     actions,
+    hideUnavailableActions: normalizeActions(next.hideUnavailableActions),
     activeMode: normalizeMode(next.activeMode, modes),
     orientation: normalizeChoice(next.orientation, ORIENTATIONS, "vertical"),
     placement: normalizeChoice(next.placement, PLACEMENTS, "map"),

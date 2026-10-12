@@ -102,7 +102,7 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .pbb-personal-borderless,.pbb-personal-borderless .ui-map-controls__group {border:0;background:transparent;box-shadow:none;}
 .pbb-personal-borderless .ui-map-controls__button {border:0;background:transparent;width:36px;min-height:36px;}
 .pbb-personal-divider {height:24px;border-left:1px solid #354761;margin:0 4px;}
-.pbb-personal-rail {position:absolute;top:70px;right:max(16px,env(safe-area-inset-right));z-index:6;}
+.pbb-personal-rail {position:absolute;top:70px;right:max(16px,env(safe-area-inset-right));z-index:6;max-height:calc(100% - 86px);overflow-y:auto;scrollbar-width:thin;}
 .pbb-personal-rail .ui-map-drawing {padding:0;}
 .pbb-personal-rail .ui-map-drawing-group {flex-direction:column;gap:0;}
 .pbb-personal-rail .ui-map-drawing-button {width:44px;min-height:44px;}

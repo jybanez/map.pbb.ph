@@ -1,4 +1,6 @@
 export const ICON_DEFINITIONS = {
+  "map.select": icon("map", [path("M5 3v17l5-5 4 7 3-2-4-7h7Z")]),
+  "map.pan": icon("map", [path("M8 12V5a2 2 0 0 1 4 0v6-7a2 2 0 0 1 4 0v7-5a2 2 0 0 1 4 0v9c0 5-3 7-7 7-3 0-5-2-6-4l-4-6a2 2 0 0 1 3-2l2 2Z")]),
   "map.path": icon("map", [polyline("4 18 9 6 15 16 20 4"), circle(4, 18, 1.5), circle(9, 6, 1.5), circle(15, 16, 1.5), circle(20, 4, 1.5)]),
   "actions.fill": icon("actions", [path("M4 12 12 4l8 8-8 8Z"), line(4, 12, 20, 12), path("M8 3l5 5"), path("M20 15s-2 2-2 3a2 2 0 0 0 4 0c0-1-2-3-2-3Z")]),
   "actions.stroke": icon("actions", [rect(4, 4, 16, 16, 2), rect(8, 8, 8, 8, 1)]),
