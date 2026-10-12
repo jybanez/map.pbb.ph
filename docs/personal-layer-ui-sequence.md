@@ -1,6 +1,6 @@
 # Personal-layer UI sequence — task209
 
-Implementation is in progress under owner9461/9463 and Alfred9462/9465. This document supersedes the task206 modal workflow description for the current application; task206's acceptance record and historical browser fixtures remain unchanged. No task209 implementation acceptance, push or deployment is claimed.
+Alfred9580 independently accepted exact implementation commit `c541638f4258cb4529e1652d5dd19b3a50f280a9` for Chromium desktop1200/mobile375; task209 is completed, version8. The accepted implementation remains local/unpushed. This document supersedes the task206 modal workflow description for the current application; task206's acceptance record and historical browser fixtures remain unchanged. Push and deployment are not authorized by this acceptance.
 
 ## Component ownership
 
@@ -56,4 +56,12 @@ Alfred requested changes on7266dc0 because dirty Close entered modal busy before
 
 `verify-personal-ui-save-close.js` passes1200/375 actual invalid-name and unfinished-shape flows with instrumented zero modal busy transitions and zero IndexedDB writes. A valid Save-and-close enters busy once, commits once and returns to management. The initial test attempt did not dismiss the canonical error alert; corrected user interaction dismisses it before Keep editing. `npm test` passes55/55. Shell manifest is now `bbdd7ba0aa729bd19c3d`, retaining42 assets and29 Helper roots/dependencies.
 
-After the correction, actual IndexedDB quota-failure Save-and-close again retains the modal and draft, preserves the empty saved record, performs one failed attempt without replay, exports the unsaved feature (JSON inspected), and supports explicit Discard. Context/loading/dismissal/late-disposal fixture also passes without page errors. These focused checks supplement the preceding297 full drawing/object/offline evidence; independent review remains required before acceptance or push.
+After the correction, actual IndexedDB quota-failure Save-and-close again retains the modal and draft, preserves the empty saved record, performs one failed attempt without replay, exports the unsaved feature (JSON inspected), and supports explicit Discard. Context/loading/dismissal/late-disposal fixture also passes without page errors. These focused checks supplement the preceding297 full drawing/object/offline evidence and were submitted for independent review.
+
+## Independent acceptance9580
+
+Alfred accepted exact `c541638f4258cb4529e1652d5dd19b3a50f280a9` after inspecting the complete-component controller and validation-before-busy correction. Independent management, save-close, drawing, object, object-context, actual IndexedDB quota recovery, context/loading/cancellation, denied/corrupt reads and strict-bundle/offline fixtures passed at1200/375. Evidence includes invalid zero-busy/zero-write, one valid commit, numeric0/alpha0, geometry/style rollback, Finish versus durable Save, history/delete/Clear confirmations, native inline input, style restoration, authored offline reload and no automatic replay. Cold offline verified42 shell files,24 factories, terrain/person/81POIs and exactly three Helper assets; six failure modes had no modular fallback or page errors. Working-runtime `npm test` passed55/55 and runtime diff against the submitted commit was empty. Mobile management/edit screenshots were inspected.
+
+Review caveats: the first management run timed out after its card became hidden during concurrent suites; a fresh isolated rerun passed both widths, with cause not established and no product workaround. A separate isolated Git checkout initially failed byte hashes because of mixed checkout line endings; the submitted working runtime passed. These outcomes are recorded distinctly and are not claimed as resolved product defects. Physical touch/Safari/assistive technology, full-process restart, deployment and indefinite durability remain unvalidated; forced map replacement requires redrawing unfinished vertex-input history as documented.
+
+Task209 completion was recorded by Alfred (version8), not self-approved. This documentation record does not authorize push/deployment or claim Responsibility Inbox resolution; unrelated owner/Landing work remains untouched.
