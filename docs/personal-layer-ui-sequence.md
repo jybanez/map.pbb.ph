@@ -10,7 +10,7 @@ The application now mounts `assets/personal-layer-ui.js`. The previous `assets/p
 
 The single-field name prompt uses the complete declarative form modal. This is the verified convenience-prompt gap recorded in9468 and independently confirmed in9473: reviewed294's convenience prompt hardcodes automatic busy, lacks associated field errors and exposes no managed lifecycle. Required, max80 and case-insensitive unique-name validation precedes busy or writes. Inline-name validation retains values and accessible field errors, with a canonical draggable structured alert. The complete action modal supplies context-aware deletion and three-way dirty Close.
 
-The original drawing adapter has no object checkpoint/rollback or style-update API; gap9467 is tracked by Helper task210. Proposed object-session runtimes remain subject to Alfred's exact-head review before adoption. The integration code uses supported captured-session APIs, schedules selection-driven session entry after read-only adapter callbacks, and does not implement an application drawing engine or replacement-import rollback.
+The original drawing adapter had no object checkpoint/rollback or style-update API; gap9467 was resolved by Helper task210. Alfred accepted exact head `c7b46d9592034f889d247646b98059ebbe81bbe6` in9521, and Helper merged main `0f254c6acda65157508aba6c6a1fb2d41720b78b` in9524. The adopter verifies their identical tree `962dd053617e35f468f5cf3c01b79a6c004cdbca` and manifest hashes before copying revision295. The integration uses supported captured-session APIs, schedules selection-driven session entry after read-only adapter callbacks, and does not implement an application drawing engine or replacement-import rollback.
 
 ## Draft and persistence boundaries
 
@@ -24,7 +24,7 @@ The authored database remains `pbb-personal-layers-v1`, version1, store `documen
 
 ## Verification record
 
-Current checks completed on Chromium desktop1200/mobile375:
+Initial revision294 checks completed on Chromium desktop1200/mobile375 (not final revision295 acceptance):
 
 - `verify-personal-ui.js`: compact card, disabled no-selection actions, create and inline validation, explicit Save, dirty Keep/Discard, cancelled layer deletion, exactly three Helper requests, no page errors. Mobile screenshots inspected.
 - `verify-personal-ui-drawing.js`: actual point/line/polygon creation, explicit Save boundary, history cancellation and confirmed canvas keyboard undo/redo, Pan gesture, unfinished-drawing Save guard, native inline Backspace/Escape and Clear cancellation; navigation restored at both widths, no page errors.
@@ -34,6 +34,10 @@ Current checks completed on Chromium desktop1200/mobile375:
 - `verify-bundle-only.js`: six missing/broken bundle/factory cases, including the personal-layer select, show an error without modular fallback; cold offline page serves all24 required factories,42 shell files and exactly three Helper assets, no page errors.
 - `npm test`:55/55 passed, including pinned asset integrity and existing authored-store/CAS contracts.
 
-`verify-personal-ui-objects.js` is prepared for the reviewed object-session runtime and has not yet been run. It checks actual pointer rollback/Finish, complete picker alpha0, one coherent undo unit, Save settlement, numeric0, viewport positioning, style rehydration and offline storage round trip. Final runtime pin, shell version, exact integration commit and independent review are pending.
+After revision295 adoption, `npm test` passed55/55; compact desktop/mobile UI, actual IndexedDB failed-save recovery, context cancellation/late disposal and denied/corrupt storage fixtures passed again. The drawing fixture now also passes polygon Fill and line Stroke persistence, with unsupported line Fill hidden, at both widths. The six-case bundle-only check passed again with42 shell files,24 factories, exactly three Helper assets and cold offline loading. The new375-width `verify-personal-ui-object-context.js` passed supported object-preview restoration, alpha0, restored Cancel checkpoint and styled failed-Save retention without replay or overwrite (a deterministic rejected fixture store; the separate storage fixture covers actual IndexedDB failure). It explicitly starts from a loaded style and does not claim pending-tile initialization coverage. Its first attempt clicked during modal-close transition; the corrected test waits for that transition before reopening.
+
+`verify-personal-ui-objects.js` exercised actual pointer rollback, coherent object undo/redo, numeric0, alpha0 and explicit Save. The full desktop/mobile suite has not passed: fresh mobile creation after style.load while base tiles remain pending exposes revision295's factory initialization gate, leaving no canonical drawing source. Report9533 and Alfred9535 track Helper task211. No unreviewed adapter changes or app drawing-engine workaround are adopted. The app inactive renderer's own broad tile-readiness gate was corrected to restore resources on style availability. Further object/style/offline and styled drawing verification remains pending the reviewed canonical fix.
+
+Current runtime query is `20261012-personal-ui2`; shell manifest `a059ccd759b94447eb83` has42 files and29 Helper roots/dependencies. Checkpoint `bae5caf478a4acfe7dc0dbe5c510c743d583a30a` is local/unpushed. Final integration commit and independent application review remain pending; task209 is in_progress.
 
 Physical touch, Safari/native and assistive-technology acceptance, a full browser-process restart, deployment and indefinite browser storage durability remain unverified.

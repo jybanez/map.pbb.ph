@@ -1,7 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-const repo='C:/wamp64/www/hotline-helpers', revision='b70496c802e152abf2d3ea5ba8b67f9d680a60f8';
+const repo='C:/wamp64/www/hotline-helpers', revision='0f254c6acda65157508aba6c6a1fb2d41720b78b', reviewedHead='c7b46d9592034f889d247646b98059ebbe81bbe6';
+const tree=ref=>execFileSync('git',['-C',repo,'rev-parse',`${ref}^{tree}`],{encoding:'utf8'}).trim();
+if(tree(revision)!==tree(reviewedHead))throw Error('Merged runtime differs from the independently reviewed tree.');
 const vendor=JSON.parse(readFileSync('vendor/manifest.json','utf8'));
 const artifacts=new Map();
 for(const document of ['maplibre-drawing-runtime','map-layer-icon-runtime','color-picker-runtime']){
@@ -13,6 +15,6 @@ for(const [path,expected] of artifacts){
  const hash=createHash('sha256').update(bytes).digest('hex');if(hash!==expected)throw Error(path);
  const target=`vendor/helpers/${path}`;mkdirSync(target.slice(0,target.lastIndexOf('/')),{recursive:true});writeFileSync(target,bytes);vendor.files[target]=hash;
 }
-vendor.personalLayers={revision,mainUiRevision:'0.21.294',colorPickerRevision:'0.21.294',adapterRevision:'0.21.290',iconRevision:'0.21.287'};
+vendor.personalLayers={revision,reviewedHead,tree:tree(revision),mainUiRevision:'0.21.295',colorPickerRevision:'0.21.294',adapterRevision:'0.21.295',iconRevision:'0.21.287'};
 writeFileSync('vendor/manifest.json',JSON.stringify(vendor,null,2)+'\n');
 console.log('Adopted verified reviewed personal-layer runtime; game and MapLibre unchanged.');

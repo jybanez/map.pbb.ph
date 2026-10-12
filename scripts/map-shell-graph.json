@@ -40,5 +40,5 @@
     "ui.inline.text",
     "ui.color.picker"
   ],
-  "policy": "Strict three-artifact reviewed Helper294; canonical personal-layer navigation, inline editing, color picker and adapter. No modular fallback."
+  "policy": "Strict three-artifact reviewed Helper295; canonical personal-layer navigation, inline editing, color picker and adapter. No modular fallback."
 }

@@ -1,4 +1,4 @@
-import { mountApp } from './app.js?v=20261012-personal-ui1';
+import { mountApp } from './app.js?v=20261012-personal-ui2';
 const status = document.getElementById('boot-status');
 mountApp().then(() => { status.hidden = true; }).catch(error => {
   console.error('PBB Map startup:', error);

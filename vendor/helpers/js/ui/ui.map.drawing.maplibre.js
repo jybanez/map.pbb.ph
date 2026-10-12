@@ -18,7 +18,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   let mode = "select", selected = null, draft = [], draftRedo = [];
   let undoStack = [], redoStack = [], drag = null, lock = null, destroyed = false;
   let ownedSource = false, ownedLayers = new Set(), suppressClick = null, hydrating = false, styleQueued = false;
-  let revision = 0, requestingDelete = false;
+  let revision = 0, requestingDelete = false, edit = null, nextEdit = 0, dispatchDepth = 0;
   const oldCursor = canvas.style.cursor;
   const historyLimit = Number.isInteger(options.historyLimit) && options.historyLimit > 0 ? options.historyLimit : 100;
 
@@ -29,10 +29,14 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
 
   function emit(name, payload) {
     // Snapshot subscribers: the complete toolbar resubscribes while rendering.
-    for (const callback of [...(listeners.get(name) || [])]) {
-      try { callback(clone(payload)); }
-      catch (error) { reportError(error); }
-    }
+    dispatchDepth++;
+    try {
+      for (const callback of [...(listeners.get(name) || [])]) {
+        if (destroyed) break;
+        try { callback(clone(payload)); }
+        catch (error) { reportError(error); }
+      }
+    } finally { dispatchDepth--; }
   }
   function on(name, callback) {
     if (destroyed || typeof callback !== "function") return () => {};
@@ -57,7 +61,16 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     return coordinates.flatMap((ring, r) => ring.slice(0, -1).map((coordinate, i) => ({ path: [r, i], coordinate })));
   }
   function renderedData() {
-    const data = features.map(feature => ({ ...clone(feature), properties: { ...clone(feature.properties), __helperId: String(feature.id), __helperKind: "feature", __helperSelected: String(feature.id) === selected } }));
+    const data = features.map(feature => {
+      const style = feature.properties?.helperStyle;
+      const paint = { __helperfillColor: null, __helperfillOpacity: null, __helperstrokeColor: null, __helperstrokeOpacity: null };
+      for (const part of ["fill", "stroke"]) if (style?.[part]) {
+        const { r, g, b, a } = style[part];
+        paint[`__helper${part}Color`] = `rgb(${r},${g},${b})`;
+        paint[`__helper${part}Opacity`] = a;
+      }
+      return { ...clone(feature), properties: { ...clone(feature.properties), ...paint, __helperId: String(feature.id), __helperKind: "feature", __helperSelected: String(feature.id) === selected } };
+    });
     draft.forEach((coordinate, i) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "draft", index: i } }));
     if (draft.length > 1) data.push({ type: "Feature", geometry: { type: "LineString", coordinates: mode === "polygon" && draft.length > 2 ? [...draft, draft[0]] : draft }, properties: { __helperKind: "draft" } });
     vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
@@ -68,66 +81,133 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (!map.getStyle()) return;
     hydrating = true;
     try {
-    if (!map.getSource(sourceId)) { map.addSource(sourceId, { type: "geojson", data: renderedData() }); ownedSource = true; }
+    if (!map.getSource(sourceId)) { map.addSource(sourceId, { type: "geojson", data: renderedData() }); if (destroyed) return; ownedSource = true; }
     const color = ["case", ["boolean", ["get", "__helperSelected"], false], "#ffb547", "#50b8ff"];
     const specs = [
-      { id: layers[0], type: "fill", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": color, "fill-opacity": 0.22 } },
-      { id: layers[1], type: "line", filter: ["!=", ["geometry-type"], "Point"], paint: { "line-color": color, "line-width": 3 } },
-      { id: layers[2], type: "circle", filter: ["all", ["==", ["geometry-type"], "Point"], ["!=", ["get", "__helperKind"], "vertex"]], paint: { "circle-color": color, "circle-radius": 7, "circle-stroke-color": "#102035", "circle-stroke-width": 2 } },
+      { id: layers[0], type: "fill", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": ["coalesce", ["get", "__helperfillColor"], color], "fill-opacity": ["coalesce", ["get", "__helperfillOpacity"], 0.22] } },
+      { id: layers[1], type: "line", filter: ["!=", ["geometry-type"], "Point"], paint: { "line-color": ["coalesce", ["get", "__helperstrokeColor"], color], "line-opacity": ["coalesce", ["get", "__helperstrokeOpacity"], 1], "line-width": 3 } },
+      { id: layers[2], type: "circle", filter: ["all", ["==", ["geometry-type"], "Point"], ["!=", ["get", "__helperKind"], "vertex"]], paint: { "circle-color": ["coalesce", ["get", "__helperfillColor"], color], "circle-opacity": ["coalesce", ["get", "__helperfillOpacity"], 1], "circle-radius": 7, "circle-stroke-color": ["coalesce", ["get", "__helperstrokeColor"], "#102035"], "circle-stroke-opacity": ["coalesce", ["get", "__helperstrokeOpacity"], 1], "circle-stroke-width": 2 } },
       { id: layers[3], type: "circle", filter: ["==", ["get", "__helperKind"], "vertex"], paint: { "circle-color": "#fff", "circle-radius": 8, "circle-stroke-color": "#e79622", "circle-stroke-width": 3 } },
     ];
-    for (const spec of specs) if (!map.getLayer(spec.id)) { map.addLayer({ ...spec, source: sourceId }); ownedLayers.add(spec.id); }
+    for (const spec of specs) {
+      if (destroyed) return;
+      if (!map.getLayer(spec.id)) { map.addLayer({ ...spec, source: sourceId }); if (destroyed) return; ownedLayers.add(spec.id); }
+    }
     render();
     } finally { hydrating = false; }
   }
   function render() { if (!destroyed && ownedSource) map.getSource(sourceId)?.setData(renderedData()); }
   function capabilities() {
-    return { modes: destroyed ? ["pan"] : [...MODES], editing: "drag-existing-vertices", measurement: false,
-      actions: { finish: !destroyed && (mode === "line" ? draft.length >= 2 : mode === "polygon" && draft.length >= 3), cancel: !destroyed && (mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!undoStack.length) && !drag, redo: !destroyed && (!!draftRedo.length || !!redoStack.length) && !drag, delete: !destroyed && selected !== null && !drag, clear: !destroyed && !!features.length && !drag } };
+    return { modes: destroyed ? ["pan"] : edit ? ["select"] : [...MODES], editing: "drag-existing-vertices", editSessions: true, featureStyles: ["fill", "stroke"], measurement: false,
+      actions: { finish: !destroyed && !drag && (!!edit || (mode === "line" ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (!!edit || mode !== "select" || !!draft.length || !!drag), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag, delete: !destroyed && !edit && selected !== null && !drag, clear: !destroyed && !edit && !!features.length && !drag } };
   }
-  function refresh() { revision++; render(); emit("measure", null); }
-  function select(id) { revision++; selected = id === null ? null : String(id); render(); emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); }
+  function publishState() { if (!destroyed) emit("statechange", { mode, selectedFeatureId: selected, draft: clone(draft), anchor: anchor(), dragging: !!drag, editSession: getEditState(), revision }); }
+  function refresh() { if (destroyed) return false; revision++; render(); if (destroyed) return false; emit("measure", null); publishState(); return !destroyed; }
+  function select(id) { if (destroyed || edit) return false; revision++; selected = id === null ? null : String(id); render(); if (destroyed) return false; emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); publishState(); return !destroyed; }
   function publishChanges(before) {
-    before.filter(f => !features.some(n => String(n.id) === String(f.id))).forEach(f => emit("delete", f.id));
-    features.forEach(f => { const old = before.find(p => String(p.id) === String(f.id)); if (!old) emit("create", f); else if (!equal(old, f)) emit("update", f); });
+    for (const f of before.filter(f => !features.some(n => String(n.id) === String(f.id)))) { if (destroyed) return; emit("delete", f.id); }
+    for (const f of features) { if (destroyed) return; const old = before.find(p => String(p.id) === String(f.id)); if (!old) emit("create", f); else if (!equal(old, f)) emit("update", f); }
+    if (destroyed) return;
     if (selected !== null && !features.some(f => String(f.id) === selected)) select(null);
     refresh();
   }
   function commit(next) {
+    if (destroyed) return false;
     const validated = validateFeatures(next);
-    if (equal(validated, features)) return;
-    const before = clone(features); undoStack.push(before); if (undoStack.length > historyLimit) undoStack.shift(); redoStack = [];
-    revision++; features = validated; render(); publishChanges(before);
+    if (equal(validated, features)) return true;
+    const before = clone(features), stack = edit ? edit.undo : undoStack;
+    stack.push(before); if (stack.length > historyLimit) stack.shift();
+    if (edit) edit.redo = []; else redoStack = [];
+    revision++; features = validated; render(); if (destroyed) return false; publishChanges(before); return !destroyed;
   }
-  function abortDrag() {
+  function abortDrag(notify = true) {
     if (!drag) return;
     const previousDrag = drag; drag = null;
     revision++;
     features = previousDrag.before; try { canvas.releasePointerCapture(previousDrag.pointerId); } catch (_) { /* already released */ }
-    restoreNavigation(); render();
+    restoreNavigation(); render(); if (notify) { emit("measure", null); publishState(); }
   }
   function setMode(next) {
+    if (dispatchDepth) return false;
     if (destroyed) return;
     if (!MODES.includes(next)) throw new RangeError(`Unsupported drawing mode: ${next}`);
-    abortDrag(); draft = []; draftRedo = []; restoreNavigation(); mode = next;
+    if (edit) return false;
+    abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; restoreNavigation(); mode = next;
     if (!["select", "pan"].includes(mode)) lockNavigation(["dragPan", "doubleClickZoom", "keyboard"]);
     canvas.style.cursor = mode === "pan" || mode === "select" ? oldCursor : "crosshair";
-    refresh(); emit("modechange", mode);
+    if (!refresh()) return false; emit("modechange", mode);
   }
   function newFeature(type, coordinates) {
     let id; do { id = `${prefix}-${globalThis.crypto.randomUUID()}`; } while (features.some(f => String(f.id) === id));
     return { type: "Feature", id, properties: {}, geometry: { type, coordinates: clone(coordinates) } };
   }
   function finish() {
+    if (dispatchDepth) return false;
     if (destroyed || !capabilities().actions.finish) return false;
+    if (edit) return acceptEdit();
     const feature = newFeature(mode === "line" ? "LineString" : "Polygon", mode === "line" ? draft : [[...draft, draft[0]]]);
     try { validateFeatures([feature]); }
     catch (error) { reportError(error); return false; } // Invalid draft stays editable.
-    draft = []; draftRedo = []; commit([...features, feature]); setMode("select"); select(feature.id); return true;
+    draft = []; draftRedo = []; if (!commit([...features, feature])) return false; setMode("select"); return select(feature.id);
   }
-  function cancel() { if (!destroyed) { abortDrag(); setMode("select"); } }
+  function cancel() { if (dispatchDepth) return false; if (!destroyed) { if (edit) return rollbackEdit(); abortDrag(); setMode("select"); } }
+  function beginEdit(id = selected) {
+    if (dispatchDepth || destroyed || edit || drag || draft.length || draftRedo.length || mode !== "select" || id === null || id === undefined) return false;
+    const feature = features.find(f => String(f.id) === String(id));
+    if (!feature) return false;
+    edit = { id: ++nextEdit, featureId: String(feature.id), before: clone(features), undo: [], redo: [] };
+    const session = edit;
+    selected = edit.featureId;
+    emit("select", { featureId: selected, feature });
+    if (destroyed || edit !== session || !refresh()) return false;
+    emit("editchange", getEditState()); return !destroyed && edit === session;
+  }
+  function getEditState() { return edit ? { id: edit.id, featureId: edit.featureId, dirty: !equal(edit.before, features), dragging: !!drag, canUndo: !!edit.undo.length && !drag, canRedo: !!edit.redo.length && !drag } : null; }
+  function acceptEdit(sessionId = edit?.id) {
+    if (dispatchDepth || destroyed || !edit || edit.id !== sessionId || drag) return false;
+    const before = edit.before;
+    if (!equal(before, features)) { undoStack.push(before); if (undoStack.length > historyLimit) undoStack.shift(); redoStack = []; }
+    edit = null; if (!refresh()) return false; emit("editchange", null); return !destroyed;
+  }
+  function rollbackEdit(sessionId = edit?.id) {
+    if (dispatchDepth || destroyed || !edit || edit.id !== sessionId) return false;
+    const session = edit;
+    abortDrag(); if (destroyed || edit !== session) return false;
+    const before = clone(features), original = session.before; edit = null;
+    features = original; publishChanges(before); if (destroyed) return false; emit("editchange", null); return !destroyed;
+  }
+  function updateFeature(id, patch, { sessionId } = {}) {
+    if (dispatchDepth || destroyed || drag || draft.length || draftRedo.length || mode !== "select") return false;
+    if (sessionId !== undefined && edit?.id !== sessionId) return false;
+    if (id === null || id === undefined || (edit && edit.featureId !== String(id))) return false;
+    const index = features.findIndex(f => String(f.id) === String(id));
+    if (index < 0) return false;
+    validateJsonData(patch, new Set(), "Feature update");
+    if (!patch || Array.isArray(patch) || typeof patch !== "object" || Object.keys(patch).some(key => !["geometry", "properties", "style"].includes(key))) throw new TypeError("Feature update supports geometry, properties and style only.");
+    const next = clone(features), feature = next[index];
+    if (Object.hasOwn(patch, "geometry")) feature.geometry = clone(patch.geometry);
+    if (Object.hasOwn(patch, "properties")) feature.properties = clone(patch.properties);
+    if (Object.hasOwn(patch, "style")) {
+      if (feature.properties === null) feature.properties = {};
+      if (patch.style === null) delete feature.properties.helperStyle;
+      else feature.properties.helperStyle = clone(patch.style);
+    }
+    return commit(next);
+  }
+  function getFeatureStyle(id = selected) {
+    const feature = features.find(f => id !== null && id !== undefined && String(f.id) === String(id));
+    return feature ? clone(feature.properties?.helperStyle || {}) : null;
+  }
+  function anchor() {
+    const coordinates = draft.length ? draft : vertices(features.find(f => String(f.id) === selected)).map(v => v.coordinate);
+    if (!coordinates.length) return null;
+    return [0, 1].map(axis => {
+      const bounds = coordinates.reduce(([min, max], p) => [Math.min(min, p[axis]), Math.max(max, p[axis])], [Infinity, -Infinity]);
+      return (bounds[0] + bounds[1]) / 2;
+    });
+  }
   function click(event) {
-    if (destroyed || drag || mode === "pan") return;
+    if (dispatchDepth || destroyed || drag || mode === "pan") return;
     // Suppress only the click belonging to a completed drag, never a later click.
     const original = event.originalEvent;
     if (suppressClick && original && Math.abs(original.timeStamp - suppressClick.timeStamp) < 50 && Math.hypot(original.clientX - suppressClick.x, original.clientY - suppressClick.y) < 2) return;
@@ -142,7 +222,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     else { if (!equal(draft.at(-1), coordinate)) draft.push(coordinate); draftRedo = []; refresh(); }
   }
   function pointerDown(event) {
-    if (destroyed || mode !== "select" || selected === null || drag || event.button !== 0) return;
+    if (dispatchDepth || destroyed || mode !== "select" || selected === null || drag || event.button !== 0) return;
     const feature = features.find(f => String(f.id) === selected), box = canvas.getBoundingClientRect();
     const x = event.clientX - box.left, y = event.clientY - box.top;
     const vertex = vertices(feature).find(v => { const p = map.project(v.coordinate); return Math.hypot(p.x - x, p.y - y) <= 12; });
@@ -152,9 +232,11 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     drag = { before: clone(features), path: vertex.path, pointerId: event.pointerId, moved: false };
     revision++;
     canvas.setPointerCapture(event.pointerId);
+    emit("measure", null);
+    publishState();
   }
   function pointerMove(event) {
-    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (dispatchDepth || !drag || drag.pointerId !== event.pointerId) return;
     const box = canvas.getBoundingClientRect(), ll = map.unproject([event.clientX - box.left, event.clientY - box.top]);
     const coordinate = [ll.lng, ll.lat];
     try { validatePosition(coordinate); } catch (_) { return; }
@@ -162,12 +244,13 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (feature.geometry.type === "Point") feature.geometry.coordinates = coordinate;
     else if (feature.geometry.type === "LineString") feature.geometry.coordinates[drag.path[0]] = coordinate;
     else { const [r, i] = drag.path; feature.geometry.coordinates[r][i] = coordinate; if (i === 0) feature.geometry.coordinates[r][feature.geometry.coordinates[r].length - 1] = [...coordinate]; }
-    revision++; drag.moved = true; render(); event.preventDefault();
+    revision++; drag.moved = true; render(); publishState(); event.preventDefault();
   }
   function pointerUp(event) {
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const next = clone(features), before = drag.before, moved = drag.moved;
-    abortDrag(); if (moved) suppressClick = { timeStamp: event.timeStamp, x: event.clientX, y: event.clientY };
+    if (dispatchDepth || !drag || drag.pointerId !== event.pointerId) return;
+    const next = clone(features), before = drag.before, moved = drag.moved, session = edit, selection = selected, currentMode = mode;
+    abortDrag(); if (destroyed || edit !== session || selected !== selection || mode !== currentMode) return;
+    if (moved) suppressClick = { timeStamp: event.timeStamp, x: event.clientX, y: event.clientY };
     if (moved) { try { validateFeatures(next); } catch (error) { refresh(); reportError(error); return; } commit(next); }
     else features = before;
   }
@@ -184,25 +267,31 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     } finally { if (handled) event.preventDefault(); }
   }
   function undo() {
+    if (dispatchDepth) return false;
     if (destroyed || drag) return;
+    if (edit) { if (edit.undo.length) { const before = clone(features); edit.redo.push(before); features = edit.undo.pop(); publishChanges(before); } return; }
     if (draft.length) { draftRedo.push(draft.pop()); refresh(); return; }
     if (!undoStack.length) return;
     const before = clone(features); redoStack.push(before); revision++; features = undoStack.pop(); publishChanges(before);
   }
   function redo() {
+    if (dispatchDepth) return false;
     if (destroyed || drag) return;
+    if (edit) { if (edit.redo.length) { const before = clone(features); edit.undo.push(before); features = edit.redo.pop(); publishChanges(before); } return; }
     if (draftRedo.length) { draft.push(draftRedo.pop()); refresh(); return; }
     if (draft.length || !redoStack.length) return;
     const before = clone(features); undoStack.push(before); revision++; features = redoStack.pop(); publishChanges(before);
   }
   function setFeatures(input) {
+    if (dispatchDepth) return false;
     if (destroyed) return;
     const next = validateFeatures(input); // Validate atomically before cancelling interaction.
-    abortDrag(); draft = []; draftRedo = []; undoStack = []; redoStack = [];
+    if (edit) return false;
+    abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; undoStack = []; redoStack = [];
     const before = features; revision++; features = next; publishChanges(before);
   }
   function requestDeletion(action) {
-    if (destroyed || drag || requestingDelete || (action === "delete" && selected === null)) return false;
+    if (dispatchDepth || destroyed || edit || drag || requestingDelete || (action === "delete" && selected === null)) return false;
     // A draft-only clear retains the historical behavior but also goes through the gate.
     if (action === "clear" && !features.length && !draft.length && !draftRedo.length) return false;
     const expectedRevision = revision;
@@ -210,10 +299,10 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     let consumed = false;
     const confirm = () => {
       // Calling from inside the hook cannot recursively bypass confirmation.
-      if (requestingDelete) return false;
+      if (dispatchDepth || requestingDelete) return false;
       if (consumed) return false;
       consumed = true;
-      if (destroyed || drag || revision !== expectedRevision) return false;
+      if (destroyed || edit || drag || revision !== expectedRevision) return false;
       if (action === "delete") commit(features.filter(f => String(f.id) !== String(featureIds[0])));
       else { draft = []; draftRedo = []; commit([]); refresh(); }
       return true;
@@ -235,8 +324,10 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   function deleteSelected() { return requestDeletion("delete"); }
   function clear() { return requestDeletion("clear"); }
   function destroy(removed = false) {
+    if (dispatchDepth && !removed) return false;
     if (destroyed) return;
-    abortDrag(); restoreNavigation(); revision++; destroyed = true;
+    abortDrag(false); if (edit) { features = edit.before; edit = null; }
+    restoreNavigation(); revision++; destroyed = true;
     mapOffs.splice(0).forEach(off => off()); domOffs.splice(0).forEach(off => off()); listeners.clear();
     canvas.style.cursor = oldCursor;
     if (!removed) {
@@ -257,11 +348,11 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   });
   bindMap("remove", () => destroy(true));
   bindDom(canvas, "pointerdown", pointerDown); bindDom(canvas, "pointermove", pointerMove); bindDom(canvas, "pointerup", pointerUp);
-  bindDom(canvas, "pointercancel", abortDrag); bindDom(canvas, "lostpointercapture", () => { if (drag) abortDrag(); }); bindDom(canvas, "keydown", keydown);
-  bindDom(globalThis, "blur", () => { if (drag) abortDrag(); });
+  bindDom(canvas, "pointercancel", () => { if (!dispatchDepth) abortDrag(); }); bindDom(canvas, "lostpointercapture", () => { if (drag && !dispatchDepth) abortDrag(); }); bindDom(canvas, "keydown", keydown);
+  bindDom(globalThis, "blur", () => { if (drag && !dispatchDepth) abortDrag(); });
   try { if (map.isStyleLoaded()) hydrate(); } catch (error) { destroy(); throw error; }
-  return { on, setMode, setFeatures, validateFeatures, getFeatures: () => clone(features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy,
-    getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), revision, destroyed, sourceId, layerIds: [...layers] }) };
+  return { on, setMode, setFeatures, validateFeatures, beginEdit, acceptEdit, rollbackEdit, updateFeature, getFeatureStyle, getFeatures: () => clone(features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy: () => destroy(),
+    getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), editSession: getEditState(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
 }
 
 function validatePosition(position) {
@@ -276,6 +367,7 @@ function validateFeatures(input) {
     if (feature?.type !== "Feature" || !["string", "number"].includes(typeof feature.id) || String(feature.id) === "" || (typeof feature.id === "number" && !Number.isFinite(feature.id))) throw new TypeError("Every feature requires a stable nonempty string or finite numeric ID.");
     if (ids.has(String(feature.id))) throw new TypeError("Feature IDs must be unique (including string/numeric equivalents)."); ids.add(String(feature.id));
     if (feature.properties !== null && (typeof feature.properties !== "object" || Array.isArray(feature.properties))) throw new TypeError("Feature properties must be an object or null.");
+    if (Object.hasOwn(feature.properties || {}, "helperStyle")) validateStyle(feature.properties.helperStyle);
     const geometry = feature.geometry;
     if (geometry?.type === "Point") validatePosition(geometry.coordinates);
     else if (geometry?.type === "LineString") validateLine(geometry.coordinates, 2);
@@ -317,4 +409,11 @@ function validateLine(coordinates, minimum) {
   if (!Array.isArray(coordinates) || coordinates.length < minimum) throw new TypeError(`Geometry requires at least ${minimum} coordinates.`);
   coordinates.forEach(validatePosition);
   if (new Set(coordinates.map(String)).size < 2) throw new TypeError("Geometry requires distinct coordinates.");
+}
+
+function validateStyle(style) {
+  if (!style || typeof style !== "object" || Array.isArray(style) || Object.keys(style).some(key => !["fill", "stroke"].includes(key))) throw new TypeError("helperStyle supports fill and stroke RGBA objects only.");
+  for (const color of Object.values(style)) {
+    if (!color || typeof color !== "object" || Array.isArray(color) || Object.keys(color).length !== 4 || Object.keys(color).some(key => !["r", "g", "b", "a"].includes(key)) || ![color.r, color.g, color.b].every(value => Number.isInteger(value) && value >= 0 && value <= 255) || !Number.isFinite(color.a) || color.a < 0 || color.a > 1) throw new TypeError("Fill and stroke require r, g, b integers from 0 to 255 and alpha a from 0 to 1.");
+  }
 }

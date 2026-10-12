@@ -1,4 +1,4 @@
-import { poiName, poiNameExpression } from './poi-name.js?v=20261012-personal-ui1';
+import { poiName, poiNameExpression } from './poi-name.js?v=20261012-personal-ui2';
 
 // Category keys retain exact source strings; empty/missing/nonstring values share Unspecified.
 export const categoryValue = value => typeof value === 'string' && value.trim() ? value : '';
