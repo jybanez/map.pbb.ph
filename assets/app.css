@@ -125,3 +125,7 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .pbb-personal-modal .ui-tree-grid-table col:nth-child(1){width:32%;}
 .pbb-personal-modal .ui-tree-grid-table col:nth-child(2){width:20%;}
 .pbb-personal-modal .ui-tree-grid-table col:nth-child(3){width:48%;}
+
+.pbb-personal-read > .pbb-personal-row {justify-content:space-between;margin-bottom:10px;}
+.pbb-personal-read-shape .ui-skeleton-line {height:32px;}
+.pbb-personal-read-shape .ui-skeleton-line.is-short {height:28px;width:42%;justify-self:end;}

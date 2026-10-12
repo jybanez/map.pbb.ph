@@ -1,6 +1,6 @@
-import { poiNameExpression } from './poi-name.js?v=20261013-polygon1';
-import { eligibilityExpression } from './poi-categories.js?v=20261013-polygon1';
-import { tileUrls } from './config.js?v=20261013-polygon1';
+import { poiNameExpression } from './poi-name.js?v=20261013-skeleton1';
+import { eligibilityExpression } from './poi-categories.js?v=20261013-skeleton1';
+import { tileUrls } from './config.js?v=20261013-skeleton1';
 
 export const POI_LAYERS = ['pbb-poi-points', 'pbb-poi-labels'];
 export const ATTRIBUTION = '© <a href="https://stadiamaps.com/attribution/" target="_blank" rel="noopener">Stadia Maps</a> · © <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · © <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener">MapTiler</a>';

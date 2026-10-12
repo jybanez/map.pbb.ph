@@ -21,6 +21,7 @@
     "ui.toast",
     "ui.empty.state",
     "ui.busy.overlay",
+    "ui.skeleton",
     "ui.icons",
     "ui.menu",
     "ui.modal",

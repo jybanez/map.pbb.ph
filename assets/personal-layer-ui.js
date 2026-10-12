@@ -1,12 +1,12 @@
-import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261013-polygon1';
-export function createPersonalLayers({region,uiLoader,createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,toast,onChange,onEditingChange,store=createPersonalLayerStore(),idPrefix='pbb-personal-readonly'}){
+import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261013-skeleton1';
+export function createPersonalLayers({region,uiLoader,createActionModal,createFormModal,createMapControls,createBusyOverlay,createSkeleton,uiAlert,toast,onChange,onEditingChange,store=createPersonalLayerStore(),idPrefix='pbb-personal-readonly'}){
   const card=document.createElement('section'),rail=document.createElement('div'),objectHost=document.createElement('div'),status=document.createElement('p');
   card.className='pbb-personal-card';card.hidden=true;card.setAttribute('aria-label','Personal layers');rail.className='pbb-personal-rail';rail.hidden=true;objectHost.className='pbb-personal-object';objectHost.hidden=true;status.setAttribute('role','status');region.append(card,rail,objectHost);
   const busy=createBusyOverlay(card,{visible:false,fullscreen:false,lockScroll:false,text:'Reading personal layers…',cancel:{label:'Close',onCancel:()=>hideCard()}});
   const source=idPrefix,renderLayers=['fill','line','point'].map(x=>`${source}-${x}`);
   let map=null,disposed=false,mapToken=0,openToken=0,loaded=false,loading=null,blocked=false,writing=false,saved={schema:1,revision:0,layers:[]},selected=null,session=null,adapter=null,epoch=0;
   let stack=null,select=null,inline=null,tools=null,objectControls=null,pageControls=[],confirmation=null,form=null,settleColor=null,life=null,launcher=null;
-  let createAdapter,createTools,createStack,createSelect,createInline,createColor,renderQueued=false,uiQueued=false;
+  let createAdapter,createTools,createStack,createSelect,createInline,createColor,renderQueued=false,uiQueued=false,readEpoch=0,readBusy=false,readHost=null,skeleton=null,readControls=[];
   const dirty=()=>!!session&&(JSON.stringify(session.layer)!==JSON.stringify(session.baseline)||!!adapter?.getState().draft.length||!!adapter?.getState().editSession?.dirty||!!inline?.getState().active);
   const layerIds=()=>saved.layers.map(l=>({id:`personal-layer:${l.id}`,label:l.name,checked:l.visible,disabled:writing||blocked||!!session}));
   function alertError(message){void uiAlert('Please address the following issues before continuing:',{title:'Check personal layer',variant:'error',items:[message],draggable:true,workspaceBridge:false});}
@@ -21,10 +21,10 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
   }
   function styleData(){if(renderQueued||!map||map.getSource(source)&&renderLayers.every(id=>map.getLayer(id)))return;const context=map;renderQueued=true;queueMicrotask(()=>{renderQueued=false;if(!disposed&&map===context)render();});}
   async function load(){
-    if(loaded)return;if(loading){await loading;if(!loaded)return load();return;}const context=map,token=mapToken;
+    if(loaded)return;if(loading){try{await loading;}catch(error){if(error.name!=="AbortError")throw error;}if(!loaded)return load();return;}const context=map,token=mapToken,readToken=readEpoch;
     loading=(async()=>{if(!context)throw Error('Wait for the map to load, then reopen Personal layers.');
       [createAdapter,createTools,createStack,createSelect,createInline,createColor]=await Promise.all(['ui.map.drawing.maplibre','ui.map.drawing','ui.navigation.stack','ui.select','ui.inline.text','ui.color.picker'].map(n=>uiLoader.get(n,{preferBundles:true})));
-      const document=await store.read();if(disposed||map!==context||mapToken!==token)throw Error('Map context changed; reopen Personal layers.');const validator=createAdapter(context,{editBehavior:'immediate'});try{const capabilities=validator.getCapabilities();if(capabilities.editBehavior!=='immediate'||!capabilities.styleTransactions||!['circle','rectangle'].every(shape=>capabilities.shapes?.includes(shape))||!['fill','stroke'].every(part=>capabilities.featureStyles?.includes(part)))throw Error('The reviewed drawing runtime is missing immediate editing, shapes or styles.');saved=validateLayerDocument(document,features=>validator.validateFeatures(features));}finally{validator.destroy();}loaded=true;blocked=false;render();onChange?.();
+      const document=await store.read();if(disposed||map!==context||mapToken!==token||readEpoch!==readToken)throw new DOMException('Personal layers read cancelled.','AbortError');const validator=createAdapter(context,{editBehavior:'immediate'});try{const capabilities=validator.getCapabilities();if(capabilities.editBehavior!=='immediate'||!capabilities.styleTransactions||!['circle','rectangle'].every(shape=>capabilities.shapes?.includes(shape))||!['fill','stroke'].every(part=>capabilities.featureStyles?.includes(part)))throw Error('The reviewed drawing runtime is missing immediate editing, shapes or styles.');saved=validateLayerDocument(document,features=>validator.validateFeatures(features));}finally{validator.destroy();}loaded=true;blocked=false;render();onChange?.();
     })().finally(()=>{loading=null;});return loading;
   }
   async function commit(next){if(writing||blocked)throw Error(blocked?'Storage failed. Preserve your edits before reloading.':'Wait for the current save.');writing=true;sync();try{saved=await store.save(next);return saved;}catch(error){fail(error);throw error;}finally{writing=false;render();sync();}}
@@ -50,17 +50,31 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
   function showEditor(){if(!stack)stack=createStack(card,{chrome:false,transition:'none',ariaLabel:'Personal layers navigation'});const page=editorPage();if(stack.getState().currentIndex===0)stack.push(page,{animate:false});else stack.replace(page,{animate:false});sync();}
   function queueSync(){if(uiQueued)return;uiQueued=true;queueMicrotask(()=>{uiQueued=false;if(!disposed)sync();});}
   function sync(){
-    if(disposed)return;onChange?.();card.setAttribute('aria-busy',String(writing));card.dataset.dirty=String(dirty());card.dataset.page=session?'edit':'manage';
+    if(disposed)return;onChange?.();card.setAttribute('aria-busy',String(writing||readBusy));card.dataset.dirty=String(dirty());card.dataset.page=session?'edit':'manage';
     if(session){if(!blocked&&!writing&&status.getAttribute('role')!=='alert')status.textContent=dirty()?'Unsaved changes':'';status.hidden=!status.textContent;const caps=adapter?.getCapabilities().actions||{},locked=writing||blocked;card.querySelector('.pbb-personal-name')?.toggleAttribute('inert',locked);if(tools&&tools.getState().busy!==locked)tools.update({busy:locked});
       for(const c of pageControls){c.setActionState('save',{disabled:locked});c.setActionState('close',{disabled:writing});c.setActionState('undo',{disabled:locked||!caps.undo});c.setActionState('redo',{disabled:locked||!caps.redo});c.setActionState('delete',{disabled:locked||!caps.delete});c.setActionState('clear',{disabled:locked||!caps.clear});c.setActionState('export',{visible:blocked});}positionObject();
     }else for(const c of pageControls){c.setActionState('add',{disabled:writing||blocked});c.setActionState('edit',{disabled:!selected||writing||blocked});c.setActionState('delete',{disabled:!selected||writing||blocked});c.setActionState('export',{visible:blocked});}rail.inert=writing||blocked;objectHost.inert=writing||blocked;
   }
-  async function open(){
-    if(disposed)return;if(session){requestClose();return;}if(!card.hidden){hideCard();return;}const token=++openToken,context=map;card.hidden=false;busy.show({text:'Reading personal layers…'});await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
-    try{await load();if(disposed||token!==openToken||card.hidden||context!==map)return;busy.hide();if(session)showEditor();else showManage();}
-    catch(error){if(disposed||token!==openToken||card.hidden)return;busy.hide();blocked=true;feedback(`Personal layers could not load. ${error.message} Close and reopen to retry; saved data has not been replaced.`,true);card.append(status);}
+  function clearRead(){skeleton?.destroy();skeleton=null;readControls.splice(0).forEach(c=>c.destroy());readHost?.remove();readHost=null;readBusy=false;card.setAttribute('aria-busy',String(writing));}
+  function readShell(){
+    clearRead();clearPages();stack?.destroy();stack=null;readHost=document.createElement('div');readHost.className='pbb-personal-read';const header=row(),title=document.createElement('strong'),close=document.createElement('div');title.textContent='Personal layers';header.append(title,close);readHost.append(header);card.append(readHost);readControls.push(actionGroup(close,[{id:'close-read',label:'Close personal layers',icon:'actions.close',onActivate:hideCard}]));return readHost;
   }
-  function hideCard(){if(session)return;openToken++;card.hidden=true;busy.hide();launcher?.focus();}
+  async function open(){
+    if(disposed)return;if(session){requestClose();return;}if(!card.hidden){hideCard();return;}const token=++openToken,context=map;card.hidden=false;
+    if(loaded){showManage();return;}
+    const host=readShell(),placeholder=document.createElement('div');placeholder.className='pbb-personal-read-shape';placeholder.setAttribute('role','status');placeholder.setAttribute('aria-label','Loading personal layers');host.append(placeholder);readBusy=true;card.setAttribute('aria-busy','true');
+    try{
+      if(!createSkeleton)createSkeleton=await uiLoader.get('ui.skeleton',{preferBundles:true});
+      if(disposed||token!==openToken||card.hidden||context!==map)return;
+      skeleton=createSkeleton(placeholder,{lines:2},{variant:'lines'});
+      await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));await load();
+      if(disposed||token!==openToken||card.hidden||context!==map)return;clearRead();if(session)showEditor();else showManage();
+    }catch(error){
+      if(disposed||token!==openToken||card.hidden||context!==map)return;
+      skeleton?.destroy();skeleton=null;placeholder.remove();readBusy=false;card.setAttribute('aria-busy','false');blocked=true;feedback(`Personal layers could not load. ${error.message} Retry or close and reopen; saved data has not been replaced.`,true);host.append(status);const retry=document.createElement('div');host.append(retry);readControls.push(actionGroup(retry,[{id:'retry-read',label:'Retry loading personal layers',onActivate:()=>{hideCard();void open();}}]));
+    }
+  }
+  function hideCard(){if(session)return;openToken++;readEpoch++;card.hidden=true;clearRead();busy.hide();launcher?.focus();}
   function namePrompt(){
     if(form||writing||blocked||session)return;const context=map,token=mapToken;life?.abort();life=new AbortController();let created=null,instance;
     form=instance=createFormModal({title:'Create personal layer',ariaLabel:'Layer name prompt',size:'sm',workspaceBridge:false,rows:[[{type:'input',name:'name',label:'Layer name',required:true,maxLength:80}]],submitLabel:'Create',cancelLabel:'Cancel',autoBusy:false,manageBusyOnSubmit:false,
@@ -134,7 +148,7 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
   const unload=event=>{if(dirty()||writing){event.preventDefault();event.returnValue='';}};window.addEventListener('keydown',key,true);window.addEventListener('beforeunload',unload);
   return {open,isEditing:()=>!!session,getLayers:layerIds,setLauncher:button=>{launcher=button;},
     async setVisibility(id,visible){if(!loaded||session||writing||blocked){onChange?.();return;}const next=structuredClone(saved),layer=next.layers.find(l=>`personal-layer:${l.id}`===id);if(!layer)return;layer.visible=visible;try{await commit(next);}catch{onChange?.();}},
-    setMap(next){confirmation?.close({reason:'context-change'});form?.close();mapToken++;openToken++;detachEditor();if(map){map.off('style.load',render);map.off('styledata',styleData);if(map.getStyle()){for(const id of [...renderLayers].reverse())if(map.getLayer(id))map.removeLayer(id);if(map.getSource(source))map.removeSource(source);}}map=next;if(map){map.on('style.load',render);map.on('styledata',styleData);void load().then(()=>{if(map!==next||disposed)return;render();if(session){card.hidden=false;createEditor();showEditor();}}).catch(error=>{if(!disposed&&map===next)feedback(`Personal layers could not load. ${error.message}`,true);});}else{card.hidden=true;if(session&&dirty())feedback('The map changed. Your edit session remains here; reopen it when the map returns.',true);}},
-    destroy(){if(disposed)return;disposed=true;confirmation?.destroy();form?.destroy();life?.abort();detachEditor();session=null;onEditingChange?.(false);clearPages();stack?.destroy();busy.destroy();if(map){map.off('style.load',render);map.off('styledata',styleData);if(map.getStyle()){for(const id of [...renderLayers].reverse())if(map.getLayer(id))map.removeLayer(id);if(map.getSource(source))map.removeSource(source);}}card.remove();rail.remove();objectHost.remove();store.close();window.removeEventListener('keydown',key,true);window.removeEventListener('beforeunload',unload);}
+    setMap(next){confirmation?.close({reason:'context-change'});form?.close();mapToken++;openToken++;readEpoch++;clearRead();if(!session)card.hidden=true;detachEditor();if(map){map.off('style.load',render);map.off('styledata',styleData);if(map.getStyle()){for(const id of [...renderLayers].reverse())if(map.getLayer(id))map.removeLayer(id);if(map.getSource(source))map.removeSource(source);}}map=next;if(map){map.on('style.load',render);map.on('styledata',styleData);void load().then(()=>{if(map!==next||disposed)return;render();if(session){card.hidden=false;createEditor();showEditor();}}).catch(error=>{if(!disposed&&map===next&&error.name!=='AbortError')feedback(`Personal layers could not load. ${error.message}`,true);});}else{card.hidden=true;if(session&&dirty())feedback('The map changed. Your edit session remains here; reopen it when the map returns.',true);}},
+    destroy(){if(disposed)return;disposed=true;confirmation?.destroy();form?.destroy();life?.abort();detachEditor();session=null;onEditingChange?.(false);clearRead();clearPages();stack?.destroy();busy.destroy();if(map){map.off('style.load',render);map.off('styledata',styleData);if(map.getStyle()){for(const id of [...renderLayers].reverse())if(map.getLayer(id))map.removeLayer(id);if(map.getSource(source))map.removeSource(source);}}card.remove();rail.remove();objectHost.remove();store.close();window.removeEventListener('keydown',key,true);window.removeEventListener('beforeunload',unload);}
   };
 }

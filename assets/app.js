@@ -1,24 +1,24 @@
-import { createPersonalLayers } from './personal-layer-ui.js?v=20261013-polygon1';
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261013-polygon1';
-import { createPoiFilter } from './poi-filter.js?v=20261013-polygon1';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261013-polygon1';
+import { createPersonalLayers } from './personal-layer-ui.js?v=20261013-skeleton1';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261013-skeleton1';
+import { createPoiFilter } from './poi-filter.js?v=20261013-skeleton1';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261013-skeleton1';
 import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.306';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261013-polygon1';
-import { registerMapShell } from './map-shell.js?v=20261013-polygon1';
-import { config } from './config.js?v=20261013-polygon1';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261013-polygon1';
-import { createLocationController } from './location.js?v=20261013-polygon1';
-import { installMapContext } from './map-context.js?v=20261013-polygon1';
-import { createMapSearch } from './map-search.js?v=20261013-polygon1';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261013-polygon1';
-import { createDirectionOptions } from './direction-options.js?v=20261013-polygon1';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261013-skeleton1';
+import { registerMapShell } from './map-shell.js?v=20261013-skeleton1';
+import { config } from './config.js?v=20261013-skeleton1';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261013-skeleton1';
+import { createLocationController } from './location.js?v=20261013-skeleton1';
+import { installMapContext } from './map-context.js?v=20261013-skeleton1';
+import { createMapSearch } from './map-search.js?v=20261013-skeleton1';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261013-skeleton1';
+import { createDirectionOptions } from './direction-options.js?v=20261013-skeleton1';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
   // modular fallback. Explicit get options below keep this policy for lazy flows.
   uiLoader.setPreferBundles(true);
-  const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert] = await Promise.all(
-    ['ui.navbar', 'ui.map.controls', 'ui.map.markers', 'ui.toast', 'ui.empty.state', 'ui.busy.overlay', 'ui.icons', 'ui.menu', 'ui.modal', 'ui.search', 'ui.events.createEventBag','ui.action.modal','ui.form.modal','ui.dialog.alert']
+  const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert,createSkeleton] = await Promise.all(
+    ['ui.navbar', 'ui.map.controls', 'ui.map.markers', 'ui.toast', 'ui.empty.state', 'ui.busy.overlay', 'ui.icons', 'ui.menu', 'ui.modal', 'ui.search', 'ui.events.createEventBag','ui.action.modal','ui.form.modal','ui.dialog.alert','ui.skeleton']
       .map(name => uiLoader.get(name, { preferBundles: true })));
   const { createIcon } = icons;
   const { createMapMarker } = markers;
@@ -80,7 +80,7 @@ export async function mountApp() {
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261013-polygon1').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261013-skeleton1').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -122,7 +122,7 @@ export async function mountApp() {
   const search = createMapSearch({createSearchField,createMenu,createIcon,createEventBag,createMapMarker,markExploration,poiAllowed:p=>poiFilter.visible(p),onDismiss:()=>dismissSearch(),
     onDestinationActivate:({point,x,y,trigger})=>contextActions?.openAt(point,x,y,trigger),
     onDestinationUnavailable:()=>contextActions?.close(),onSearchFocus:()=>contextActions?.close()});
-  personal=createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,createBusyOverlay,uiAlert,toast,onChange:()=>syncControls(),onEditingChange:editing=>{if(editing)markExploration();else if(missingNotice)queueMicrotask(()=>{if(map&&!disposed&&!personal?.isEditing())void recoverResources();});document.body.classList.toggle('pbb-personal-editing',editing);contextActions?.close();search.closeResults();search.container.inert=editing;updateSearchAction();}});
+  personal=createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,createBusyOverlay,createSkeleton,uiAlert,toast,onChange:()=>syncControls(),onEditingChange:editing=>{if(editing)markExploration();else if(missingNotice)queueMicrotask(()=>{if(map&&!disposed&&!personal?.isEditing())void recoverResources();});document.body.classList.toggle('pbb-personal-editing',editing);contextActions?.close();search.closeResults();search.container.inert=editing;updateSearchAction();}});
   const personalHost=document.createElement('div');personalHost.className='pbb-personal-control';region.append(personalHost);
   const personalControl=createMapControls(personalHost,{controls:['personal-layers'],actions:[{id:'personal-layers',label:'Manage personal layers',title:'Manage personal layers',icon:'map.layer',onActivate:({button})=>{personal.setLauncher(button);void personal.open();}}]});
   function navbarOptions() {
