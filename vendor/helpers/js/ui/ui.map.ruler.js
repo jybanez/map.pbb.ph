@@ -13,7 +13,7 @@ export function createMapRuler(container, options = {}) {
   let settings = { ...options }, destroyed = false, active = false, pending = false;
   let start = null, end = null, preview = null, copyStatus = '', copying = false;
   let activation = null, controller = null, epoch = 0, copyEpoch = 0, originalDoubleClick = null;
-  let gesture = false;
+  let gesture = false, hydrating = false, styleQueued = false;
   const id = `helper-ruler-${++sequence}`, lineId = `${id}-line`, pointsId = `${id}-points`;
   const root = createElement('section', { className: 'ui-map-ruler', attrs: { 'aria-label': 'Map ruler', hidden: '' } });
   const value = createElement('output', { className: 'ui-map-ruler__distance', attrs: { 'aria-label': 'Straight-line geographic distance' } });
@@ -60,17 +60,20 @@ export function createMapRuler(container, options = {}) {
     return { type: 'FeatureCollection', features };
   }
   function draw() {
-    // Own source updates temporarily make isStyleLoaded false. Keep updating an
-    // installed source; otherwise retry after the engine finishes loading.
-    if (destroyed || !active || (!map.isStyleLoaded() && !map.getSource(id))) return;
+    // Style availability permits custom resources while base tiles are pending.
+    // Waiting for isStyleLoaded/idle can leave a valid measurement invisible.
+    if (destroyed || !active || hydrating || !map.getStyle()) return;
+    hydrating = true;
     try {
       if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data: data() });
       if (!map.getLayer(lineId)) map.addLayer({ id: lineId, type: 'line', source: id, filter: ['==', '$type', 'LineString'], paint: { 'line-color': '#38bdf8', 'line-width': 3, 'line-dasharray': [2, 1] } });
       if (!map.getLayer(pointsId)) map.addLayer({ id: pointsId, type: 'circle', source: id, filter: ['==', '$type', 'Point'], paint: { 'circle-color': '#38bdf8', 'circle-radius': 5, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } });
       map.getSource(id).setData(data());
     } catch (error) { report(error); }
+    finally { hydrating = false; }
   }
   function removeGeometry() {
+    if (!map.getStyle()) return;
     for (const layer of [pointsId, lineId]) if (map.getLayer(layer)) map.removeLayer(layer);
     if (map.getSource(id)) map.removeSource(id);
   }
@@ -151,8 +154,16 @@ export function createMapRuler(container, options = {}) {
     root.remove(); instances.delete(map); settings.onStateChange?.(getState());
   }
   function idle() { if (active && !map.getSource(id)) draw(); }
+  function styleData() {
+    if (styleQueued || destroyed || !active) return;
+    styleQueued = true;
+    queueMicrotask(() => {
+      styleQueued = false;
+      if (!destroyed && active && map.getStyle() && (!map.getSource(id) || !map.getLayer(lineId) || !map.getLayer(pointsId))) draw();
+    });
+  }
   function removed() { destroy(true); }
-  const bindings = [['click', click], ['mousemove', move], ['dragstart', gestureStart], ['zoomstart', gestureStart], ['rotatestart', gestureStart], ['pitchstart', gestureStart], ['style.load', draw], ['idle', idle], ['remove', removed]];
+  const bindings = [['click', click], ['mousemove', move], ['dragstart', gestureStart], ['zoomstart', gestureStart], ['rotatestart', gestureStart], ['pitchstart', gestureStart], ['style.load', draw], ['styledata', styleData], ['idle', idle], ['remove', removed]];
   for (const [name, handler] of bindings) map.on(name, handler);
   map.getCanvas().addEventListener('pointerdown', pointerStart);
   container.ownerDocument.addEventListener('keydown', key);
