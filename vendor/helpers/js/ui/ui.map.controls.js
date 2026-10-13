@@ -117,6 +117,9 @@ export function createMapControls(container, options = {}) {
     refs.button.disabled = action.disabled;
     refs.button.title = action.title || action.label;
     refs.button.setAttribute("aria-label", action.label);
+    if (action.pressed == null) refs.button.removeAttribute("aria-pressed");
+    else refs.button.setAttribute("aria-pressed", String(action.pressed));
+    refs.button.classList.toggle("is-active", action.pressed === true);
     if (action.expanded == null) refs.button.removeAttribute("aria-expanded");
     else refs.button.setAttribute("aria-expanded", String(action.expanded));
     if (action.ariaControls) refs.button.setAttribute("aria-controls", action.ariaControls);
@@ -127,9 +130,9 @@ export function createMapControls(container, options = {}) {
     if (destroyed) return false;
     const action = currentOptions.actions.find((item) => item.id === String(id));
     if (!action) return false;
-    for (const key of ["visible", "disabled", "expanded"]) {
+    for (const key of ["visible", "disabled", "expanded", "pressed"]) {
       if (Object.prototype.hasOwnProperty.call(patch, key)) {
-        action[key] = key === "expanded" && patch[key] == null ? null : Boolean(patch[key]);
+        action[key] = ["expanded", "pressed"].includes(key) && patch[key] == null ? null : Boolean(patch[key]);
       }
     }
     syncAction(action);
@@ -390,6 +393,7 @@ function normalizeActions(actions) {
     return { id, label, title: String(action.title || label), icon: String(action.icon || ""),
       visible: action.visible !== false, disabled: Boolean(action.disabled),
       expanded: action.expanded == null ? null : Boolean(action.expanded),
+      pressed: action.pressed == null ? null : Boolean(action.pressed),
       ariaControls: String(action.ariaControls || ""),
       onActivate: typeof action.onActivate === "function" ? action.onActivate : null };
   });

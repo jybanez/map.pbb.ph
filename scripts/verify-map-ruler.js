@@ -1,0 +1,36 @@
+async page=>{
+const results=[];
+for(const width of [1200,375]){
+ const context=await page.context().browser().newContext({viewport:{width,height:1000},hasTouch:width===375,serviceWorkers:'block'}),errors=[],requests=[];context.setDefaultTimeout(30000);
+ await context.addInitScript(()=>{let lib;Object.defineProperty(window,'maplibregl',{get:()=>lib,set(v){lib=v;const Base=v.Map;v.Map=class extends Base{constructor(o){super(o);window.__map=this;}};}});Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async t=>{window.__copied=t;}}});});
+ context.on('request',r=>{if(r.url().includes('/vendor/helpers/'))requests.push(new URL(r.url()).pathname);});const tab=await context.newPage();tab.on('pageerror',e=>errors.push(e.message));
+ await tab.route('**/assets/app.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('ruler=installMapRuler(','ruler=window.__ruler=installMapRuler(')});});
+ try{
+ await tab.goto('https://map.pbb.ph/');await tab.waitForFunction(()=>window.__map?.getSource('pbb-personal-readonly')&&window.__ruler);await tab.evaluate(()=>__map.jumpTo({zoom:15,pitch:45,bearing:35}));await tab.waitForFunction(()=>!__map.isMoving());
+ const button=n=>tab.getByRole('button',{name:n,exact:true}),rulerButton=button('Measure straight-line distance');
+ const storage=()=>tab.evaluate(async()=>{const{createPersonalLayerStore}=await import('./assets/personal-layer-store.js'),s=createPersonalLayerStore();try{return JSON.stringify(await s.read());}finally{s.close();}});const baseline=await storage();
+ await rulerButton.click();await tab.waitForFunction(()=>__ruler.getState().active);if(await rulerButton.getAttribute('aria-pressed')!=='true')throw Error('Pressed');
+ const point=async(x,y)=>tab.evaluate(([x,y])=>{const b=__map.getCanvas().getBoundingClientRect();return{x:b.left+b.width*x,y:b.top+b.height*y};},[x,y]);
+ const a=await point(.35,.4),b=await point(.6,.65);const click=async p=>width===375?tab.touchscreen.tap(p.x,p.y):tab.mouse.click(p.x,p.y);
+ await click(a);await tab.waitForFunction(()=>__ruler.getState().phase==='preview');if(width!==375){await tab.mouse.move(b.x,b.y);await tab.waitForFunction(()=>__ruler.getState().preview);}
+ await click(b);await tab.waitForFunction(()=>__ruler.getState().phase==='complete');
+ await tab.waitForFunction(()=>{const m=__map,layer=m.getStyle().layers.find(l=>/^helper-ruler-.*-line$/.test(l.id));return layer&&m.isSourceLoaded(layer.source)&&m.queryRenderedFeatures({layers:[layer.id]}).length>0;},null,{timeout:60000});
+ const measurement=await tab.evaluate(()=>{const s=__ruler.getState();return{state:s,expected:new maplibregl.LngLat(...s.start).distanceTo(new maplibregl.LngLat(...s.end))};});if(Math.abs(measurement.state.result.distanceMeters-measurement.expected)>.001)throw Error('Distance');
+ if(await button('Filter points of interest').isEnabled())throw Error('POI competing');
+ const placement=await tab.locator('.pbb-ruler-result').evaluate(host=>{const b=host.getBoundingClientRect();return{rect:b.toJSON(),overlap:[...document.querySelectorAll('.pbb-personal-card,.pbb-personal-rail,.ui-map-scale,#locate-control,.pbb-location-toast .ui-toast')].filter(e=>!e.hidden&&e.getClientRects().length).some(e=>{const r=e.getBoundingClientRect();return b.left<r.right&&b.right>r.left&&b.top<r.bottom&&b.bottom>r.top;})};});if(placement.overlap||placement.rect.left<0||placement.rect.right>width)throw Error('Placement '+JSON.stringify(placement));
+ await button('Copy distance').click();await tab.waitForFunction(()=>__ruler.getState().copyStatus==='Distance copied.');if(await tab.evaluate(()=>__copied)!==measurement.state.result.text)throw Error('Copy text');
+ await tab.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Denied');}}}));await button('Copy distance').click();await tab.waitForFunction(()=>__ruler.getState().copyStatus.includes('Could not copy'));
+ await tab.screenshot({path:`output/playwright/ruler246-${width}.png`});
+ await click(a);await tab.waitForFunction(()=>__ruler.getState().phase==='preview');await button('Reset ruler').click();await tab.waitForFunction(()=>__ruler.getState().phase==='ready');await tab.locator('canvas').first().press('Escape');await tab.waitForFunction(()=>!__ruler.getState().active);if(await rulerButton.getAttribute('aria-pressed')!=='false'||!await button('Filter points of interest').isEnabled())throw Error('Exit ownership');if(await storage()!==baseline)throw Error('Measuring persisted');
+ // Seed one local layer in the isolated browser context; exercise existing dirty exit flow.
+ await tab.evaluate(async()=>{const{createPersonalLayerStore}=await import('./assets/personal-layer-store.js'),s=createPersonalLayerStore(),doc=await s.read();doc.layers.push({id:'ruler-guard',name:'Ruler guard',visible:true,features:[]});await s.save(doc);s.close();});await tab.reload();await tab.waitForFunction(()=>window.__map?.getSource('pbb-personal-readonly')&&window.__ruler);await button('Manage personal layers').click();await button('Personal layer').click();await tab.getByRole('option',{name:'Ruler guard',exact:true}).click();await button('Edit layer').click();await tab.locator('.pbb-personal-rail [data-mode="polygon"]').click();await click(await point(.4,.5));
+ await rulerButton.click();await tab.getByRole('dialog',{name:'Unsaved personal layer',exact:true}).waitFor();await button('Keep editing').click();await tab.waitForFunction(()=>!__ruler.getState().pending);if(await tab.evaluate(()=>__ruler.getState().active))throw Error('Keep activated');
+ await rulerButton.click();await tab.getByRole('dialog',{name:'Unsaved personal layer',exact:true}).waitFor();await tab.evaluate(()=>__ruler.cancel());await tab.waitForFunction(()=>!__ruler.getState().pending);await tab.getByRole('dialog',{name:'Unsaved personal layer',exact:true}).waitFor({state:'hidden'});if(await tab.evaluate(()=>__ruler.getState().active))throw Error('Late cancelled activation');
+ await rulerButton.click();await tab.getByRole('dialog',{name:'Unsaved personal layer',exact:true}).waitFor();await button('Discard').click();await tab.waitForFunction(()=>__ruler.getState().active);if(await tab.locator('.pbb-personal-rail').isVisible())throw Error('Editor still owns input');await button('Exit ruler').click();
+ await rulerButton.click();await tab.waitForFunction(()=>__ruler.getState().active);await button('Manage personal layers').click();await tab.waitForFunction(()=>!__ruler.getState().active);await button('Manage personal layers').click();
+ await rulerButton.click();await tab.waitForFunction(()=>__ruler.getState().active);await tab.evaluate(()=>__map.remove());await tab.waitForFunction(()=>__ruler.getState().destroyed);
+ if(errors.length||new Set(requests).size!==3)throw Error(JSON.stringify({errors,requests}));results.push({width,tilted:true,nativeTwoTaps:width===375,measurement,placement,copyControlledSuccessFailure:true,restartResetEscape:true,noMeasurementPersistence:true,dirtyKeepDiscardAndAbort:true,layersCancelsRuler:true,mapRemoval:true,helperAssets:[...new Set(requests)],errors});
+ }finally{await context.close();}
+}
+return results;
+}

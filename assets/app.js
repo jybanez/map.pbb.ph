@@ -1,25 +1,26 @@
-import { installScalePlacement } from './map-scale-placement.js?v=20261013-rail1';
-import { createPersonalLayers } from './personal-layer-ui.js?v=20261013-rail1';
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261013-rail1';
-import { createPoiFilter } from './poi-filter.js?v=20261013-rail1';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261013-rail1';
-import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.311';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261013-rail1';
-import { registerMapShell } from './map-shell.js?v=20261013-rail1';
-import { config } from './config.js?v=20261013-rail1';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261013-rail1';
-import { createLocationController } from './location.js?v=20261013-rail1';
-import { installMapContext } from './map-context.js?v=20261013-rail1';
-import { createMapSearch } from './map-search.js?v=20261013-rail1';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261013-rail1';
-import { createDirectionOptions } from './direction-options.js?v=20261013-rail1';
+import { installMapRuler } from './map-ruler.js?v=20261013-ruler1';
+import { installScalePlacement } from './map-scale-placement.js?v=20261013-ruler1';
+import { createPersonalLayers } from './personal-layer-ui.js?v=20261013-ruler1';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261013-ruler1';
+import { createPoiFilter } from './poi-filter.js?v=20261013-ruler1';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261013-ruler1';
+import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.312';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261013-ruler1';
+import { registerMapShell } from './map-shell.js?v=20261013-ruler1';
+import { config } from './config.js?v=20261013-ruler1';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261013-ruler1';
+import { createLocationController } from './location.js?v=20261013-ruler1';
+import { installMapContext } from './map-context.js?v=20261013-ruler1';
+import { createMapSearch } from './map-search.js?v=20261013-ruler1';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261013-ruler1';
+import { createDirectionOptions } from './direction-options.js?v=20261013-ruler1';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
   // modular fallback. Explicit get options below keep this policy for lazy flows.
   uiLoader.setPreferBundles(true);
-  const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert,createSkeleton,createMapScale] = await Promise.all(
-    ['ui.navbar', 'ui.map.controls', 'ui.map.markers', 'ui.toast', 'ui.empty.state', 'ui.busy.overlay', 'ui.icons', 'ui.menu', 'ui.modal', 'ui.search', 'ui.events.createEventBag','ui.action.modal','ui.form.modal','ui.dialog.alert','ui.skeleton','ui.map.scale']
+  const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert,createSkeleton,createMapScale,createMapRuler] = await Promise.all(
+    ['ui.navbar', 'ui.map.controls', 'ui.map.markers', 'ui.toast', 'ui.empty.state', 'ui.busy.overlay', 'ui.icons', 'ui.menu', 'ui.modal', 'ui.search', 'ui.events.createEventBag','ui.action.modal','ui.form.modal','ui.dialog.alert','ui.skeleton','ui.map.scale','ui.map.ruler']
       .map(name => uiLoader.get(name, { preferBundles: true })));
   const { createIcon } = icons;
   const { createMapMarker } = markers;
@@ -48,7 +49,8 @@ export async function mountApp() {
   zoomContainer.id = 'zoom-control';
   region.appendChild(zoomContainer);
   let map = null, controls = null, zoomControls = null, marker = null, position = null, recenterPending = false;
-  let contextActions = null; let personal = null;
+  let contextActions = null; let personal = null; let ruler = null;
+  const inputBlocked=()=>personal?.isEditing()||ruler?.isOwningInput();
   let disposed = false, ready = false, poiVisible = true, generation = 0, abort = null, startupTimer = null;
   let locationState = { status: 'idle' }, locationToast = null;
   const warned = new Set();
@@ -81,7 +83,7 @@ export async function mountApp() {
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261013-rail1').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261013-ruler1').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -123,9 +125,10 @@ export async function mountApp() {
   const search = createMapSearch({createSearchField,createMenu,createIcon,createEventBag,createMapMarker,markExploration,poiAllowed:p=>poiFilter.visible(p),onDismiss:()=>dismissSearch(),
     onDestinationActivate:({point,x,y,trigger})=>contextActions?.openAt(point,x,y,trigger),
     onDestinationUnavailable:()=>contextActions?.close(),onSearchFocus:()=>contextActions?.close()});
-  personal=createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,createBusyOverlay,createSkeleton,uiAlert,toast,onChange:()=>syncControls(),onEditingChange:editing=>{if(editing)markExploration();else if(missingNotice)queueMicrotask(()=>{if(map&&!disposed&&!personal?.isEditing())void recoverResources();});document.body.classList.toggle('pbb-personal-editing',editing);contextActions?.close();search.closeResults();search.container.inert=editing;updateSearchAction();}});
+  personal=createPersonalLayers({region,uiLoader,createModal,createActionModal,createFormModal,createMapControls,createBusyOverlay,createSkeleton,uiAlert,toast,onChange:()=>syncControls(),onEditingChange:editing=>{if(editing)markExploration();else if(missingNotice)queueMicrotask(()=>{if(map&&!disposed&&!personal?.isEditing())void recoverResources();});document.body.classList.toggle('pbb-personal-editing',editing);contextActions?.close();search.closeResults();search.container.inert=!!inputBlocked();updateSearchAction();}});
   const personalHost=document.createElement('div');personalHost.className='pbb-personal-control';region.append(personalHost);
-  const personalControl=createMapControls(personalHost,{controls:['personal-layers'],actions:[{id:'personal-layers',label:'Manage personal layers',title:'Manage personal layers',icon:'map.layer',onActivate:({button})=>{personal.setLauncher(button);void personal.open();}}]});
+  const personalControl=createMapControls(personalHost,{controls:['personal-layers','ruler'],orientation:'vertical',actions:[{id:'personal-layers',label:'Manage personal layers',title:'Manage personal layers',icon:'map.layer',onActivate:({button})=>{ruler?.cancel();personal.setLauncher(button);void personal.open();}},{id:'ruler',label:'Measure straight-line distance',title:'Measure straight-line distance',icon:'map.ruler',pressed:false,disabled:true,onActivate:()=>ruler?.toggle()}]});
+  ruler=installMapRuler({region,createMapRuler,personal,toast,onStateChange:state=>{personalControl.setActionState('ruler',{pressed:state.active,disabled:state.pending||state.destroyed});contextActions?.close();search.closeResults();search.container.inert=!!inputBlocked();updateSearchAction();}});
   function navbarOptions() {
     const brandIcon = document.createElement('img');
     brandIcon.src = new URL('./pbb-map-icon-navbar.png', import.meta.url).href;
@@ -139,11 +142,11 @@ export async function mountApp() {
   const navbar = createNavbar(header, {}, navbarOptions());
   const searchMobile = window.matchMedia('(max-width: 720px)');
   let searchExpanded=false;
-  function searchAction() {return {id:'search',label:searchExpanded?'Close map search':'Open map search',icon:searchExpanded?'actions.close':'actions.search',visible:searchMobile.matches,disabled:personal?.isEditing(),expanded:searchExpanded,ariaControls:'map-search',onActivate:()=>searchExpanded?dismissSearch():revealSearch()};}
+  function searchAction() {return {id:'search',label:searchExpanded?'Close map search':'Open map search',icon:searchExpanded?'actions.close':'actions.search',visible:searchMobile.matches,disabled:!!inputBlocked(),expanded:searchExpanded,ariaControls:'map-search',onActivate:()=>searchExpanded?dismissSearch():revealSearch()};}
   function enableAction(){return{id:'enable-direction',label:'Enable direction',icon:'actions.add',visible:direction.needsActivation?.()===true,onActivate:()=>{void direction.request(true);}};}
-  function directionAction(){return{id:'direction-status',label:'Direction diagnostics',icon:'status.info',onActivate:()=>diagnostics.open()};}
-  function optionsAction(){const state=direction.getOptionsState?.()||{};return{id:'direction-options',label:'Direction options',icon:'actions.settings',visible:state.missing||state.selected,onActivate:()=>directionOptions.open()};}
-  function mapActions(){return [searchAction(),{id:'poi-filter',label:'Filter points of interest',icon:'data.filter',disabled:personal?.isEditing(),onActivate:()=>poiFilter.open()},enableAction(),...(config.showDirectionTools ? [directionAction(),optionsAction()] : [])];}
+  function directionAction(){return{id:'direction-status',label:'Direction diagnostics',icon:'status.info',onActivate:()=>{ruler?.cancel();diagnostics.open();}};}
+  function optionsAction(){const state=direction.getOptionsState?.()||{};return{id:'direction-options',label:'Direction options',icon:'actions.settings',visible:state.missing||state.selected,onActivate:()=>{ruler?.cancel();directionOptions.open();}};}
+  function mapActions(){return [searchAction(),{id:'poi-filter',label:'Filter points of interest',icon:'data.filter',disabled:!!inputBlocked(),onActivate:()=>poiFilter.open()},enableAction(),...(config.showDirectionTools ? [directionAction(),optionsAction()] : [])];}
   function updateSearchAction(){zoomControls?.update({actions:mapActions()});}
   function dismissSearch(returnFocus=true) {
     if(!searchMobile.matches)return;
@@ -262,6 +265,7 @@ export async function mountApp() {
   });
 
   function removeMap() {
+    ruler?.setMap(null);
     scalePlacement?.destroy(); scalePlacement=null;
     diagnostics.close();
     welcome?.close();directionOptions.close();directionControlKey='';
@@ -319,7 +323,7 @@ export async function mountApp() {
         keyboard: true, dragRotate: true, touchPitch: true, transformRequest: resources.transformRequest });
       map.getCanvas().setAttribute('aria-label', 'Map. Use arrow keys to pan, plus or minus to zoom, and Shift with arrow keys to rotate or pitch.');
       map.on('style.load', () => { if (!disposed && id === generation && ready) displayPosition(); });
-      contextActions = installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed:p=>poiFilter.visible(p),isInteractionBlocked:()=>personal?.isEditing() });
+      contextActions = installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed:p=>poiFilter.visible(p),isInteractionBlocked:()=>!!inputBlocked() });
       map.on('movestart', event => {
         if (event.originalEvent) { location.markNavigation(); recenterPending = false; }
       });
@@ -357,7 +361,7 @@ export async function mountApp() {
 
   function activateMap(id) {
     if (disposed || id !== generation || ready || !map) return;
-    ready = true; scalePlacement=installScalePlacement({map,region,createMapScale}); accuracyRipple.setMap(map); search.setMap(map); poiFilter.setMap(map); personal?.setMap(map);
+    ready = true; scalePlacement=installScalePlacement({map,region,createMapScale}); accuracyRipple.setMap(map); search.setMap(map); poiFilter.setMap(map); personal?.setMap(map);ruler?.setMap(map);
     clearTimeout(startupTimer); busy.hide();
     POI_LAYERS.forEach(layer => { if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', poiVisible ? 'visible' : 'none'); });
     displayPosition(); syncDirectionUI();
@@ -378,7 +382,7 @@ export async function mountApp() {
     window.visualViewport?.removeEventListener('resize', onViewportResize);
     window.removeEventListener('pagehide', onPageHide);
     searchMobile.removeEventListener('change', placeSearch);
-    personal?.destroy();personalControl.destroy();personalHost.remove();
+    ruler?.destroy();personal?.destroy();personalControl.destroy();personalHost.remove();
     poiFilter.destroy();search.destroy(); navbar.destroy(); locateControl.destroy(); locateContainer.remove(); zoomContainer.remove(); feedback.destroy(); busy.destroy(); toast.destroy();
   }
   window.addEventListener('pagehide', onPageHide);

@@ -102,7 +102,7 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .pbb-personal-borderless,.pbb-personal-borderless .ui-map-controls__group {border:0;background:transparent;box-shadow:none;}
 .pbb-personal-borderless .ui-map-controls__button {border:0;background:transparent;width:36px;min-height:36px;}
 .pbb-personal-divider {height:24px;border-left:1px solid #354761;margin:0 4px;}
-.pbb-personal-rail {position:absolute;top:70px;right:max(16px,env(safe-area-inset-right));z-index:6;max-height:calc(100% - 86px);overflow-y:auto;scrollbar-width:thin;}
+.pbb-personal-rail {position:absolute;top:122px;right:max(16px,env(safe-area-inset-right));z-index:6;max-height:calc(100% - 138px);overflow-y:auto;scrollbar-width:thin;}
 .pbb-personal-rail .ui-map-drawing {padding:0;}
 .pbb-personal-rail .ui-map-drawing-group {flex-direction:column;gap:0;}
 .pbb-personal-rail .ui-map-drawing-button {width:44px;min-height:44px;}
@@ -129,3 +129,5 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .pbb-personal-read > .pbb-personal-row {justify-content:space-between;margin-bottom:10px;}
 .pbb-personal-read-shape .ui-skeleton-line {height:32px;}
 .pbb-personal-read-shape .ui-skeleton-line.is-short {height:28px;width:42%;justify-self:end;}
+
+.pbb-ruler-result {position:absolute;width:max-content;bottom:16px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);z-index:7;}
