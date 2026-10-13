@@ -1,9 +1,9 @@
-import { createIcon } from "./ui.icons.js?v=0.21.309";
+import { createIcon } from "./ui.icons.js?v=0.21.315";
 import { createElement, clearNode } from "./ui.dom.js";
 import { createEventBag } from "./ui.events.js";
 
 const DEFAULT_OPTIONS = {
-  modes: ["select", "point", "line", "polygon", "rectangle", "circle"],
+  modes: ["select", "pin", "point", "line", "polygon", "rectangle", "circle"],
   hideUnavailableActions: [],
   selectToggle: false,
   showModeTransitionStatus: true,
@@ -34,7 +34,7 @@ const DEFAULT_OPTIONS = {
   onSelect: null,
 };
 
-const MODES = new Set(["select", "pan", "point", "line", "path", "polygon", "rectangle", "circle"]);
+const MODES = new Set(["select", "pin", "pan", "point", "line", "path", "polygon", "rectangle", "circle"]);
 const ACTIONS = new Set(["fill", "stroke", "finish", "cancel", "undo", "redo", "delete", "clear"]);
 const ORIENTATIONS = new Set(["vertical", "horizontal"]);
 const PLACEMENTS = new Set(["map", "external"]);
@@ -44,6 +44,7 @@ const LABEL_MODES = new Set(["auto", "always", "none"]);
 
 const MODE_META = {
   select: { label: "Select", icon: "map.select" },
+  pin: { label: "Pin", icon: "map.pin" },
   pan: { label: "Pan", icon: "map.pan" },
   point: { label: "Point", symbol: "●" },
   line: { label: "Line", symbol: "╱" },

@@ -42,7 +42,8 @@
     "ui.color.picker",
     "ui.map.drawing.object",
     "ui.map.scale",
-    "ui.map.ruler"
+    "ui.map.ruler",
+    "ui.map.pin"
   ],
-  "policy": "Strict three-artifact reviewed Helper312; canonical drawing, ruler, scale and adapters. No modular fallback."
+  "policy": "Strict three-artifact reviewed Helper315; canonical drawing, ruler, scale and adapters. No modular fallback."
 }

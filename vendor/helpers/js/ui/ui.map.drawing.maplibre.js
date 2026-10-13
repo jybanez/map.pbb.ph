@@ -1,5 +1,6 @@
 import { shapeFromPoints, recognizedShape, shapeHandles, transformShape, objectPivot, rotateObject, shapeProject } from "./ui.map.drawing.shapes.js?v=0.21.309";
-const MODES = ["select", "pan", "point", "line", "path", "polygon", "rectangle", "circle"];
+import { createMapPinRenderer, isMapPin } from "./ui.map.pin.js?v=0.21.315";
+const MODES = ["select", "pin", "pan", "point", "line", "path", "polygon", "rectangle", "circle"];
 const clone = value => structuredClone(value);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 let nextAdapter = 0;
@@ -10,7 +11,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   const prefix = options.idPrefix || `helper-drawing-${++nextAdapter}`;
   const sourceId = `${prefix}-data`;
   const layers = ["fill", "line", "point", "vertex"].map(name => `${prefix}-${name}`);
-  if (map.getStyle() && (map.getSource(sourceId) || layers.some(id => map.getLayer(id)))) throw new Error("Drawing IDs already exist.");
+  if (map.getStyle() && (map.getSource(sourceId) || map.getLayer(`${prefix}-pins`) || layers.some(id => map.getLayer(id)))) throw new Error("Drawing IDs already exist.");
   const canvas = map.getCanvas();
   const lineBehavior = options.lineBehavior ?? "legacy-path";
   if (!["segment", "legacy-path"].includes(lineBehavior)) throw new RangeError("lineBehavior must be segment or legacy-path.");
@@ -29,6 +30,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   let ownedSource = false, ownedLayers = new Set(), suppressClick = null, hydrating = false, styleQueued = false;
   let revision = 0, requestingDelete = false, edit = null, nextEdit = 0, dispatchDepth = 0;
   const oldCursor = canvas.style.cursor;
+  let pinRenderer = null;
   const historyLimit = Number.isInteger(options.historyLimit) && options.historyLimit > 0 ? options.historyLimit : 100;
 
   function reportError(error) {
@@ -80,7 +82,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
         paint[`__helper${part}Color`] = `rgb(${r},${g},${b})`;
         paint[`__helper${part}Opacity`] = a;
       }
-      return { ...clone(feature), properties: { ...clone(feature.properties), ...paint, __helperId: String(feature.id), __helperKind: "feature", __helperSelected: String(feature.id) === selected } };
+      return { ...clone(feature), properties: { ...clone(feature.properties), ...paint, __helperPin: isMapPin(feature), __helperId: String(feature.id), __helperKind: "feature", __helperSelected: String(feature.id) === selected } };
     });
     draft.forEach((coordinate, i) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "draft", index: i } }));
     if (preview && draft.length && ["circle", "rectangle"].includes(mode)) {
@@ -88,12 +90,13 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     }
     const drawing = preview && draft.length && ["line", "path"].includes(mode) ? [...draft, preview] : draft;
     if (drawing.length > 1) data.push({ type: "Feature", geometry: { type: "LineString", coordinates: mode === "polygon" && draft.length > 2 ? [...draft, draft[0]] : drawing }, properties: { __helperKind: "draft" } });
-    if (objectMode === "move" && (!selectToggle || mode === "select")) vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
+    if (objectMode === "move" && (!selectToggle || mode === "select") && !isMapPin(features.find(f => String(f.id) === selected))) vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
     return { type: "FeatureCollection", features: data };
   }
   function hydrate() {
     if (destroyed || hydrating) return;
     if (!map.getStyle()) return;
+    if (drag) abortDrag();
     hydrating = true;
     try {
     if (!map.getSource(sourceId)) { map.addSource(sourceId, { type: "geojson", data: renderedData() }); if (destroyed) return; ownedSource = true; }
@@ -101,7 +104,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const specs = [
       { id: layers[0], type: "fill", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": ["coalesce", ["get", "__helperfillColor"], color], "fill-opacity": ["coalesce", ["get", "__helperfillOpacity"], 0.22] } },
       { id: layers[1], type: "line", filter: ["!=", ["geometry-type"], "Point"], paint: { "line-color": ["coalesce", ["get", "__helperstrokeColor"], color], "line-opacity": ["coalesce", ["get", "__helperstrokeOpacity"], 1], "line-width": 3 } },
-      { id: layers[2], type: "circle", filter: ["all", ["==", ["geometry-type"], "Point"], ["!=", ["get", "__helperKind"], "vertex"]], paint: { "circle-color": ["coalesce", ["get", "__helperfillColor"], color], "circle-opacity": ["coalesce", ["get", "__helperfillOpacity"], 1], "circle-radius": 7, "circle-stroke-color": ["coalesce", ["get", "__helperstrokeColor"], "#102035"], "circle-stroke-opacity": ["coalesce", ["get", "__helperstrokeOpacity"], 1], "circle-stroke-width": 2 } },
+      { id: layers[2], type: "circle", filter: ["all", ["==", ["geometry-type"], "Point"], ["!=", ["get", "__helperKind"], "vertex"], ["!=", ["get", "__helperPin"], true]], paint: { "circle-color": ["coalesce", ["get", "__helperfillColor"], color], "circle-opacity": ["coalesce", ["get", "__helperfillOpacity"], 1], "circle-radius": 7, "circle-stroke-color": ["coalesce", ["get", "__helperstrokeColor"], "#102035"], "circle-stroke-opacity": ["coalesce", ["get", "__helperstrokeOpacity"], 1], "circle-stroke-width": 2 } },
       { id: layers[3], type: "circle", filter: ["==", ["get", "__helperKind"], "vertex"], paint: { "circle-color": "#fff", "circle-radius": 8, "circle-stroke-color": "#e79622", "circle-stroke-width": 3 } },
     ];
     for (const spec of specs) {
@@ -111,7 +114,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     render();
     } finally { hydrating = false; }
   }
-  function render() { if (!destroyed && ownedSource) map.getSource(sourceId)?.setData(renderedData()); }
+  function render() { if (!destroyed && ownedSource) { map.getSource(sourceId)?.setData(renderedData()); if (!pinRenderer && features.some(isMapPin)) pinRenderer = createMapPinRenderer(map, { id: `${prefix}-pins`, maplibre: options.maplibre }); pinRenderer?.update(features, { selectedFeatureId: selected }); } }
   function capabilities() {
     const dirty = !!edit && !equal(edit.before, features);
     const modeTransitionReason = !selectToggle ? null : drag ? "Cancel or release the active edit before changing tools." : styleChange ? "Finish or cancel the color change before changing tools." : draft.length || draftRedo.length ? "Finish or cancel the drawing before changing tools." : dirty ? "Finish or cancel the object edit before changing tools." : null;
@@ -287,6 +290,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (!feature) return null;
     const shape = recognizedShape(feature);
     if (shape) return shape.kind;
+    if (isMapPin(feature)) return "pin";
     if (feature.geometry.type !== "LineString") return feature.geometry.type.toLowerCase();
     return feature.properties?.helperDrawingKind === "line" && feature.geometry.coordinates.length === 2 ? "line" : "path";
   }
@@ -307,7 +311,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       const live = layers.slice(0, 3).filter(id => map.getLayer(id));
       const p = event.point;
       const hit = live.length ? map.queryRenderedFeatures([[p.x - 6, p.y - 6], [p.x + 6, p.y + 6]], { layers: live }).find(f => f.properties.__helperKind === "feature") : null;
-      select(hit?.properties.__helperId ?? null); return;
+      select(pinRenderer?.hitTest(p, original?.pointerType === "touch" ? 12 : 6) ?? hit?.properties.__helperId ?? null); return;
     }
     if (mode === "path" && original?.detail > 1) return; // The first click of a double-click already added its endpoint.
     const coordinate = [event.lngLat.lng, event.lngLat.lat];
@@ -323,7 +327,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       } catch (error) { reportError(error); }
       return;
     }
-    if (mode === "point") { const feature = newFeature("Point", coordinate); if (commit([...features, feature]) && selectToggle) { setMode("select"); select(feature.id); } }
+    if (["point", "pin"].includes(mode)) { const feature = newFeature("Point", coordinate); if (mode === "pin") feature.properties.helperDrawingKind = "pin"; if (commit([...features, feature]) && selectToggle) { setMode("select"); select(feature.id); } }
     else { if (!equal(draft.at(-1), coordinate)) draft.push(coordinate); draftRedo = []; preview = null;
       if (mode === "line" && lineBehavior === "segment" && draft.length === 2) finish(); else refresh(); }
   }
@@ -332,7 +336,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const feature = features.find(f => String(f.id) === selected), box = canvas.getBoundingClientRect();
     const x = event.clientX - box.left, y = event.clientY - box.top;
     if (objectMode === "rotate" && !canRotate(feature)) return;
-    const vertex = objectMode === "move" ? vertices(feature).find(v => { const p = map.project(v.coordinate); return Math.hypot(p.x - x, p.y - y) <= 12; }) : null;
+    const vertex = objectMode === "move" ? isMapPin(feature) ? (pinRenderer?.hitTest({ x, y }, event.pointerType === "touch" ? 12 : 6) === selected ? vertices(feature)[0] : null) : vertices(feature).find(v => { const p = map.project(v.coordinate); return Math.hypot(p.x - x, p.y - y) <= 12; }) : null;
     let segment = false;
     if (!vertex && feature?.geometry.type === "LineString") {
       const points = feature.geometry.coordinates.map(c => map.project(c));
@@ -357,7 +361,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       if (hit?.properties.__helperId !== selected) return;
     }
     event.preventDefault(); event.stopImmediatePropagation();
-    lockNavigation(["dragPan", "dragRotate", "touchZoomRotate", "doubleClickZoom"]);
+    lockNavigation(["dragPan", "dragRotate", "touchZoomRotate", "doubleClickZoom", ...(isMapPin(feature) ? ["touchPitch", "scrollZoom", "keyboard"] : [])]);
     const start = map.unproject([x, y]);
     const pivot = objectMode === "rotate" ? objectPivot(feature) : null;
     const plane = pivot ? shapeProject([start.lng, start.lat]) : null;
@@ -416,6 +420,12 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       if (candidate.some(c => Math.abs(c[1]) > 85.0511287798066)) return;
       feature.geometry.coordinates = translated;
     }
+    else if (isMapPin(feature)) {
+      const original = drag.before.find(f => String(f.id) === drag.featureId).geometry.coordinates;
+      const next = [original[0] + ll.lng - drag.start.lng, original[1] + ll.lat - drag.start.lat, ...original.slice(2)];
+      try { validatePosition(next); } catch (_) { return; }
+      feature.geometry.coordinates = next;
+    }
     else if (feature.geometry.type === "Point") feature.geometry.coordinates = coordinate;
     else if (feature.geometry.type === "LineString") feature.geometry.coordinates[drag.path[0]] = coordinate;
     else { const [r, i] = drag.path; feature.geometry.coordinates[r][i] = coordinate; if (i === 0) feature.geometry.coordinates[r][feature.geometry.coordinates[r].length - 1] = [...coordinate]; }
@@ -435,7 +445,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     let handled = true;
     try {
       if (event.key === "Escape") cancel();
-      else if (event.key === "Enter") { if (mode === "point" || mode === "line" || mode === "path" || mode === "polygon" || mode === "circle" || mode === "rectangle") click({ point: map.project(map.getCenter()), lngLat: map.getCenter() }); }
+      else if (event.key === "Enter") { if (mode === "pin" || mode === "point" || mode === "line" || mode === "path" || mode === "polygon" || mode === "circle" || mode === "rectangle") click({ point: map.project(map.getCenter()), lngLat: map.getCenter() }); }
       else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") event.shiftKey ? redo() : undo();
       else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") redo();
       else if (event.key === "Delete" || event.key === "Backspace") deleteSelected();
@@ -517,6 +527,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     restoreNavigation(); revision++; destroyed = true;
     mapOffs.splice(0).forEach(off => off()); domOffs.splice(0).forEach(off => off()); listeners.clear();
     canvas.style.cursor = oldCursor;
+    pinRenderer?.destroy(removed); pinRenderer = null;
     if (!removed) {
       [...ownedLayers].reverse().forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
       if (ownedSource && map.getSource(sourceId)) map.removeSource(sourceId);
@@ -544,6 +555,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   // Style availability permits custom resources before base-source tiles finish.
   try { hydrate(); } catch (error) { destroy(); throw error; }
   return { on, setObjectMode, getObjectMode: () => objectMode, setMode, setFeatures, validateFeatures, beginStyleChange, previewStyle, finishStyleChange, cancelStyleChange, settleStyleChange, beginEdit, acceptEdit, rollbackEdit, updateFeature, getFeatureStyle, getDrawingKind, getFeatures: () => clone(editBehavior === "immediate" ? styleChange?.before || drag?.before || features : features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy: () => destroy(),
+    getPinBounds: () => pinRenderer?.getBounds() || [],
     getState: () => ({ mode, objectMode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), preview: clone(preview), editSession: getEditState(), styleChange: getStyleChange(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
 }
 
@@ -561,6 +573,7 @@ function validateFeatures(input) {
     if (feature.properties !== null && (typeof feature.properties !== "object" || Array.isArray(feature.properties))) throw new TypeError("Feature properties must be an object or null.");
     if (Object.hasOwn(feature.properties || {}, "helperStyle")) validateStyle(feature.properties.helperStyle);
     const geometry = feature.geometry;
+    if (feature.properties?.helperDrawingKind === "pin" && (geometry?.type !== "Point" || Math.abs(geometry.coordinates?.[1]) > 85.0511287798066)) throw new TypeError("Pin metadata requires a Point within Mercator latitude bounds.");
     if (geometry?.type === "Point") validatePosition(geometry.coordinates);
     else if (geometry?.type === "LineString") validateLine(geometry.coordinates, 2);
     else if (geometry?.type === "Polygon") {

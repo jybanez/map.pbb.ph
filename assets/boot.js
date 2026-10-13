@@ -1,4 +1,4 @@
-import { mountApp } from './app.js?v=20261013-ruler3';
+import { mountApp } from './app.js?v=20261014-pin1';
 const status = document.getElementById('boot-status');
 mountApp().then(() => { status.hidden = true; }).catch(error => {
   console.error('PBB Map startup:', error);
