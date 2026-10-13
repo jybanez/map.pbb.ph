@@ -8,3 +8,8 @@
 *.webmanifest text eol=lf
 # Preserve the original scientific runtime's independently pinned byte checksums.
 vendor/geomagnetism/** -text -eol whitespace=-trailing-space,cr-at-eol
+
+# Pinned license bytes must survive archive/checkout without Git conversion.
+vendor/maplibre/4.6.0/LICENSE.txt -text -eol
+vendor/helpers/README.md -text -eol
+vendor/helpers/licenses/*.txt -text -eol
