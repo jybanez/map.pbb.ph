@@ -1,4 +1,4 @@
-import { poiName } from './poi-name.js?v=20261013-ruler2';
+import { poiName } from './poi-name.js?v=20261013-ruler3';
 export function installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed=()=>true,isInteractionBlocked=()=>false }) {
   const canvas = map.getCanvas();
   const pointerSurface = map.getCanvasContainer();

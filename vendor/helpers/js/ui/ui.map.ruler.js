@@ -14,6 +14,8 @@ export function createMapRuler(container, options = {}) {
   let start = null, end = null, preview = null, copyStatus = '', copying = false;
   let activation = null, controller = null, epoch = 0, copyEpoch = 0, originalDoubleClick = null;
   let gesture = false, hydrating = false, styleQueued = false;
+  let drag = null, suppressClick = false;
+  const canvas = map.getCanvas();
   const id = `helper-ruler-${++sequence}`, lineId = `${id}-line`, pointsId = `${id}-points`;
   const root = createElement('section', { className: 'ui-map-ruler', attrs: { 'aria-label': 'Map ruler', hidden: '' } });
   const value = createElement('output', { className: 'ui-map-ruler__distance', attrs: { 'aria-label': 'Straight-line geographic distance' } });
@@ -38,23 +40,23 @@ export function createMapRuler(container, options = {}) {
     const meters = new maplibre.LngLat(...start).distanceTo(new maplibre.LngLat(...target));
     return { distanceMeters: meters, text: meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(2)} km`, fixed: Boolean(end) };
   }
-  function getState() { return { destroyed, pending, active, phase: !active ? 'inactive' : end ? 'complete' : start ? 'preview' : 'ready', start: start?.slice() || null, end: end?.slice() || null, preview: preview?.slice() || null, result: result(), copying, copyStatus }; }
+  function getState() { return { destroyed, pending, active, dragging: drag?.endpoint || null, phase: !active ? 'inactive' : end ? 'complete' : start ? 'preview' : 'ready', start: start?.slice() || null, end: end?.slice() || null, preview: preview?.slice() || null, result: result(), copying, copyStatus }; }
   function notify() {
     root.hidden = !active;
     const measurement = result();
     value.textContent = measurement?.text || (start ? 'Choose the second point' : 'Choose the first point');
-    copy.disabled = !end || copying;
+    copy.disabled = !end || copying || Boolean(drag);
     feedback.textContent = copyStatus;
     settings.onStateChange?.(getState());
   }
   function report(error) { settings.onError?.(error); }
   function data() {
     const features = [], target = end || preview;
-    if (start) features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: start } });
+    if (start) features.push({ type: 'Feature', properties: { endpoint: 'start' }, geometry: { type: 'Point', coordinates: start } });
     if (start && target) {
       const delta = ((target[0] - start[0] + 180) % 360 + 360) % 360 - 180;
       const renderedEnd = [start[0] + delta, target[1]];
-      features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: renderedEnd } });
+      features.push({ type: 'Feature', properties: { endpoint: 'end' }, geometry: { type: 'Point', coordinates: renderedEnd } });
       features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [start, renderedEnd] } });
     }
     return { type: 'FeatureCollection', features };
@@ -78,11 +80,11 @@ export function createMapRuler(container, options = {}) {
     if (map.getSource(id)) map.removeSource(id);
   }
   function clearPair() { ++copyEpoch; start = end = preview = null; copying = false; copyStatus = ''; }
-  function reset() { if (destroyed) return; clearPair(); draw(); notify(); }
+  function reset() { if (destroyed) return; finishDrag(true); clearPair(); draw(); notify(); }
   function deactivate(mapRemoved = false) {
     if (destroyed) return;
     ++epoch; controller?.abort(); controller = null; activation = null; pending = false;
-    active = false; gesture = false; clearPair();
+    finishDrag(true); active = false; gesture = false; clearPair();
     if (mapRemoved !== true) removeGeometry();
     if (originalDoubleClick !== null) {
       if (mapRemoved !== true) { if (originalDoubleClick) map.doubleClickZoom.enable(); else map.doubleClickZoom.disable(); }
@@ -115,7 +117,7 @@ export function createMapRuler(container, options = {}) {
     const promise = activation; notify(); return promise;
   }
   function click(event) {
-    if (!active || destroyed || gesture || map.isMoving?.() || map.isZooming?.()) return;
+    if (!active || destroyed || drag || suppressClick || gesture || map.isMoving?.() || map.isZooming?.()) return;
     const next = point(event.lngLat); if (!next) return;
     ++copyEpoch; copying = false; copyStatus = '';
     if (!start || end) { start = next; end = preview = null; } else { end = next; preview = null; }
@@ -123,7 +125,51 @@ export function createMapRuler(container, options = {}) {
   }
   function move(event) { if (active && start && !end && !gesture) { preview = point(event.lngLat); draw(); notify(); } }
   function gestureStart() { gesture = true; }
-  function pointerStart() { gesture = false; }
+  function pointerStart(event) {
+    if (drag) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+    gesture = false; suppressClick = false;
+    if (!active || !end || event.isPrimary === false || event.button !== 0 || !map.getLayer(pointsId)) return;
+    const box = canvas.getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
+    const radius = event.pointerType === 'touch' ? 22 : 12;
+    const hits = map.queryRenderedFeatures([[x - radius, y - radius], [x + radius, y + radius]], { layers: [pointsId] });
+    const endpoint = hits.find(feature => ['start', 'end'].includes(feature.properties.endpoint))?.properties.endpoint;
+    if (!endpoint) return;
+    const handlers = ['dragPan', 'dragRotate', 'touchZoomRotate', 'touchPitch', 'boxZoom', 'scrollZoom', 'keyboard'].map(name => map[name]).filter(handler => handler?.isEnabled && handler?.disable && handler?.enable);
+    drag = { endpoint, pointerId: event.pointerId, original: (endpoint === 'start' ? start : end).slice(), handlers: handlers.map(handler => [handler, handler.isEnabled()]), cursor: canvas.style.cursor };
+    for (const [handler] of drag.handlers) handler.disable();
+    ++copyEpoch; copying = false; copyStatus = ''; canvas.style.cursor = 'grabbing';
+    event.preventDefault(); event.stopImmediatePropagation();
+    try { canvas.setPointerCapture(event.pointerId); }
+    catch (error) { finishDrag(true); report(error); return; }
+    notify();
+  }
+  function dragMove(event) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    const box = canvas.getBoundingClientRect();
+    const next = point(map.unproject([event.clientX - box.left, event.clientY - box.top]));
+    if (!next) return;
+    if (drag.endpoint === 'start') start = next; else end = next;
+    draw(); notify();
+  }
+  function finishDrag(cancel = false) {
+    if (!drag) return;
+    const previous = drag; drag = null; suppressClick = true; gesture = false;
+    if (cancel) { if (previous.endpoint === 'start') start = previous.original; else end = previous.original; }
+    for (const [handler, enabled] of previous.handlers) { if (enabled) handler.enable(); else handler.disable(); }
+    canvas.style.cursor = previous.cursor;
+    if (canvas.hasPointerCapture(previous.pointerId)) canvas.releasePointerCapture(previous.pointerId);
+    draw(); notify();
+  }
+  function dragEnd(event) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (event.type === 'pointerup') dragMove(event);
+    finishDrag(event.type !== 'pointerup');
+  }
+  function lostCapture() { finishDrag(true); }
+  function blur() { finishDrag(true); }
+  function blockCompatibility(event) { if (drag || (event.type === 'click' && suppressClick)) { event.preventDefault(); event.stopImmediatePropagation(); } }
   function key(event) {
     if (event.key !== 'Escape' || (!active && !pending)) return;
     const target = event.target;
@@ -131,7 +177,7 @@ export function createMapRuler(container, options = {}) {
     event.preventDefault(); deactivate();
   }
   async function copyDistance() {
-    if (destroyed || !active || !end || copying) return;
+    if (destroyed || !active || !end || copying || drag) return;
     const token = ++copyEpoch, text = result().text;
     copying = true; copyStatus = 'Copying distance…'; notify();
     try {
@@ -149,7 +195,7 @@ export function createMapRuler(container, options = {}) {
     if (destroyed) return;
     deactivate(mapRemoved); destroyed = true;
     for (const [name, handler] of bindings) map.off(name, handler);
-    map.getCanvas().removeEventListener('pointerdown', pointerStart);
+    for (const [target, name, handler] of domBindings) target.removeEventListener(name, handler, true);
     container.ownerDocument.removeEventListener('keydown', key);
     root.remove(); instances.delete(map); settings.onStateChange?.(getState());
   }
@@ -159,13 +205,16 @@ export function createMapRuler(container, options = {}) {
     styleQueued = true;
     queueMicrotask(() => {
       styleQueued = false;
-      if (!destroyed && active && map.getStyle() && (!map.getSource(id) || !map.getLayer(lineId) || !map.getLayer(pointsId))) draw();
+      if (!destroyed && active && (!map.getStyle() || !map.getSource(id) || !map.getLayer(lineId) || !map.getLayer(pointsId))) { finishDrag(true); draw(); }
     });
   }
   function removed() { destroy(true); }
-  const bindings = [['click', click], ['mousemove', move], ['dragstart', gestureStart], ['zoomstart', gestureStart], ['rotatestart', gestureStart], ['pitchstart', gestureStart], ['style.load', draw], ['styledata', styleData], ['idle', idle], ['remove', removed]];
+  function styleLoad() { finishDrag(true); draw(); }
+  const bindings = [['click', click], ['mousemove', move], ['dragstart', gestureStart], ['zoomstart', gestureStart], ['rotatestart', gestureStart], ['pitchstart', gestureStart], ['style.load', styleLoad], ['styledata', styleData], ['idle', idle], ['remove', removed]];
   for (const [name, handler] of bindings) map.on(name, handler);
-  map.getCanvas().addEventListener('pointerdown', pointerStart);
+  const doc = container.ownerDocument;
+  const domBindings = [[canvas, 'pointerdown', pointerStart], [doc, 'pointermove', dragMove], [doc, 'pointerup', dragEnd], [doc, 'pointercancel', dragEnd], [canvas, 'lostpointercapture', lostCapture], [doc.defaultView, 'blur', blur], ...['mousedown', 'touchstart', 'click'].map(name => [canvas, name, blockCompatibility])];
+  for (const [target, name, handler] of domBindings) target.addEventListener(name, handler, { capture: true, passive: false });
   container.ownerDocument.addEventListener('keydown', key);
   const api = { activate, deactivate, reset, getState, destroy, getElement: () => destroyed ? null : root,
     getSize: () => { const box = destroyed ? null : root.getBoundingClientRect(); return { width: box?.width || 0, height: box?.height || 0 }; },
