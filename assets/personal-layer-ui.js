@@ -1,4 +1,4 @@
-import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261013-object1';
+import {createPersonalLayerStore,validateLayerDocument} from './personal-layer-store.js?v=20261013-rail1';
 export function createPersonalLayers({region,uiLoader,createActionModal,createFormModal,createMapControls,createBusyOverlay,createSkeleton,uiAlert,toast,onChange,onEditingChange,store=createPersonalLayerStore(),idPrefix='pbb-personal-readonly'}){
   const card=document.createElement('section'),rail=document.createElement('div'),objectHost=document.createElement('div'),status=document.createElement('p');
   card.className='pbb-personal-card';card.hidden=true;card.setAttribute('aria-label','Personal layers');rail.className='pbb-personal-rail';rail.hidden=true;objectHost.className='pbb-personal-object';objectHost.hidden=true;status.setAttribute('role','status');region.append(card,rail,objectHost);
@@ -107,7 +107,7 @@ export function createPersonalLayers({region,uiLoader,createActionModal,createFo
   }
   function createEditor(){
     if(!session||!map||adapter)return;adapter=createAdapter(map,{features:session.layer.features,lineBehavior:'segment',editBehavior:'immediate',selectToggle:true,beforeDelete,onError:error=>feedback(error.message,true)});for(const event of ['create','update','delete'])adapter.on(event,geometryChanged);for(const event of ['create','update','delete','select','modechange','measure','statechange','editchange'])adapter.on(event,()=>{epoch++;queueSync();});
-    tools=createTools(rail,{adapter,selectToggle:true,showModeTransitionStatus:false,modes:['select','pan','point','line','path','polygon','circle','rectangle'],actions:[],orientation:'vertical',labels:'none'});rail.hidden=false;
+    tools=createTools(rail,{adapter,chrome:false,selectToggle:true,showModeTransitionStatus:false,modes:['select','pan','point','line','path','polygon','circle','rectangle'],actions:[],orientation:'vertical',labels:'none'});rail.hidden=false;
     constructionHost=document.createElement('div');selectedHost=document.createElement('div');objectHost.replaceChildren(constructionHost,selectedHost);
     objectControls=[actionGroup(constructionHost,[{id:'finish',label:'Finish object',icon:'actions.check',onActivate:finishObject},{id:'cancel',label:'Cancel object',icon:'actions.close',onActivate:cancelObject}])];
     selectedTools=createObjectTools(selectedHost,{adapter,chrome:false,ariaLabel:'Selected object controls',onAction:action=>{if(action==='fill'||action==='stroke')colorPrompt(action);}});map.on('move',positionObject);map.on('resize',positionObject);map.on('remove',hideObject);
