@@ -1,30 +1,31 @@
-import { createPersonalLayers } from './personal-layer-ui.js?v=20261013-rotate1';
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261013-rotate1';
-import { createPoiFilter } from './poi-filter.js?v=20261013-rotate1';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261013-rotate1';
-import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.309';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261013-rotate1';
-import { registerMapShell } from './map-shell.js?v=20261013-rotate1';
-import { config } from './config.js?v=20261013-rotate1';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261013-rotate1';
-import { createLocationController } from './location.js?v=20261013-rotate1';
-import { installMapContext } from './map-context.js?v=20261013-rotate1';
-import { createMapSearch } from './map-search.js?v=20261013-rotate1';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261013-rotate1';
-import { createDirectionOptions } from './direction-options.js?v=20261013-rotate1';
+import { installScalePlacement } from './map-scale-placement.js?v=20261013-scale1';
+import { createPersonalLayers } from './personal-layer-ui.js?v=20261013-scale1';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261013-scale1';
+import { createPoiFilter } from './poi-filter.js?v=20261013-scale1';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261013-scale1';
+import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.310';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261013-scale1';
+import { registerMapShell } from './map-shell.js?v=20261013-scale1';
+import { config } from './config.js?v=20261013-scale1';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261013-scale1';
+import { createLocationController } from './location.js?v=20261013-scale1';
+import { installMapContext } from './map-context.js?v=20261013-scale1';
+import { createMapSearch } from './map-search.js?v=20261013-scale1';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261013-scale1';
+import { createDirectionOptions } from './direction-options.js?v=20261013-scale1';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
   // modular fallback. Explicit get options below keep this policy for lazy flows.
   uiLoader.setPreferBundles(true);
-  const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert,createSkeleton] = await Promise.all(
-    ['ui.navbar', 'ui.map.controls', 'ui.map.markers', 'ui.toast', 'ui.empty.state', 'ui.busy.overlay', 'ui.icons', 'ui.menu', 'ui.modal', 'ui.search', 'ui.events.createEventBag','ui.action.modal','ui.form.modal','ui.dialog.alert','ui.skeleton']
+  const [createNavbar, createMapControls, markers, createToastStack, createEmptyState, createBusyOverlay, icons, createMenu, createModal, createSearchField, createEventBag,createActionModal,createFormModal,uiAlert,createSkeleton,createMapScale] = await Promise.all(
+    ['ui.navbar', 'ui.map.controls', 'ui.map.markers', 'ui.toast', 'ui.empty.state', 'ui.busy.overlay', 'ui.icons', 'ui.menu', 'ui.modal', 'ui.search', 'ui.events.createEventBag','ui.action.modal','ui.form.modal','ui.dialog.alert','ui.skeleton','ui.map.scale']
       .map(name => uiLoader.get(name, { preferBundles: true })));
   const { createIcon } = icons;
   const { createMapMarker } = markers;
   // An optional renderer must never prevent the canonical location fallback.
   const createPerson = await uiLoader.get('ui.map.location.person', { preferBundles: true }).catch(() => null);
-  let person = null;
+  let person = null; let scalePlacement = null;
   let headingDegrees=null;
   let approximateActive=false;let welcome=null;
   const header = document.getElementById('navbar'), region = document.getElementById('map-region');
@@ -80,7 +81,7 @@ export async function mountApp() {
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261013-rotate1').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261013-scale1').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -261,6 +262,7 @@ export async function mountApp() {
   });
 
   function removeMap() {
+    scalePlacement?.destroy(); scalePlacement=null;
     diagnostics.close();
     welcome?.close();directionOptions.close();directionControlKey='';
     person?.destroy(); person = null;
@@ -355,7 +357,7 @@ export async function mountApp() {
 
   function activateMap(id) {
     if (disposed || id !== generation || ready || !map) return;
-    ready = true; accuracyRipple.setMap(map); search.setMap(map); poiFilter.setMap(map); personal?.setMap(map);
+    ready = true; scalePlacement=installScalePlacement({map,region,createMapScale}); accuracyRipple.setMap(map); search.setMap(map); poiFilter.setMap(map); personal?.setMap(map);
     clearTimeout(startupTimer); busy.hide();
     POI_LAYERS.forEach(layer => { if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', poiVisible ? 'visible' : 'none'); });
     displayPosition(); syncDirectionUI();

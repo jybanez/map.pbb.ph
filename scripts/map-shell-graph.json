@@ -40,7 +40,8 @@
     "ui.select",
     "ui.inline.text",
     "ui.color.picker",
-    "ui.map.drawing.object"
+    "ui.map.drawing.object",
+    "ui.map.scale"
   ],
-  "policy": "Strict three-artifact reviewed Helper309; canonical personal-layer navigation, inline editing, color picker, selected-object controls and adapter. No modular fallback."
+  "policy": "Strict three-artifact reviewed Helper310; canonical personal-layer navigation, inline editing, color picker, selected-object controls, scale and adapter. No modular fallback."
 }
