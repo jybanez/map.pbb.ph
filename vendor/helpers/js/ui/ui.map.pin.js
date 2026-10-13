@@ -80,8 +80,8 @@ export function createMapPinRenderer(map, options = {}) {
       gl.uniform3f(locations.lightDirection, -.4 * cosine - .6 * sine, lightY * ct - st, lightY * st + ct);
       for (const feature of features) {
         const coordinate = feature.geometry.coordinates;
-        // MapLibre 4.6 returns elevation relative to the camera target.
-        const elevation = (map.queryTerrainElevation?.(coordinate) || 0) + (map.getCameraTargetElevation?.() || 0);
+        // MapLibre 4.6 custom-layer matrices use elevation relative to the camera target.
+        const elevation = map.queryTerrainElevation?.(coordinate) || 0;
         const longitude = coordinate[0] + (map.getRenderWorldCopies?.() === false ? 0 : 360 * Math.round((map.getCenter().lng - coordinate[0]) / 360));
         const mercator = engine.MercatorCoordinate.fromLngLat([longitude, coordinate[1]], elevation);
         const anchor = transform(matrix, [mercator.x, mercator.y, mercator.z, 1]);

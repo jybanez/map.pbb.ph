@@ -1,5 +1,5 @@
 import { shapeFromPoints, recognizedShape, shapeHandles, transformShape, objectPivot, rotateObject, shapeProject } from "./ui.map.drawing.shapes.js?v=0.21.309";
-import { createMapPinRenderer, isMapPin } from "./ui.map.pin.js?v=0.21.315";
+import { createMapPinRenderer, isMapPin } from "./ui.map.pin.js?v=0.21.317";
 const MODES = ["select", "pin", "pan", "point", "line", "path", "polygon", "rectangle", "circle"];
 const clone = value => structuredClone(value);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
