@@ -18,7 +18,7 @@
 
 .ui-map-drawing[hidden] { display: none; }
 .ui-map-drawing-object-tools.ui-map-drawing--vertical .ui-map-drawing-group { flex-direction: row; }
-.ui-map-drawing-object-tools { width: max-content; }
+.ui-map-drawing-object-tools { width: max-content; align-items: center; }
 
 .ui-map-drawing--vertical {
   flex-direction: column;

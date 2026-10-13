@@ -1,0 +1,7 @@
+# Selected-object toolbar presentation
+
+Task243 adopts accepted Helper head 81ea4ef5e39de6dbfcfbcc39f5def9b555ddd96d through verified merge c569706f48e8c18bb03b2c13ea2bd94c2a6cfcc8 (tree443b5bb349e2865dc5a0834806fac9f51eef8978). The canonical complete object toolbar centers its groups. The application host no longer supplies background, border or corner radius; chrome:false and individual button styling remain canonical. Construction controls, measured placement, editing and scale collision handling are unchanged.
+
+Main UI bundle/drawing CSS revision311; modular adapter/icons and game309, color picker294. Five canonical manifests validate55 normalized entries before adoption. Raw pinned license/scientific bytes remain protected by existing attributes. Runtime cache keys and shell inventory are refreshed together.
+
+Verification uses actual desktop1200/mobile375 tilted app layouts. The existing rotation fixture additionally measures both row centers within1px, verifies transparent borderless host/root and retained button borders/backgrounds, and captures the selected Polygon before testing Point/Circle omission. It retains native editing, atomic history, cancellation, metadata/holes, color Cancel, Rectangle conversion, Save/reload and three Helper assets checks. Scale and cold bundle-only verifiers remain separate; scale collision uses synthetic stacked overlays. Generic geometry/seam/polar coverage remains Helper-reported; physical touch, Safari and assistive technology are not claimed. No deployment.

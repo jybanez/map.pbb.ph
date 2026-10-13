@@ -107,7 +107,7 @@ body .pbb-location-toast { top: auto; bottom: calc(env(safe-area-inset-bottom) +
 .pbb-personal-rail .ui-map-drawing-group {flex-direction:column;gap:0;}
 .pbb-personal-rail .ui-map-drawing-button {width:44px;min-height:44px;}
 .pbb-personal-rail .ui-map-drawing-button:nth-child(2){margin-bottom:8px;border-bottom:1px solid #354761;}
-.pbb-personal-object {position:absolute;display:flex;align-items:center;z-index:6;background:#0d1726;border:1px solid #354761;border-radius:8px;max-width:calc(100% - 16px);}
+.pbb-personal-object {position:absolute;display:flex;align-items:center;z-index:6;max-width:calc(100% - 16px);}
 .pbb-personal-object[hidden] {display:none;}
 .pbb-personal-card .ui-inline-view {overflow-wrap:anywhere;}
 .pbb-personal-editor {position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:min(680px,calc(100% - 24px));z-index:6;background:#0d1726;border:1px solid #354761;border-radius:8px;padding:10px;}

@@ -1,4 +1,4 @@
-import { poiName } from './poi-name.js?v=20261013-scale1';
+import { poiName } from './poi-name.js?v=20261013-object1';
 export function installMapContext({ map, createMenu, createModal, toast, markExploration, reducedMotion,poiAllowed=()=>true,isInteractionBlocked=()=>false }) {
   const canvas = map.getCanvas();
   const pointerSurface = map.getCanvasContainer();
@@ -41,7 +41,7 @@ export function installMapContext({ map, createMenu, createModal, toast, markExp
     if (modal.getState().open) return;
     const id = ++token;
     modal.setContent(null);
-    modal.setBusy(true, { message: 'Reading nearby loaded map tiles…' });
+    modal.setBusy(true, { message: 'Reading nearby loaded map tilesâ€¦' });
     modal.open();
     // Yield a paint before initializing read-only content. Dismissal stays available.
     await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
@@ -63,7 +63,7 @@ export function installMapContext({ map, createMenu, createModal, toast, markExp
       }
       const list = document.createElement('ul');
       for (const item of [...found.values()].sort((a,b) => a.d-b.d).slice(0,30)) {
-        const li = document.createElement('li'); li.textContent = `${item.name} — approximately ${Math.round(item.d)} m`; list.appendChild(li);
+        const li = document.createElement('li'); li.textContent = `${item.name} â€” approximately ${Math.round(item.d)} m`; list.appendChild(li);
       }
       if (found.size) content.appendChild(list);
       else paragraph(content, 'No named POIs found within 250 m in loaded tiles. This does not establish that none exist. Zoom or navigate to load nearby tiles, then reopen Get info.');
