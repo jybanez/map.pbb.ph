@@ -10,13 +10,13 @@ for(const width of [1200,375]){
   stage="warm";await tab.reload();await tab.waitForFunction(()=>window.__map?.getSource('pbb-accuracy-ripple'));
   const before=await tab.evaluate(async()=>({controller:navigator.serviceWorker.controller?.scriptURL,caches:await caches.keys(),helper:performance.getEntriesByType('resource').filter(e=>e.name.includes('/vendor/helpers/')).map(e=>e.name)}));
   if(!before.controller||!before.helper.some(u=>u.includes('helpers.ui.bundle.min.js?v=0.21.313')))throw Error('Incorrect controlled runtime '+JSON.stringify(before));
-  await tab.getByRole('button',{name:'Set pitch 60 degrees',exact:true}).click();await tab.waitForFunction(()=>!__map.isMoving());
+  await tab.getByRole('button',{name:'Set pitch 60 degrees',exact:true}).click();await tab.waitForFunction(()=>!__map.isMoving());await tab.waitForFunction(()=>__map.isSourceLoaded('osm')&&!document.body.textContent.includes('Some map detail is unavailable. Reconnect'),null,{timeout:120000});
   await tab.getByRole('button',{name:'Measure straight-line distance',exact:true}).click();
   const box=await tab.locator('canvas').first().boundingBox(),a={x:box.x+box.width*.35,y:box.y+box.height*.4},b={x:box.x+box.width*.6,y:box.y+box.height*.65};
   const click=p=>width===375?tab.touchscreen.tap(p.x,p.y):tab.mouse.click(p.x,p.y);
   stage='preview';await click(a);if(width===1200){await tab.mouse.move(b.x,b.y);await check();}stage='fixed';await click(b);await check();
   const distance=await tab.locator('.ui-map-ruler__distance').textContent();
-  for(const camera of [{zoom:14,pitch:0,bearing:0},{zoom:15,pitch:60,bearing:85}]){stage='camera-'+JSON.stringify(camera);await tab.evaluate(camera=>__map.jumpTo(camera),camera);await check();}
+  for(const camera of [{zoom:14,pitch:0,bearing:0},{zoom:13.5,pitch:60,bearing:85}]){stage='camera-'+JSON.stringify(camera);await tab.evaluate(camera=>__map.jumpTo(camera),camera);await check();}
   for(const enabled of [false,true]){stage='terrain-'+enabled;await tab.evaluate(enabled=>__map.setTerrain(enabled?{source:'terrain',exaggeration:1.6}:null),enabled);await check();}
   for(const diff of [false,true]){stage='style-'+diff;await tab.evaluate(diff=>__map.setStyle(__map.getStyle(),{diff}),diff);await check();}
   await tab.screenshot({path:`output/playwright/ruler247-served-${width}.png`});
