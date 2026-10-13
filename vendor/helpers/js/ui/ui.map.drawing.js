@@ -1,4 +1,4 @@
-import { createIcon } from "./ui.icons.js?v=0.21.303";
+import { createIcon } from "./ui.icons.js?v=0.21.309";
 import { createElement, clearNode } from "./ui.dom.js";
 import { createEventBag } from "./ui.events.js";
 
@@ -7,6 +7,8 @@ const DEFAULT_OPTIONS = {
   hideUnavailableActions: [],
   selectToggle: false,
   showModeTransitionStatus: true,
+  objectControls: false,
+  objectOnly: false,
   actions: ["finish", "cancel", "undo", "redo", "delete", "clear"],
   activeMode: "select",
   orientation: "vertical",
@@ -58,9 +60,17 @@ const ACTION_META = {
   cancel: { label: "Cancel drawing", shortLabel: "Cancel", symbol: "×", method: "cancel" },
   undo: { label: "Undo drawing action", shortLabel: "Undo", icon: "actions.undo", method: "undo" },
   redo: { label: "Redo drawing action", shortLabel: "Redo", icon: "actions.redo", method: "redo" },
-  delete: { label: "Delete selected drawing", shortLabel: "Delete", symbol: "⌫", method: "deleteSelected" },
+  delete: { label: "Delete selected drawing", shortLabel: "Delete", icon: "actions.delete", method: "deleteSelected" },
   clear: { label: "Clear drawings", shortLabel: "Clear", icon: "actions.clear", method: "clear" },
 };
+
+/** Complete selected-object toolbar; construction controls remain in their own tools instance. */
+export function createMapDrawingObjectTools(container, options = {}) {
+  const structure = {objectControls:true, objectOnly:true, modes:[], actions:["fill","stroke","delete"], selectToggle:false, orientation:"vertical", labels:"none", showModeTransitionStatus:false};
+  const initial = options.adapter?.getState?.();
+  const tools = createMapDrawingTools(container, {features:options.adapter?.getFeatures?.() || [], selectedFeatureId:initial?.selectedFeatureId ?? "", activeMode:options.adapter?.getMode?.() || "select", ...options, ...structure});
+  return {...tools, update(next = {}) { tools.update({...next, ...structure}); }};
+}
 
 export function createMapDrawingTools(container, options = {}) {
   if (!container || container.nodeType !== 1) {
@@ -85,6 +95,7 @@ export function createMapDrawingTools(container, options = {}) {
     const focused = container.contains(document.activeElement) ? document.activeElement : null;
     const focusMode = focused?.dataset?.mode;
     const focusAction = focused?.dataset?.action;
+    const focusObjectMode = focused?.dataset?.objectMode;
     if (currentOptions.selectToggle && currentOptions.adapter?.getMode) {
       activeMode = normalizeMode(currentOptions.adapter.getMode(), currentOptions.modes);
       currentOptions.activeMode = activeMode;
@@ -112,7 +123,9 @@ export function createMapDrawingTools(container, options = {}) {
       },
     });
 
-    if (!currentOptions.modes.length && !currentOptions.actions.length) {
+    if (currentOptions.objectOnly) root.hidden = readCapabilities().objectControlsVisible !== true;
+
+    if (!currentOptions.objectControls && !currentOptions.modes.length && !currentOptions.actions.length) {
       root.appendChild(createElement("span", {
         className: "ui-map-drawing-empty",
         text: currentOptions.emptyText,
@@ -124,6 +137,7 @@ export function createMapDrawingTools(container, options = {}) {
     if (currentOptions.modes.length) {
       root.appendChild(renderModeGroup());
     }
+    if (currentOptions.objectControls && readCapabilities().objectRotationSupported !== false) root.appendChild(renderObjectGroup());
     if (currentOptions.actions.length) {
       root.appendChild(renderActionGroup());
     }
@@ -139,11 +153,33 @@ export function createMapDrawingTools(container, options = {}) {
       root.appendChild(measurement);
     }
     container.appendChild(root);
-    if (currentOptions.selectToggle && (focusMode || focusAction)) {
+    if ((currentOptions.selectToggle || currentOptions.objectControls) && (focusMode || focusAction || focusObjectMode)) {
       const replacement = Array.from(root.querySelectorAll('button')).find(button =>
-        focusMode ? button.dataset.mode === focusMode : button.dataset.action === focusAction);
+        focusObjectMode ? button.dataset.objectMode === focusObjectMode : focusMode ? button.dataset.mode === focusMode : button.dataset.action === focusAction);
       if (replacement && !replacement.disabled) replacement.focus({ preventScroll: true });
     }
+  }
+
+  function setObjectMode(next) {
+    const adapter = currentOptions.adapter;
+    if (destroyed || currentOptions.disabled || currentOptions.busy || readCapabilities().objectModes?.[next] !== true || !adapter?.setObjectMode) return false;
+    const accepted = adapter.setObjectMode(next);
+    render(); return accepted !== false && adapter.getObjectMode?.() === next;
+  }
+  function renderObjectGroup() {
+    const group = createElement("div", {className:"ui-map-drawing-group ui-map-drawing-object-modes", attrs:{role:"group", "aria-label":"Object interaction"}});
+    const caps = readCapabilities();
+    for (const [name, icon] of [["move","actions.move"],["rotate","actions.rotate-right"]]) {
+      const label = name === "move" ? "Move object" : "Rotate object";
+      const active = (currentOptions.adapter?.getObjectMode?.() || "move") === name;
+      const disabled = currentOptions.disabled || currentOptions.busy || caps.objectModes?.[name] !== true;
+      const button = createElement("button", {className:`ui-map-drawing-button ui-map-drawing-mode${active ? " is-active" : ""}`,attrs:{type:"button",title:label,"aria-label":label,"aria-pressed":String(active),"aria-disabled":String(disabled),disabled:disabled ? "disabled" : null},dataset:{objectMode:name}});
+      const artwork = createElement("span",{className:"ui-map-drawing-button-icon",attrs:{"aria-hidden":"true"}});
+      artwork.appendChild(createIcon(icon,{size:18}));button.appendChild(artwork);
+      button.appendChild(createElement("span",{className:"ui-map-drawing-button-label",text:label}));
+      events.on(button,"click",()=>setObjectMode(name));group.appendChild(button);
+    }
+    return group;
   }
 
   function renderModeGroup() {
@@ -326,6 +362,7 @@ export function createMapDrawingTools(container, options = {}) {
         onSelect: currentOptions.onSelect,
       },
       activeMode,
+      objectMode: currentOptions.adapter?.getObjectMode?.() || "move",
       features: currentFeatures.map(clonePlain),
       featureCount: currentFeatures.length,
       selectedFeatureId,
@@ -359,7 +396,7 @@ export function createMapDrawingTools(container, options = {}) {
       measure: handleAdapterMeasure,
       modechange: handleAdapterModeChange,
     };
-    if (currentOptions.selectToggle) eventMap.statechange = () => { activeMode = normalizeMode(adapter.getMode?.() || activeMode, currentOptions.modes); currentOptions.activeMode = activeMode; render(); };
+    if (currentOptions.selectToggle || currentOptions.objectControls) eventMap.statechange = () => { activeMode = normalizeMode(adapter.getMode?.() || activeMode, currentOptions.modes); currentOptions.activeMode = activeMode; render(); };
 
     Object.entries(eventMap).forEach(([eventName, handler]) => {
       const off = adapter.on(eventName, handler);
@@ -462,6 +499,8 @@ export function createMapDrawingTools(container, options = {}) {
     getState,
     setFeatures,
     setMode,
+    setObjectMode,
+    getSize: () => { const box = root?.getBoundingClientRect(); return {width:box?.width || 0,height:box?.height || 0}; },
     update,
   };
 }
@@ -477,6 +516,8 @@ function normalizeOptions(input = {}) {
     hideUnavailableActions: normalizeActions(next.hideUnavailableActions),
     selectToggle: next.selectToggle === true,
     showModeTransitionStatus: next.showModeTransitionStatus !== false,
+    objectControls: next.objectControls === true,
+    objectOnly: next.objectOnly === true,
     activeMode: normalizeMode(next.activeMode, modes),
     orientation: normalizeChoice(next.orientation, ORIENTATIONS, "vertical"),
     placement: normalizeChoice(next.placement, PLACEMENTS, "map"),
@@ -622,6 +663,7 @@ function formatNumber(value) {
 function buildRootClass(options) {
   return [
     "ui-map-drawing",
+    options.objectOnly ? "ui-map-drawing-object-tools" : "",
     `ui-map-drawing--${options.orientation}`,
     `ui-map-drawing--${options.placement}`,
     `ui-map-drawing--${options.size}`,

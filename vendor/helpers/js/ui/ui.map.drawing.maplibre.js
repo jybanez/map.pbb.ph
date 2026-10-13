@@ -1,4 +1,4 @@
-import { shapeFromPoints, recognizedShape, shapeHandles, transformShape } from "./ui.map.drawing.shapes.js?v=0.21.303";
+import { shapeFromPoints, recognizedShape, shapeHandles, transformShape, objectPivot, rotateObject, shapeProject } from "./ui.map.drawing.shapes.js?v=0.21.309";
 const MODES = ["select", "pan", "point", "line", "path", "polygon", "rectangle", "circle"];
 const clone = value => structuredClone(value);
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -23,6 +23,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   const domOffs = [];
   let features = validateFeatures(options.features || []);
   let mode = "select", selected = null, draft = [], draftRedo = [];
+  let objectMode = "move";
   let preview = null;
   let undoStack = [], redoStack = [], drag = null, lock = null, destroyed = false;
   let ownedSource = false, ownedLayers = new Set(), suppressClick = null, hydrating = false, styleQueued = false;
@@ -87,7 +88,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     }
     const drawing = preview && draft.length && ["line", "path"].includes(mode) ? [...draft, preview] : draft;
     if (drawing.length > 1) data.push({ type: "Feature", geometry: { type: "LineString", coordinates: mode === "polygon" && draft.length > 2 ? [...draft, draft[0]] : drawing }, properties: { __helperKind: "draft" } });
-    if (!selectToggle || mode === "select") vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
+    if (objectMode === "move" && (!selectToggle || mode === "select")) vertices(features.find(f => String(f.id) === selected)).forEach(({ coordinate }) => data.push({ type: "Feature", geometry: { type: "Point", coordinates: coordinate }, properties: { __helperKind: "vertex" } }));
     return { type: "FeatureCollection", features: data };
   }
   function hydrate() {
@@ -116,14 +117,28 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const modeTransitionReason = !selectToggle ? null : drag ? "Cancel or release the active edit before changing tools." : styleChange ? "Finish or cancel the color change before changing tools." : draft.length || draftRedo.length ? "Finish or cancel the drawing before changing tools." : dirty ? "Finish or cancel the object edit before changing tools." : null;
     const transitionBlocked = selectToggle && (!!drag || !!styleChange || !!draft.length || !!draftRedo.length);
     const editable = !destroyed && (!!edit || editBehavior === "immediate" && selected !== null && mode === "select") && !drag && !styleChange;
-    const geometry = features.find(f => String(f.id) === selected)?.geometry.type;
+    const selectedFeature = features.find(f => String(f.id) === selected);
+    const geometry = selectedFeature?.geometry.type;
+    const objectEditable = !destroyed && mode === "select" && !!selectedFeature && !drag && !styleChange && !draft.length && !draftRedo.length;
+    const objectModes = { move: objectEditable, rotate: objectEditable && canRotate(selectedFeature) };
     const actionVisibility = { fill: mode === "select" && !!geometry && geometry !== "LineString", finish: edit ? dirty : ["path", "polygon"].includes(mode) || mode === "line" && lineBehavior === "legacy-path", cancel: !!styleChange || !!drag || !!draft.length || !!draftRedo.length || (edit ? dirty : !["select", "pan"].includes(mode)) };
-    return { modeTransitionReason, actionVisibility, modes: destroyed ? ["pan"] : transitionBlocked ? [mode] : edit && (dirty || drag) ? ["select"] : [...MODES], selectToggle, selectionEnabled: mode === "select", editing: "drag-existing-vertices", segmentTranslation: true, lineBehavior, drawingKinds: ["line", "path"], editBehavior, editSessions: editBehavior === "session", shapes: ["circle", "rectangle"], styleTransactions: editBehavior === "immediate", featureStyles: ["fill", "stroke"], measurement: false, canPersist: !destroyed && !styleChange && !drag && !draft.length && !draftRedo.length && !dirty,
+    return { objectMode, objectModes, objectRotationSupported: canRotate(selectedFeature), objectControlsVisible: !!selectedFeature && mode === "select", modeTransitionReason, actionVisibility, modes: destroyed ? ["pan"] : transitionBlocked ? [mode] : edit && (dirty || drag) ? ["select"] : [...MODES], selectToggle, selectionEnabled: mode === "select", editing: "drag-existing-vertices", segmentTranslation: true, lineBehavior, drawingKinds: ["line", "path"], editBehavior, editSessions: editBehavior === "session", shapes: ["circle", "rectangle"], styleTransactions: editBehavior === "immediate", featureStyles: ["fill", "stroke"], measurement: false, canPersist: !destroyed && !styleChange && !drag && !draft.length && !draftRedo.length && !dirty,
       actions: { fill: editable && geometry !== "LineString", stroke: editable, finish: !destroyed && !drag && !styleChange && (edit ? dirty : (["line", "path"].includes(mode) ? draft.length >= 2 : mode === "polygon" && draft.length >= 3)), cancel: !destroyed && (!!styleChange || (edit ? dirty : mode !== "select" || !!draft.length || !!drag)), undo: !destroyed && (!!draft.length || !!(edit?.undo || undoStack).length) && !drag && !styleChange, redo: !destroyed && (!!draftRedo.length || !!(edit?.redo || redoStack).length) && !drag && !styleChange, delete: !destroyed && (!selectToggle || mode === "select") && (!edit || !dirty) && selected !== null && !drag && !styleChange, clear: !destroyed && !edit && !!features.length && !drag && !styleChange } };
   }
   function publishState() { if (!destroyed) emit("statechange", { mode, selectedFeatureId: selected, draft: clone(draft), anchor: anchor(), dragging: !!drag, editSession: getEditState(), styleChange: getStyleChange(), revision }); }
   function refresh() { if (destroyed) return false; revision++; render(); if (destroyed) return false; emit("measure", null); publishState(); return !destroyed; }
-  function select(id) { if (drag) return false; if (styleChange) cancelStyleChange(styleChange.id); if (destroyed) return false; if (edit) return beginEdit(id); revision++; selected = id === null ? null : String(id); render(); if (destroyed) return false; emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); publishState(); return !destroyed; }
+  function canRotate(feature) {
+    if (!feature || feature.geometry.type === "Point" || recognizedShape(feature)?.kind === "circle") return false;
+    try { objectPivot(feature); return true; } catch (_) { return false; }
+  }
+  function setObjectMode(next) {
+    if (!["move", "rotate"].includes(next)) throw new RangeError("Object mode must be move or rotate.");
+    if (dispatchDepth || destroyed) return false;
+    if (next === objectMode) return true;
+    if (!capabilities().objectModes[next]) { emit("objectmoderejected", {requestedMode:next, objectMode}); return false; }
+    objectMode = next; revision++; render(); emit("objectmodechange", {objectMode}); publishState(); return !destroyed;
+  }
+  function select(id) { if (drag) return false; if (styleChange) cancelStyleChange(styleChange.id); if (destroyed) return false; if (edit) return beginEdit(id); const next = id === null ? null : String(id); if (next !== selected) objectMode = "move"; revision++; selected = next; render(); if (destroyed) return false; emit("select", selected === null ? null : { featureId: selected, feature: features.find(f => String(f.id) === selected) }); publishState(); return !destroyed; }
   function publishChanges(before) {
     for (const f of before.filter(f => !features.some(n => String(n.id) === String(f.id)))) { if (destroyed) return; emit("delete", f.id); }
     for (const f of features) { if (destroyed) return; const old = before.find(p => String(p.id) === String(f.id)); if (!old) emit("create", f); else if (!equal(old, f)) emit("update", f); }
@@ -193,6 +208,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     // Clean switches do not touch global history or publish an intermediate close.
     edit = { id: ++nextEdit, featureId: String(feature.id), before: clone(features), undo: [], redo: [] };
     const session = edit;
+    if (selected !== edit.featureId) objectMode = "move";
     selected = edit.featureId;
     emit("select", { featureId: selected, feature });
     if (destroyed || edit !== session || !refresh()) return false;
@@ -315,7 +331,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (dispatchDepth || destroyed || mode !== "select" || selected === null || drag || styleChange || event.button !== 0) return;
     const feature = features.find(f => String(f.id) === selected), box = canvas.getBoundingClientRect();
     const x = event.clientX - box.left, y = event.clientY - box.top;
-    const vertex = vertices(feature).find(v => { const p = map.project(v.coordinate); return Math.hypot(p.x - x, p.y - y) <= 12; });
+    if (objectMode === "rotate" && !canRotate(feature)) return;
+    const vertex = objectMode === "move" ? vertices(feature).find(v => { const p = map.project(v.coordinate); return Math.hypot(p.x - x, p.y - y) <= 12; }) : null;
     let segment = false;
     if (!vertex && feature?.geometry.type === "LineString") {
       const points = feature.geometry.coordinates.map(c => map.project(c));
@@ -334,9 +351,19 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
       if (!vertex) segment = true;
     }
     if (!vertex && !segment) return;
+    if (objectMode === "rotate" && feature.geometry.type === "LineString") {
+      const live = layers.slice(0,3).filter(id=>map.getLayer(id));
+      const hit = live.length ? map.queryRenderedFeatures([[x-6,y-6],[x+6,y+6]],{layers:live}).find(f=>f.properties.__helperKind === "feature") : null;
+      if (hit?.properties.__helperId !== selected) return;
+    }
     event.preventDefault(); event.stopImmediatePropagation();
     lockNavigation(["dragPan", "dragRotate", "touchZoomRotate", "doubleClickZoom"]);
-    drag = { before: clone(features), path: vertex?.path, start: map.unproject([x, y]), featureId: selected, session: edit, pointerId: event.pointerId, moved: false };
+    const start = map.unproject([x, y]);
+    const pivot = objectMode === "rotate" ? objectPivot(feature) : null;
+    const plane = pivot ? shapeProject([start.lng, start.lat]) : null;
+    // A pointer exactly at the pivot cannot define an angular gesture.
+    if (pivot && Math.hypot(plane[0]-pivot[0], plane[1]-pivot[1]) < 1e-12) { restoreNavigation(); return; }
+    drag = { before: clone(features), path: vertex?.path, start, pivot, objectMode, startAngle: pivot ? Math.atan2(plane[1]-pivot[1], plane[0]-pivot[0]) : null, featureId: selected, session: edit, pointerId: event.pointerId, moved: false };
     revision++;
     canvas.setPointerCapture(event.pointerId);
     emit("measure", null);
@@ -358,7 +385,17 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     const feature = features.find(f => String(f.id) === selected);
     if (!feature) { abortDrag(); return; }
     const originalShape = drag.before.find(f => String(f.id) === drag.featureId);
-    if (recognizedShape(originalShape)) {
+    if (drag.objectMode === "rotate") {
+      try {
+        const point = shapeProject(coordinate), pivot = drag.pivot;
+        if (Math.hypot(point[0]-pivot[0], point[1]-pivot[1]) < 1e-12 || Math.abs(ll.lng-drag.start.lng) > 180) return;
+        const angle = Math.atan2(point[1]-pivot[1], point[0]-pivot[0]) - drag.startAngle;
+        const candidate = Math.abs(Math.sin(angle)) < 1e-12 && Math.cos(angle) > 0 ? clone(originalShape) : rotateObject(originalShape, angle, pivot);
+        validateFeatures([candidate]);
+        feature.geometry = candidate.geometry; feature.properties = candidate.properties;
+      } catch (_) { return; }
+    }
+    else if (recognizedShape(originalShape)) {
       try {
         const next = transformShape(originalShape, coordinate, drag.path, [ll.lng - drag.start.lng, ll.lat - drag.start.lat]);
         validateFeatures([{ ...feature, geometry: next.geometry }]);
@@ -430,7 +467,9 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     if (edit) return false;
     if (styleChange) cancelStyleChange(styleChange.id);
     abortDrag(); if (destroyed) return false; draft = []; draftRedo = []; preview = null; undoStack = []; redoStack = [];
-    const before = features; revision++; features = next; publishChanges(before);
+    const before = features; revision++; features = next;
+    if (objectMode === "rotate" && !canRotate(features.find(f=>String(f.id)===selected))) objectMode = "move";
+    publishChanges(before);
   }
   function requestDeletion(action) {
     if (selectToggle && mode === "pan" && action === "delete") return false;
@@ -504,8 +543,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
   bindDom(globalThis, "blur", () => { if (drag && !dispatchDepth) abortDrag(); });
   // Style availability permits custom resources before base-source tiles finish.
   try { hydrate(); } catch (error) { destroy(); throw error; }
-  return { on, setMode, setFeatures, validateFeatures, beginStyleChange, previewStyle, finishStyleChange, cancelStyleChange, settleStyleChange, beginEdit, acceptEdit, rollbackEdit, updateFeature, getFeatureStyle, getDrawingKind, getFeatures: () => clone(editBehavior === "immediate" ? styleChange?.before || drag?.before || features : features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy: () => destroy(),
-    getState: () => ({ mode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), preview: clone(preview), editSession: getEditState(), styleChange: getStyleChange(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
+  return { on, setObjectMode, getObjectMode: () => objectMode, setMode, setFeatures, validateFeatures, beginStyleChange, previewStyle, finishStyleChange, cancelStyleChange, settleStyleChange, beginEdit, acceptEdit, rollbackEdit, updateFeature, getFeatureStyle, getDrawingKind, getFeatures: () => clone(editBehavior === "immediate" ? styleChange?.before || drag?.before || features : features), getMode: () => mode, getCapabilities: capabilities, finish, cancel, undo, redo, deleteSelected, clear, destroy: () => destroy(),
+    getState: () => ({ mode, objectMode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), preview: clone(preview), editSession: getEditState(), styleChange: getStyleChange(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
 }
 
 function validatePosition(position) {

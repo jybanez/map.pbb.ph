@@ -50,7 +50,7 @@ async page => {
   await cold.getByRole('button', { name: 'Filter points of interest', exact: true }).click();
   await cold.getByRole('columnheader', { name: 'Locations', exact: true }).waitFor();
   result.offline = await cold.evaluate(async names => {
-    const { uiLoader } = await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.308');
+    const { uiLoader } = await import('./vendor/helpers/js/ui/ui.loader.js?v=0.21.309');
     for (const name of names) await uiLoader.get(name, { preferBundles: true });
     const { magneticField } = await import('./assets/declination.js');
     const field = magneticField(10.3157,123.8854,0,new Date('2026-10-11'));
@@ -58,7 +58,7 @@ async page => {
     window.__directionFixture = createDirectionOptions({ createFormModal: await uiLoader.get('ui.form.modal', { preferBundles: true }), uiAlert: await uiLoader.get('ui.dialog.alert', { preferBundles: true }), getState: () => ({ eligible: true, selected: true }), apply() {} });
     window.__directionFixture.open();
     return { factories: names.length, terrain: !!window.__map.getTerrain(), person: !!window.__map.getLayer('current-location-person'), personRendered: document.querySelector('.ui-map-location-person-label')?.hidden === false, POIs: window.__map.querySourceFeatures('pbb-poi',{sourceLayer:'poi'}).length, model: Number.isFinite(field?.decl), bootError: !document.querySelector('#boot-status').hidden };
-  }, ["ui.navbar", "ui.map.controls", "ui.map.markers", "ui.toast", "ui.empty.state", "ui.busy.overlay", "ui.icons", "ui.menu", "ui.modal", "ui.search", "ui.events.createEventBag", "ui.action.modal", "ui.form.modal", "ui.dialog.alert", "ui.map.location.person", "ui.signal.strength", "ui.tree.grid", "ui.checkbox", "ui.map.drawing", "ui.map.drawing.maplibre", "ui.navigation.stack", "ui.select", "ui.inline.text", "ui.color.picker", "ui.skeleton"]);
+  }, ["ui.navbar", "ui.map.controls", "ui.map.markers", "ui.toast", "ui.empty.state", "ui.busy.overlay", "ui.icons", "ui.menu", "ui.modal", "ui.search", "ui.events.createEventBag", "ui.action.modal", "ui.form.modal", "ui.dialog.alert", "ui.map.location.person", "ui.signal.strength", "ui.tree.grid", "ui.checkbox", "ui.map.drawing", "ui.map.drawing.object", "ui.map.drawing.maplibre", "ui.navigation.stack", "ui.select", "ui.inline.text", "ui.color.picker", "ui.skeleton"]);
   await cold.getByRole('dialog', { name: 'Direction options', exact: true }).waitFor(); await cold.getByLabel('Direction mode', { exact: true }).waitFor();
   await cold.screenshot({ path: 'output/playwright/bundle-only-cold-offline.png' });
   result.individualHelperRequests = requests.filter(u => !allowed.includes(new URL(u).pathname));
