@@ -423,7 +423,7 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     else if (isMapPin(feature)) {
       const original = drag.before.find(f => String(f.id) === drag.featureId).geometry.coordinates;
       const next = [original[0] + ll.lng - drag.start.lng, original[1] + ll.lat - drag.start.lat, ...original.slice(2)];
-      try { validatePosition(next); } catch (_) { return; }
+      try { validatePosition(next, true); } catch (_) { return; }
       feature.geometry.coordinates = next;
     }
     else if (feature.geometry.type === "Point") feature.geometry.coordinates = coordinate;
@@ -559,8 +559,8 @@ export function createMapLibreDrawingAdapter(map, options = {}) {
     getState: () => ({ mode, objectMode, selectedFeatureId: selected, features: clone(features), draft: clone(draft), preview: clone(preview), editSession: getEditState(), styleChange: getStyleChange(), anchor: anchor(), dragging: !!drag, revision, destroyed, sourceId, layerIds: [...layers] }) };
 }
 
-function validatePosition(position) {
-  if (!Array.isArray(position) || position.length !== 2 || !position.every(Number.isFinite) || Math.abs(position[0]) > 180 || Math.abs(position[1]) > 90) throw new TypeError("Coordinates must be finite 2D longitude/latitude within [-180,180]/[-90,90].");
+function validatePosition(position, pin = false) {
+  if (!Array.isArray(position) || !(position.length === 2 || pin === true && position.length === 3) || !position.every(Number.isFinite) || Math.abs(position[0]) > 180 || Math.abs(position[1]) > 90) throw new TypeError(pin === true ? "Pin coordinates require finite longitude/latitude within [-180,180]/[-90,90] and an optional finite altitude." : "Coordinates must be finite 2D longitude/latitude within [-180,180]/[-90,90].");
 }
 function validateFeatures(input) {
   validateJsonData(input); // Whole batch, before any cloning or adapter mutation.
@@ -574,7 +574,7 @@ function validateFeatures(input) {
     if (Object.hasOwn(feature.properties || {}, "helperStyle")) validateStyle(feature.properties.helperStyle);
     const geometry = feature.geometry;
     if (feature.properties?.helperDrawingKind === "pin" && (geometry?.type !== "Point" || Math.abs(geometry.coordinates?.[1]) > 85.0511287798066)) throw new TypeError("Pin metadata requires a Point within Mercator latitude bounds.");
-    if (geometry?.type === "Point") validatePosition(geometry.coordinates);
+    if (geometry?.type === "Point") validatePosition(geometry.coordinates, feature.properties?.helperDrawingKind === "pin");
     else if (geometry?.type === "LineString") validateLine(geometry.coordinates, 2);
     else if (geometry?.type === "Polygon") {
       if (!Array.isArray(geometry.coordinates) || !geometry.coordinates.length) throw new TypeError("Polygon requires at least one closed ring.");

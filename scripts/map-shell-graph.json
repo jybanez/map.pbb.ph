@@ -45,5 +45,5 @@
     "ui.map.ruler",
     "ui.map.pin"
   ],
-  "policy": "Strict three-artifact reviewed Helper315; canonical drawing, ruler, scale and adapters. No modular fallback."
+  "policy": "Strict three-artifact reviewed Helper316; canonical drawing, ruler, scale and adapters. No modular fallback."
 }
