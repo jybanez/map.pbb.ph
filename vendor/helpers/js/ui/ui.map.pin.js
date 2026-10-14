@@ -9,21 +9,21 @@ function mesh() {
     const [height, radius] = profile[row];
     for (let i = 0; i <= 32; i++) {
       const angle = i / 32 * Math.PI * 2;
-      vertices.push([Math.sin(angle) * radius, -height, (1 + Math.cos(angle)) * radius * .25]);
+      vertices.push([Math.sin(angle) * radius, Math.cos(angle) * radius, height]);
       if (row && i) { const a = row * 33 + i, b = a - 33; triangles.push([a - 1, b - 1, b, 0], [a - 1, b, a, 0]); }
     }
   }
   // Recessed circular face with a raised rim; this is mesh geometry, not a sprite.
-  const center = vertices.push([0, -.70, .12]) - 1;
+  const center = vertices.push([0, 0, .90]) - 1;
   for (let i = 0; i <= 32; i++) {
     const angle = i / 32 * Math.PI * 2;
-    vertices.push([Math.sin(angle) * .135, -.70 + Math.cos(angle) * .135, .12]);
+    vertices.push([Math.sin(angle) * .135, Math.cos(angle) * .135, .90]);
     if (i) triangles.push([center, center + i, center + i + 1, 1]);
   }
   const rim = vertices.length;
   for (let i = 0; i <= 32; i++) {
     const angle = i / 32 * Math.PI * 2;
-    for (const [r, z] of [[.135, .12], [.17, .169]]) vertices.push([Math.sin(angle) * r, -.70 + Math.cos(angle) * r, z]);
+    for (const [r, z] of [[.135, .90], [.19, .935]]) vertices.push([Math.sin(angle) * r, Math.cos(angle) * r, z]);
     if (i) { const a = rim + i * 2; triangles.push([a - 2, a - 1, a, 2], [a, a - 1, a + 1, 2]); }
   }
   const data = [];
@@ -51,7 +51,7 @@ export function createMapPinRenderer(map, options = {}) {
       if (vao) vaoApi.bind(vao);
       const compile = (kind, source) => { const shader = gl.createShader(kind); gl.shaderSource(shader, source); gl.compileShader(shader); if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) { const error = gl.getShaderInfoLog(shader); gl.deleteShader(shader); throw Error(error); } return shader; };
       const vertex = compile(gl.VERTEX_SHADER, 'attribute vec3 position; attribute vec3 normal; attribute float material; uniform mat4 matrix; uniform vec4 anchor; uniform float scale; uniform vec3 lightDirection; varying float shade; varying float face; varying vec3 modelPosition; void main(){gl_Position=anchor+matrix*vec4(position*scale,0.0); shade=.55+.45*abs(dot(normal,normalize(lightDirection)));face=material;modelPosition=position;}');
-      const fragment = compile(gl.FRAGMENT_SHADER, 'precision mediump float; uniform vec4 color; uniform vec4 stroke; uniform bool selected; varying float shade; varying float face; varying vec3 modelPosition; void main(){if(face<.5&&modelPosition.z>.08&&length(vec2(modelPosition.x,modelPosition.y+.70))<.135)discard; float alpha=face>1.5?(selected?1.0:stroke.a):color.a;if(alpha<=0.0)discard;vec3 base=face>.5&&face<1.5?vec3(.07,.11,.16):face>1.5?(selected?vec3(1.0,.72,.22):stroke.rgb):color.rgb; gl_FragColor=vec4(base*shade,alpha);}');
+      const fragment = compile(gl.FRAGMENT_SHADER, 'precision mediump float; uniform vec4 color; uniform vec4 stroke; uniform bool selected; varying float shade; varying float face; varying vec3 modelPosition; void main(){if(face<.5&&modelPosition.z>.90&&length(modelPosition.xy)<.19)discard; float alpha=face>1.5?(selected?1.0:stroke.a):color.a;if(alpha<=0.0)discard;vec3 base=face>.5&&face<1.5?vec3(.07,.11,.16):face>1.5?(selected?vec3(1.0,.72,.22):stroke.rgb):color.rgb; gl_FragColor=vec4(base*shade,alpha);}');
       program = gl.createProgram(); gl.attachShader(program, vertex); gl.attachShader(program, fragment); gl.linkProgram(program); gl.deleteShader(vertex); gl.deleteShader(fragment);
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program));
       locations = Object.fromEntries(['matrix', 'anchor', 'scale', 'color', 'stroke', 'selected', 'lightDirection'].map(n => [n, gl.getUniformLocation(program, n)]));
@@ -67,17 +67,9 @@ export function createMapPinRenderer(map, options = {}) {
       gl.useProgram(program); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       for (const [name, size, offset] of [['position', 3, 0], ['normal', 3, 12], ['material', 1, 24]]) { gl.enableVertexAttribArray(locations[name]); gl.vertexAttribPointer(locations[name], size, gl.FLOAT, false, 28, offset); }
       gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      const oriented = Array.from(matrix);
-      // Follow camera heading while retaining real map-space depth and pitch.
-      // This keeps a recognizable upright pin instead of a sideways, enlarged one.
-      const bearing = map.getBearing() * Math.PI / 180, cosine = Math.cos(bearing), sine = Math.sin(bearing);
-      for (let i = 0; i < 4; i++) { oriented[i] = matrix[i] * cosine + matrix[i + 4] * sine; oriented[i + 4] = -matrix[i] * sine + matrix[i + 4] * cosine; }
-      // A partial upright response avoids near-horizon foreshortening inflation,
-      // while preserving a visible change in depth/perspective as pitch changes.
-      const tilt = map.getPitch() * Math.PI / 360, ct = Math.cos(tilt), st = Math.sin(tilt);
-      for (let i = 0; i < 4; i++) { const y = oriented[i + 4], z = oriented[i + 8]; oriented[i + 4] = y * ct - z * st; oriented[i + 8] = y * st + z * ct; }
-      const lightY = .4 * sine - .6 * cosine;
-      gl.uniform3f(locations.lightDirection, -.4 * cosine - .6 * sine, lightY * ct - st, lightY * st + ct);
+      // Upright map-space geometry: never rotate or tilt toward the camera.
+      const oriented = matrix;
+      gl.uniform3f(locations.lightDirection, -.4, -.6, 1);
       for (const feature of features) {
         const coordinate = feature.geometry.coordinates;
         // MapLibre 4.6 custom-layer matrices use elevation relative to the camera target.
@@ -89,8 +81,8 @@ export function createMapPinRenderer(map, options = {}) {
         if (Math.abs(anchor[0] / anchor[3]) > 1 + 128 / width || Math.abs(anchor[1] / anchor[3]) > 1 + 128 / height) continue;
         const screen = p => { const q = transform(oriented, [...p, 0]); return [(anchor[0] + q[0]) / (anchor[3] + q[3]) * width / 2, -(anchor[1] + q[1]) / (anchor[3] + q[3]) * height / 2]; };
         let scale = anchor[3] / (Math.hypot(matrix[4] * width, matrix[5] * height) || 1) * 64;
-        // Normalize the projected mesh itself, independent of zoom and distance.
-        for (let pass = 0; pass < 3; pass++) { const ys = MODEL.vertices.map(v => screen(v.map(n => n * scale))[1]); scale *= 32 / (Math.max(...ys) - Math.min(...ys) || 32); }
+        // Keep the largest projected dimension near 32 CSS px; do not force height at top-down pitch.
+        for (let pass = 0; pass < 3; pass++) { const points = MODEL.vertices.map(v => screen(v.map(n => n * scale))), xs = points.map(p => p[0]), ys = points.map(p => p[1]); scale *= 32 / (Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 32); }
         const projected = MODEL.vertices.map(v => screen(v.map(n => n * scale)));
         const xs = projected.map(p => p[0] + width / 2), ys = projected.map(p => p[1] + height / 2);
         bounds.set(String(feature.id), { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys), tip: { x: (anchor[0] / anchor[3] + 1) * width / 2, y: (1 - anchor[1] / anchor[3]) * height / 2 } });
