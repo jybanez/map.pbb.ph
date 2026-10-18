@@ -1,19 +1,19 @@
-import { installMapRuler } from './map-ruler.js?v=20261018-status1';
-import { installScalePlacement } from './map-scale-placement.js?v=20261018-status1';
-import { createPersonalLayers } from './personal-layer-ui.js?v=20261018-status1';
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261018-status1';
-import { createPoiFilter } from './poi-filter.js?v=20261018-status1';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261018-status1';
-import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.318';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261018-status1';
-import { registerMapShell } from './map-shell.js?v=20261018-status1';
-import { config } from './config.js?v=20261018-status1';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261018-status1';
-import { createLocationController } from './location.js?v=20261018-status1';
-import { installMapContext } from './map-context.js?v=20261018-status1';
-import { createMapSearch } from './map-search.js?v=20261018-status1';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261018-status1';
-import { createDirectionOptions } from './direction-options.js?v=20261018-status1';
+import { installMapRuler } from './map-ruler.js?v=20261018-person34';
+import { installScalePlacement } from './map-scale-placement.js?v=20261018-person34';
+import { createPersonalLayers } from './personal-layer-ui.js?v=20261018-person34';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261018-person34';
+import { createPoiFilter } from './poi-filter.js?v=20261018-person34';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261018-person34';
+import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.319';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261018-person34';
+import { registerMapShell } from './map-shell.js?v=20261018-person34';
+import { config } from './config.js?v=20261018-person34';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261018-person34';
+import { createLocationController } from './location.js?v=20261018-person34';
+import { installMapContext } from './map-context.js?v=20261018-person34';
+import { createMapSearch } from './map-search.js?v=20261018-person34';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261018-person34';
+import { createDirectionOptions } from './direction-options.js?v=20261018-person34';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
@@ -83,7 +83,7 @@ export async function mountApp() {
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261018-status1').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261018-person34').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -229,7 +229,7 @@ export async function mountApp() {
         try {
           person = createPerson({ map, maplibre: window.maplibregl, lngLat: coords,
             id: 'current-location-person', label: 'Your reported location', sizePx: 34,headingDegrees,
-            scaleMode: 'perspective', modelHeightMeters: 12, minSizePx: 8, maxSizePx: 64,
+            scaleMode: 'perspective', modelHeightMeters: 12, minSizePx: 34, maxSizePx: 34,
             onStateChange: state => {
               if (disposed || map !== currentMap || !marker) return;
               marker.getElement().style.visibility = state.status === 'rendered' ? 'hidden' : 'visible';

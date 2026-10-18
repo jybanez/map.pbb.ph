@@ -1,12 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-const repo='C:/wamp64/www/hotline-helpers', revision='21216409ff0f558f24f4021b0f84efb89fccb6fc', reviewedHead='605bc24b45dd33b5d51cd5095937b920069138d1';
+const repo='C:/wamp64/www/hotline-helpers', revision='333ca020888d018bee0b3d03d93734c7c861f9cd', reviewedHead='7c8282d9e591d4ab0ee48b4a1a377de4bb0d710c';
 const tree=ref=>execFileSync('git',['-C',repo,'rev-parse',`${ref}^{tree}`],{encoding:'utf8'}).trim();
 if(tree(revision)!==tree(reviewedHead))throw Error('Merged runtime differs from the independently reviewed tree.');
 const vendor=JSON.parse(readFileSync('vendor/manifest.json','utf8'));
 const artifacts=new Map();
-for(const document of ['maplibre-drawing-runtime','map-layer-icon-runtime','color-picker-runtime','drawing-action-icons-runtime','map-scale-runtime','map-ruler-runtime','map-pin-runtime']){
+for(const document of ['maplibre-drawing-runtime','map-layer-icon-runtime','color-picker-runtime','drawing-action-icons-runtime','map-scale-runtime','map-ruler-runtime','map-pin-runtime','map-person-perspective-runtime']){
  const manifest=JSON.parse(execFileSync('git',['-C',repo,'show',`${revision}:docs/${document}.json`],{encoding:'utf8'}));
  for(const file of manifest.artifacts)if((file.path.startsWith('js/ui/')||file.path.startsWith('css/ui/')||['dist/helpers.ui.bundle.min.js','dist/helpers.ui.bundle.min.css','dist/helpers.game.bundle.min.js'].includes(file.path)))artifacts.set(file.path,file.sha256);
 }
@@ -15,6 +15,6 @@ for(const [path,expected] of artifacts){
  const hash=createHash('sha256').update(bytes).digest('hex');if(hash!==expected)throw Error(path);
  const target=`vendor/helpers/${path}`;mkdirSync(target.slice(0,target.lastIndexOf('/')),{recursive:true});writeFileSync(target,bytes);vendor.files[target]=hash;
 }
-vendor.personalLayers={revision,reviewedHead,tree:tree(revision),mainUiRevision:'0.21.318',colorPickerRevision:'0.21.294',adapterRevision:'0.21.318',iconRevision:'0.21.315',gameBundleRevision:'0.21.315'};
+vendor.personalLayers={revision,reviewedHead,tree:tree(revision),mainUiRevision:'0.21.319',personRevision:'0.21.319',colorPickerRevision:'0.21.294',adapterRevision:'0.21.318',iconRevision:'0.21.315',gameBundleRevision:'0.21.315'};
 writeFileSync('vendor/manifest.json',JSON.stringify(vendor,null,2)+'\n');
 console.log('Adopted verified reviewed personal-layer and icon runtime; optional game catalog reconciled, MapLibre unchanged.');

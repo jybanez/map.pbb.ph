@@ -1,5 +1,16 @@
 import { createPersonMesh, createDirectionMesh, createPersonRenderer } from "./ui.map.location.person.renderer.js";
 
+// Exact positional support, deduplicated once rather than per rendered triangle.
+function meshPositions(mesh) {
+  const seen = new Set(), points = [];
+  for (let i = 0; i < mesh.length; i += 9) {
+    const key = `${mesh[i]},${mesh[i + 1]},${mesh[i + 2]}`;
+    if (!seen.has(key)) { seen.add(key); points.push(mesh[i], mesh[i + 1], mesh[i + 2]); }
+  }
+  return new Float64Array(points);
+}
+const PERSON_POINTS = meshPositions(createPersonMesh()), DIRECTION_POINTS = meshPositions(createDirectionMesh());
+
 // MapLibre GL JS 4.6 only: terrain query and render matrices are center-relative.
 export function createMapLocationPerson(options = {}) {
   const settings = { id: "helper-current-location-person", label: "Current location", sizePx: 34, ...options };
@@ -192,16 +203,26 @@ export function getPersonPlacement(matrix, anchor, width, height, sizePx, headin
   if (sizing.scaleMode === "perspective") {
     if (![anchor.x, anchor.y, anchor.z].every(Number.isFinite) || !(sizing.worldScale > 0 && Number.isFinite(sizing.worldScale))) throw new Error("Invalid perspective anchor/scale.");
     if (origin[2] < -origin[3]) return null;
-    // The full model's projected envelope includes height and optional arrow,
-    // avoiding ground-plane foreshortening inflation at high pitch.
+    // Measure actual mesh positions, including the arrow only when available.
+    // Transform each unique position once; scale search only evaluates cached
+    // homogeneous coefficients, with no repeated matrices or triangle objects.
     const angle = (headingDegrees ?? 0) * Math.PI / 180, c = Math.cos(angle), s = Math.sin(angle);
-    const points = [];
-    for (const x of [-.5,.5]) for (const y of [-.5,headingDegrees == null ? .5 : .86]) for (const z of [0,1.8]) points.push([c*x+s*y,s*x-c*y,z]);
+    const sets = headingDegrees == null ? [PERSON_POINTS] : [PERSON_POINTS, DIRECTION_POINTS];
+    const coefficients = new Float64Array(sets.reduce((n, points) => n + points.length / 3 * 4, 0));
+    let offset = 0;
+    for (const points of sets) for (let i = 0; i < points.length; i += 3) {
+      const x = c * points[i] + s * points[i + 1], y = s * points[i] - c * points[i + 1], z = points[i + 2];
+      for (let row = 0; row < 4; row++) coefficients[offset++] = matrix[row] * x + matrix[row + 4] * y + matrix[row + 8] * z;
+    }
     const extent = (at, amount) => {
-      const projected = points.map(([x,y,z]) => clip(at.x+x*amount,at.y+y*amount,at.z+z*amount));
-      if (projected.some(p => p[3] <= 0 || p[2] < -p[3])) return null;
-      const pixels = projected.map(pixel);
-      return Math.max(Math.max(...pixels.map(p=>p[0]))-Math.min(...pixels.map(p=>p[0])),Math.max(...pixels.map(p=>p[1]))-Math.min(...pixels.map(p=>p[1])));
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < coefficients.length; i += 4) {
+        const w = origin[3] + coefficients[i + 3] * amount, z = origin[2] + coefficients[i + 2] * amount;
+        if (w <= 0 || z < -w) return null;
+        const x = (origin[0] + coefficients[i] * amount) / w * width / 2, y = (origin[1] + coefficients[i + 1] * amount) / w * height / 2;
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      }
+      return Math.max(maxX - minX, maxY - minY);
     };
     // Physical world size is independent of camera center/zoom; projection
     // supplies perspective and camera depth. Bounds only limit its envelope.
