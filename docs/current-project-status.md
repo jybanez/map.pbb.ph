@@ -22,7 +22,7 @@ Official repository: https://github.com/jybanez/map.pbb.ph (owner message 9275).
 
 ## Dependencies and review
 
-Current Task286 dependencies: canonical PR185 merge `333ca020888d018bee0b3d03d93734c7c861f9cd`, tree `2d3bc2703cbb079ed39304d173b85534929eec56`, matches the independently reviewed version. Main/person319, Pin/adapter318, icons/game315; shell `e76ecee2e3b8edfd730a` contains44 assets/4290260 bytes/34 Helper dependencies. Independent acceptance11243 covers55 tests,120 camera/depth samples, actual mesh approximately34px, full lifecycle/fallback/accessibility and cold offline startup with exact3Helper/no page errors. Canonical364 pixel checks remain separate from application mesh projection. Physical hardware/Safari/AT/WebGL1 remain unverified. Task286 runtime is accepted; final task completion follows GitHub handoff verification.
+Current Task286 dependencies: canonical PR185 merge `333ca020888d018bee0b3d03d93734c7c861f9cd`, tree `2d3bc2703cbb079ed39304d173b85534929eec56`, matches the independently reviewed version. Main/person319, Pin/adapter318, icons/game315; shell `e76ecee2e3b8edfd730a` contains44 assets/4290260 bytes/34 Helper dependencies. Independent acceptance11243 covers55 tests,120 camera/depth samples, actual mesh approximately34px, full lifecycle/fallback/accessibility and cold offline startup with exact3Helper/no page errors. Canonical364 pixel checks remain separate from application mesh projection. Physical hardware/Safari/AT/WebGL1 remain unverified. Task286 runtime and the owner-authorized GitHub handoff are independently accepted; local and remote main were verified synchronized with a clean working tree.
 
 ### Historical Task271 acceptance
 

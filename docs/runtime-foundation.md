@@ -4,7 +4,7 @@
 
 ## Current runtime
 
-MapLibre JS/CSS remain 4.6.0. The canonical Helper loader now prefers the pinned production UI bundle with exactly three Helper requests and no modular fallback; main/loader/adapter/Pin are 318. Map resources use a page-owned cache protocol, Cache Storage and IndexedDB; the separate shell service worker supports disconnected startup with available coverage. Camera zoom is 0–24 and pitch up to 85 degrees. Complete deployment includes shell-manifest.js, map-shell-worker.js and map.webmanifest as well as HTML/assets/vendor. Hashes and provenance are in vendor/manifest.json; no provider credentials or account integration are included.
+MapLibre JS/CSS remain 4.6.0. The canonical Helper loader now prefers the pinned production UI bundle with exactly three Helper requests and no modular fallback; main/loader/person are 319; adapter/Pin remain 318. Map resources use a page-owned cache protocol, Cache Storage and IndexedDB; the separate shell service worker supports disconnected startup with available coverage. Camera zoom is 0–24 and pitch up to 85 degrees. Complete deployment includes shell-manifest.js, map-shell-worker.js and map.webmanifest as well as HTML/assets/vendor. Hashes and provenance are in vendor/manifest.json; no provider credentials or account integration are included.
 
 ## Historical task 148 foundation
 
