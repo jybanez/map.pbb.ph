@@ -1,48 +1,50 @@
-# PBB Map V1
+# PBB Map
 
+PBB Map is the public mapping application of the PBB Ecosystem. It uses locally bundled MapLibre and Helper components and receives geographic resources from the configured PBB MapServer.
 
-Current status (2026-10-11): [Current project status](docs/current-project-status.md) is the authoritative documentation summary for the accepted controls, location tracking, POI filtering and three-wave accuracy ripple. Older revision-specific statements below remain historical where superseded. Physical-device validation and final owner acceptance are not inferred from automated checks.
+- Application: https://map.pbb.ph/
+- Repository: https://github.com/jybanez/map.pbb.ph
+- Current accepted behavior, provenance and limits: [Project status](docs/current-project-status.md)
 
-Public static map: https://map.pbb.ph/
+## Current development — October 18, 2026
 
-A selected search result flies to the destination, then drops an amber pin with a small bounce at its exact coordinates. The pin stays hidden during flight; interrupted flights cancel the reveal. It remains when search closes, moves to the next selected result, and clears when the map restarts. It is separate from your reported location and accuracy circle; camera terrain adjustment does not change the destination coordinates. The explicitly requested sequence uses essential motion for both the flight and drop.
+The latest independently accepted application implementation is `6038639abdf75265a429166503e6cba37323c364` (Task 271), runtime `20261014-pin4`. Helper UI bundle/loader, drawing adapter and Pin renderer use revision `0.21.318`; individual component and CSS revisions differ. Exact adopted bytes and provenance are recorded in [vendor/manifest.json](vendor/manifest.json). Documentation commits may follow this implementation commit. GitHub publication does not establish deployment or physical-device certification.
 
-Your reported location uses an original blue 3D person on a circular base, with three sequential expanding accuracy ripples. The original static circle is removed. See [accuracy ripple](docs/accuracy-ripple.md). A canonical blue dot remains visible until the model renders and returns if the renderer fails or loses its context. Locate explicitly retries a failed model while requesting location. The locally bundled Helper renderer and procedural geometry use the Helper ISC license; MapLibre 4.6.0 uses its bundled BSD license. No model, texture or renderer CDN is required. Perspective and building occlusion follow the map; the optional gold base cue shows corrected device direction when supported and fresh. Choose Locate to allow direction where a permission tap is required. Unknown, stale or unreliable readings retain a neutral person. [Compass inputs and limits](docs/compass.md) document local WMM2025 correction, supported sensor paths and remaining real-phone checks.
+## Features
 
-Click or tap a settled destination pin to open its location actions: copy coordinates, Center in view, or Get info. Keyboard users can focus the pin and press Enter or Space; Escape dismisses the menu and returns focus. Actions use the exact selected destination coordinates. Pins are unavailable during flight/drop, and new selections clear stale menus.
+- Dark map with terrain, 3D buildings, compass/north reset, 2D/3D controls, zoom and Locate. Camera zoom is 0–24 and pitch 0–85 degrees; initial zoom/pitch are 12/35 degrees, Locate zoom is 15, and 2D/3D presets are 0/60 degrees. Native vector/POI detail ends at zoom 14 and terrain at zoom 12.
+- Current location uses a procedural blue 3D person rendered in the map canvas, an accessible DOM label and a dot fallback when the model is unavailable. The current person uses a 12 m model with an 8–64 CSS-pixel perspective envelope. The owner-approved approximately 34 px consistent-size change is tracked as Task 286 and is not included in this accepted implementation.
+- Three expanding accuracy ripples visualize the reported horizontal uncertainty. Fresh location updates preserve a manually explored camera; explicit Locate recenters it. Location and sensor samples stay in memory.
+- Search accepts decimal `latitude, longitude` or names from loaded POI tiles. Named results respect visibility filters, display distance from the current valid location, and sort by name ascending, then numeric distance ascending. Loaded results are not a complete regional index.
+- Selecting a result flies to its coordinates, then reveals an amber destination marker. Clearing the query removes it; closing the search field alone retains it. Its keyboard-accessible menu offers Copy coordinates, Center in view and Get info. Destination markers are separate from the user person and authored Pins.
+- POI filtering provides loaded named counts, normalized category labels, class colors, mixed visibility states and an All menu.
+- Personal layers support Point, upright 3D Pin, two-endpoint Line, multi-segment Path, Polygon, Circle and Rectangle. Pin sits between Select and Point. Its largest projected dimension stays approximately 32 CSS pixels: circular from above, tapered near 85 degrees. Fill/Stroke, dragging, Undo/Redo, explicit Save and reload are supported. Delete/Clear retain confirmation; Undo/Redo do not. Dirty exits retain confirmation. See [Pin integration](docs/map-pin-integration.md) and [personal layers](docs/personal-layers-status.md).
+- The transient ruler measures straight-line distance with draggable endpoints. The metric scale is a local geographic reference, not terrain-surface distance.
+- Supported fresh device direction affects the person cue, not camera bearing. Direction diagnostics/options are hidden by default. First-use permission is requested only through explicit activation. See [direction behavior](docs/direction-automatic-start.md) and [compass limits](docs/compass.md).
 
-Clearing the search or deleting its text to empty removes the destination pin and closes its menu. Pending drop effects are cancelled; current location and accuracy stay available. Closing the search field alone retains the destination. Clearing leaves the current camera transition alone.
+## Automatic caching and offline use
 
-Helper runtime prefers the locally pinned production UI JS/CSS bundle through its canonical loader. Runtime provenance includes accepted perspective and checkbox updates; latest UI bundle/CSS revision is `0.21.284` (checkbox JS `0.21.283`). Exact hashes and incremental provenance are in `vendor/manifest.json` and the runtime evidence manifests. Search uses canonical focus-preserving menu opening and deliberate keyboard entry. No CDN is needed for UI startup.
+Caching is managed by the app, without an Offline maps menu or manual download workflow. A page-owned MapLibre protocol loader caches approved map resources using Cache Storage and IndexedDB. It operates independently of the service worker; the separate worker caches a validated application shell for cold startup.
 
-Search accepts decimal `latitude, longitude` (latitude first) or a POI name. Typing shows live suggestions and keeps focus in the field; Space edits the query. Click/tap a result, or use Arrow Down or Enter to enter the results and then select with the keyboard, to animate to the destination. Pasting a completed query or the mobile Search button also enters result navigation. Editing replaces stale suggestions without activating a destination. Named results come only from currently loaded local POI tiles and respect the shared POI visibility filters; navigate/zoom and search again to change coverage. This is not a complete barangay index. No external search service is used.
+After resources have been saved, disconnected devices can reopen the shell and use available map coverage. Previously unseen areas, zooms, glyphs or layers may be unavailable. Age alone does not expire usable cached tiles; failed refresh keeps prior bytes. Storage quota, eviction, cleared site data and incomplete coverage remain limits. Offline startup/reload has been checked in isolated Chromium desktop/mobile-emulation contexts; this does not guarantee every outage, browser or native wrapper. See [cache implementation](docs/map-resource-cache-implementation.md) and [design history](docs/device-offline-cache-design.md).
 
-Serve this directory through the local node's HTTPS web server. Copy `index.html`, `assets/` and `vendor/` together; no PHP, database, npm install or build is required for runtime. Opening the HTML directly as a file does not support this deployment's module/geolocation requirements.
+## Run and configure
 
-Configure the public MapServer URL and camera/location defaults in `assets/config.js`. The node's DNS and trusted HTTPS certificate must make MapServer reachable. Provider keys stay on MapServer; never put them in this frontend. Vector, terrain, glyph and POI requests use GET. All renderer and Helper startup assets are local.
+Serve the repository through a trusted HTTPS web server. Ship the complete tracked runtime, including `index.html`, `assets/`, `vendor/`, `map-shell-worker.js`, `shell-manifest.js` and `map.webmanifest`; copying only HTML/assets/vendor omits offline startup resources. Runtime requires no npm install, PHP, login or backend database. Opening `index.html` as a file is unsupported.
 
-Use Zoom, north reset, 2D/3D pitch, Layers → Points of interest, and Locate. Location tracking starts on startup using browser permission. Valid movement fixes update the person/dot, accuracy area and search distances while preserving the explored camera; Locate centers the latest fix. One watcher pauses when the page is hidden, resumes when visible, and clears on teardown. Denial requires allowing location in site settings and choosing Locate; visibility changes do not retry denied permission. Browsers without watch support retain one-shot Locate behavior. Location is displayed only in memory; reported accuracy is an estimate. Pan with arrow keys, zoom with plus/minus, and use Shift with arrows for supported rotation/pitch. Map tile requests reveal the viewed area to the configured MapServer.
+Configure public MapServer, camera and location settings in [assets/config.js](assets/config.js). Provider credentials belong on MapServer, never in this frontend. Local DNS/TLS and readable MapServer responses must be configured for the node. Tile requests disclose the viewed area to that server. MapLibre 4.6.0 and Helper licenses are bundled under `vendor/`.
 
-Offline V1 means the local PBB node remains reachable while upstream internet is unavailable. Each connected barangay node serves its prepared local tiles/fonts through the configured MapServer. Automatic node discovery or network switching is outside V1. Fully disconnected devices are not supported. Owner scope removal (messages9104/9105) places tile/cache outage verification outside PBB Map; it is no longer a project blocker. Historical preparation evidence remains, with no actual outage-test success claimed.
+The strict canonical Helper loader loads three Helper resources: loader, production UI JavaScript bundle and production UI CSS bundle. Bundle failures reject without modular fallback. No UI/model/texture CDN is required. Source files remain vendored for provenance and development.
 
-[Dependency/configuration details](docs/runtime-foundation.md) · [Verification and outstanding checks](docs/v1-verification.md) · [Approved scope](docs/pbb-map-v1-development-proposal.md) · [Checklist](docs/pbb-map-v1-implementation-checklist.md)
+## Verification
 
-Development checks: `npm test` (Node 22). SHA-256 manifest: `vendor/manifest.json`. Optional reference pinning script copies only public Helper JS/CSS/licenses and Hotline renderer/style assets; never copy another application's secrets or change reference projects.
+With Node 22:
 
-Direction diagnostics/options entry buttons are temporarily hidden by default. Set `showDirectionTools: true` in `assets/config.js` and bump config/entry revisions to restore them for future troubleshooting; underlying components and automatic direction remain active. See [diagnostics](docs/direction-diagnostics.md). The map camera retains its chosen bearing; compass-follow is separate.
+```sh
+npm test
+node scripts/build-shell-manifest.mjs --check
+```
 
-When altitude is unavailable, direction automatically uses the supported Philippines ground-use approximation and identifies approximation in the marker accessible description and Direction diagnostics. No ground confirmation or session enable step is required. Valid measured altitude takes priority. Locate still requests direction permission when required. Direction options offers an optional strict mode for the current session; reload restores automatic approximation. See [implementation and evidence](docs/approximate-direction.md).
+The accepted implementation passed 55 tests, vendor inventory verification and shell integrity checks. Independent desktop and fresh mobile touch-emulation checks cover Pin perspective, editing/history, terrain alignment, save/reload, lifecycle and ordinary service-worker offline reload. Physical Safari/mobile hardware, assistive technologies, WebGL1, native wrappers, complete geographic coverage and visual occlusion are not certified.
 
-Direction starts automatically when browser authorization or permitted sensor delivery is available. If a first-use tap is required, use **Enable direction** in the map controls; green Locate remains available for recenter/retry. No automatic direction permission prompt is opened. [Browser limits and verification](docs/direction-automatic-start.md).
-
-When direction needs first-use activation, a welcome alert offers **Enable location and direction** or **Continue browsing**. Only the Enable click requests browser permission; dismissing keeps map browsing available.
-
-POI labels use actual nonblank local/English name fields; unnamed POIs render neither dots nor labels (owner9120 supersedes earlier dot retention). Search/context share that name precedence. See [POI name verification](docs/poi-names.md).
-
-Camera zoom range is0–24; initial zoom12 and Locate zoom15. Vector/POI source maximum14 and terrain maximum12 remain unchanged: higher camera zoom enlarges existing detail.
-
-Maximum camera pitch is85 degrees; initial pitch35 and 2D/3D presets0/60 remain. Near-horizon views may expose source/label and device performance limits.
-
-The current-location person uses reviewed Helper perspective scaling (12m visual model height; 8–64 CSS pixel envelope). Far camera views shrink the marker; visibility bounds plateau at extremes. See docs/person-perspective-scaling.md for provenance and bounded verification.
-
-POI category filtering uses the canonical Helper modal/tree grid/checkbox with loaded named counts, stable class colors and shared map/search/nearby predicates. See docs/poi-category-filter.md for behavior, runtime provenance, evidence and coverage limits.
+Older proposals, checklists and verification reports retain their original evidence and pending decisions as historical records. Their dated claims do not override the [current status](docs/current-project-status.md). Provider attribution/redistribution obligations remain an operator follow-up; the owner-requested removal of visible attribution is not evidence of compliance.

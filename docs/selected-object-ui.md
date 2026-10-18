@@ -1,6 +1,6 @@
 # Selected-object controls — task214
 
-> Current status (2026-10-13): see [current project status](current-project-status.md). Dated revisions, inventories and pending statements below describe their original review stage. The accepted local runtime is `20261013-object1` at `201445c40fd98e59ffd7cca22121c3c55668b2d1`; main Helper UI/loader/drawing CSS311, adapter/icons/game309. Undo/Redo now run without confirmation; Delete/Clear remain confirmed. Tasks239/241/243 are accepted. No deployment or physical-device validation is inferred.
+> Documentation status (2026-10-18): the current accepted implementation is Task 271, app `6038639a`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
 
 Task214 starts from independently accepted task209 implementation `c541638f4258cb4529e1652d5dd19b3a50f280a9`, acceptance documentation `a427e92986d9fd26b15163beb817af85a1748230`. No task214 acceptance or push is claimed.
 

@@ -1,6 +1,6 @@
 # Compact drawing toolbar
 
-> Current status (2026-10-13): see [current project status](current-project-status.md). Dated revisions, inventories and pending statements below describe their original review stage. The accepted local runtime is `20261013-object1` at `201445c40fd98e59ffd7cca22121c3c55668b2d1`; main Helper UI/loader/drawing CSS311, adapter/icons/game309. Undo/Redo now run without confirmation; Delete/Clear remain confirmed. Tasks239/241/243 are accepted. No deployment or physical-device validation is inferred.
+> Documentation status (2026-10-18): the current accepted implementation is Task 271, app `6038639a`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
 
 PBB Map configures the complete canonical drawing toolbar with `showModeTransitionStatus:false`. This omits only the bottom mode-transition status so pending edits do not expand the vertical rail. Adapter rejection reasons and safeguards remain available; selection, geometry/history, construction, explicit Save/Close and actionable storage/error feedback remain intact.
 

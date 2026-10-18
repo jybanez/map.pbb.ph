@@ -1,5 +1,15 @@
 # Personal-layer Pin integration
 
+## Current accepted integration — October 18, 2026
+
+Task 271 is completed after Alfred's independent acceptance 10681. Accepted app `6038639abdf75265a429166503e6cba37323c364`, tree `fc80e1b6fdddc595cb9803491e544517af03424d`, runtime `20261014-pin4`, uses verified canonical PR184 release `21216409ff0f558f24f4021b0f84efb89fccb6fc` (tree `158541622cd7f12a65cb18866279669623cbd847`). Main/adapter/Pin are 318. The model is upright, circular at pitch 0 and tapered near 85; size means the largest projected dimension, approximately 32px. Stored numeric ID zero, optional altitude and metadata survive editing and online/offline reload. The previously documented altitude rejection and terrain-anchor offset are resolved in the accepted implementation.
+
+Independent archive/unit/shell, desktop/mobile-emulation perspective/edit/history/save/reload/readonly/lifecycle and ordinary service-worker offline checks passed. See [current status](current-project-status.md) for exact independent versus reported scope and device limits. Owner message 10697 confirms the marker working. GitHub development publication is separate from deployment.
+
+## Historical integration and verification records
+
+The following paragraphs preserve earlier submissions and their then-pending decisions. They do not describe current acceptance or supersede the size contract above.
+
 The drawing toolbar uses the complete Helper drawing component, with Pin immediately after Select and before Point. Select retains its existing navigation toggle (Pan capability). Pins are schema-1 GeoJSON Points marked by `helperDrawingKind: "pin"`; legacy Points remain circles. Existing color forms, immediate history, explicit Save, deletion confirmation and editor ownership guards remain authoritative.
 
 Saved visible layers pass cloned, layer-namespaced Pin features to the complete `ui.map.pin` renderer. The edited layer is omitted from saved display, and the Point circle filter excludes Pins. Host map replacement and destruction destroy the saved renderer; the canonical renderer owns GPU and style restoration. Stored identity and metadata are not rewritten.

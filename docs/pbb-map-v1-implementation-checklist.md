@@ -1,9 +1,6 @@
 # PBB Map V1 Implementation Checklist
 
-> Current status (2026-10-13): see [current project status](current-project-status.md). Dated revisions, inventories and pending statements below describe their original review stage. The accepted local runtime is `20261013-object1` at `201445c40fd98e59ffd7cca22121c3c55668b2d1`; main Helper UI/loader/drawing CSS311, adapter/icons/game309. Undo/Redo now run without confirmation; Delete/Clear remain confirmed. Tasks239/241/243 are accepted. No deployment or physical-device validation is inferred.
-
-
-Current status (2026-10-11): [Current project status](current-project-status.md) is the authoritative documentation summary for the accepted controls, location tracking, POI filtering and three-wave accuracy ripple. Older revision-specific statements below remain historical where superseded. Physical-device validation and final owner acceptance are not inferred from automated checks.
+> Documentation status (2026-10-18): the current accepted implementation is Task 271, app `6038639a`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
 
 Owner9104 removes tile/cache outage verification from PBB Map scope; Alfred9105 confirms deliverable43 cancelled and directs task155 cancellation. It is no longer a PBB Map blocker. Both agents’ protected API cancellation attempts were rejected403 despite Developer being recorded giver/supervisor; Alfred9107 confirms the precise authorization restriction is unresolved. Task155 remains blockedv5 pending owner cancellation in the Syndicatum task UI. No identical API retries or alternate identity use. Historical kit and evidence are retained; no actual WAN outage test was performed or passed. No MapServer configuration change or new task is implied.
 

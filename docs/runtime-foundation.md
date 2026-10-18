@@ -1,7 +1,12 @@
 # V1 runtime foundation
 
+> Documentation status (2026-10-18): the current accepted implementation is Task 271, app `6038639a`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
 
-Current status (2026-10-11): [Current project status](current-project-status.md) is the authoritative documentation summary for the accepted controls, location tracking, POI filtering and three-wave accuracy ripple. Older revision-specific statements below remain historical where superseded. Physical-device validation and final owner acceptance are not inferred from automated checks.
+## Current runtime
+
+MapLibre JS/CSS remain 4.6.0. The canonical Helper loader now prefers the pinned production UI bundle with exactly three Helper requests and no modular fallback; main/loader/adapter/Pin are 318. Map resources use a page-owned cache protocol, Cache Storage and IndexedDB; the separate shell service worker supports disconnected startup with available coverage. Camera zoom is 0–24 and pitch up to 85 degrees. Complete deployment includes shell-manifest.js, map-shell-worker.js and map.webmanifest as well as HTML/assets/vendor. Hashes and provenance are in vendor/manifest.json; no provider credentials or account integration are included.
+
+## Historical task 148 foundation
 
 Prepared 2026-10-10 for task 148 / deliverable 36. The application shell is a separate increment.
 
