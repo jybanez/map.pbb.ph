@@ -1,6 +1,6 @@
 # Selected-object interaction controls
 
-> Documentation status (2026-10-18): the current accepted implementation is Task 271, app `6038639a`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
+> Documentation status (2026-10-18): the current accepted runtime is Task286, app `b7cfe13`, runtime `20261018-person34`, Helper main/person319 and Pin/adapter318 (independent acceptance11243). See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
 
 PBB Map adopts the accepted canonical PR172 merge `4ced7421768aaa374a639f633229555e384e08c6`, reviewed head `32d99cb02e15dce4fd8a3edc66f9a982306db9a5`, identical tree `fc4724b4418d6c12e3dfd7ff6fb1d4158db4804f`. Merge parents are previous `dc7fcc27` and reviewed head. Scoped runtime manifests verify normalized canonical bytes before copying; loader/adapter/main/CSS/icon/game revision309.
 

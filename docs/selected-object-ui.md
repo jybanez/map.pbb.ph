@@ -1,6 +1,6 @@
 # Selected-object controls — task214
 
-> Documentation status (2026-10-18): the current accepted implementation is Task 271, app `6038639a`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
+> Documentation status (2026-10-18): the current accepted runtime is Task286, app `b7cfe13`, runtime `20261018-person34`, Helper main/person319 and Pin/adapter318 (independent acceptance11243). See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
 
 Task214 starts from independently accepted task209 implementation `c541638f4258cb4529e1652d5dd19b3a50f280a9`, acceptance documentation `a427e92986d9fd26b15163beb817af85a1748230`. No task214 acceptance or push is claimed.
 

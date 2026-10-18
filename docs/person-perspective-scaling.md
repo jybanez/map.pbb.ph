@@ -1,6 +1,6 @@
 # Person perspective scaling — accepted
 
-> Current implementation note (2026-10-18): Task286 now submits canonical perspective min/max34 using actual mesh extents; application review remains pending. See [consistent person size](person-consistent-size.md). The prior accepted app used a12m reference with8–64px bounds. This report preserves the earlier renderer acceptance; see [current status](current-project-status.md) for the current complete application.
+> Current implementation note (2026-10-18): Task286 uses accepted canonical perspective min/max34 with actual mesh extents; Alfred independently accepted the application runtime in11243. See [consistent person size](person-consistent-size.md). The prior accepted app used a12m reference with8–64px bounds. This report preserves the earlier renderer acceptance; see [current status](current-project-status.md) for the current complete application.
 
 Task193 integrates exact accepted Helper23b421eca5f91f92e11d714c08e8f93a54080f60/runtime0.21.282 at application revision20261011-person-perspective1. Canonical createPerson receives scaleMode:perspective, modelHeightMeters12, minSizePx8/maxSizePx64; no renderer override. All six handoff artifacts copied from Git objects and checked against Helper manifest; vendor inventory updated. Loader/main JS/CSS resource queries use0.21.282, complete app import graph gets a new revision. showDirectionTools=false and independent Enable direction retained.
 

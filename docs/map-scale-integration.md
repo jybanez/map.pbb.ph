@@ -1,6 +1,6 @@
 # Canonical map scale integration
 
-> Documentation status (2026-10-18): the current accepted implementation is Task 271, app `6038639a`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
+> Documentation status (2026-10-18): the current accepted runtime is Task286, app `b7cfe13`, runtime `20261018-person34`, Helper main/person319 and Pin/adapter318 (independent acceptance11243). See [current project status](current-project-status.md) for current behavior and evidence limits. The dated implementation/review records below are historical; older versions, loading modes, inventories and pending decisions are preserved as evidence, not current instructions. GitHub publication does not establish deployment.
 
 Task241 adopts reviewed PR173 head420336da54c8509f55dfe3b4ed2992a443f1946e, merge3455301436218e66e89486d8d6eb0ab1121e8a09 (parents4ced742 +420336da), identical tree6c587de9e1d570184a88bb21b26672f58289f412. Independent fresh origin/main fetch confirmed reachability and empty accepted-tree diff. Canonical manifests verify normalized bytes; main UI/loader310, drawing/icon/game309, MapLibre4.6.0 unchanged.
 

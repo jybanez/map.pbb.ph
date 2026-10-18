@@ -4,4 +4,6 @@ Task335 fixes literal mojibake in both initial and subsequent map loading messag
 
 The cache tag is `20261018-status1`; the shell manifest is regenerated from the changed runtime bytes. The focused browser fixture holds actual style requests to inspect both canonical busy overlays, exercises search text and synthetic paste statuses, and opens Location information through the native context menu. A response-only hook exposes the existing initialization function and observes DOM text assignments, including transient statuses; production receives no test globals or replacement controls.
 
-Task286 person sizing remains separate and requires a reviewed canonical correction. This text change does not alter person sizing or vendor code. Publication requires Alfred's independent review; service deployment is outside scope.
+At this text correction's submission, Task286 person sizing remained separate and required a reviewed canonical correction. This text-only commit did not alter person sizing or vendor code. The subsequent Task286 runtime adopted reviewed PR185; see [consistent person size](person-consistent-size.md). Service deployment remains outside scope.
+
+Alfred independently accepted Task335 at `385d20d7346e319257b3c7157a46239fae205f5a` in11235. Its correction is included in the accepted Task286 runtime and final GitHub development handoff.
