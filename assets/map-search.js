@@ -1,5 +1,5 @@
-import { poiName } from './poi-name.js?v=20261014-pin4';
-import { distance } from './map-context.js?v=20261014-pin4';
+import { poiName } from './poi-name.js?v=20261018-status1';
+import { distance } from './map-context.js?v=20261018-status1';
 
 export function orderSearchResults(results,origin){
   return [...results].sort((a,b)=>a.name.localeCompare(b.name)
@@ -12,10 +12,10 @@ export function parseCoordinates(value) {
   // mixed name text such as 7-Eleven and 3J Store remains a POI query.
   if (!text.includes(',') && !/^[+\-.\d\s]+$/.test(text)) return null;
   const match=text.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);
-  if (!match) return { error:'Coordinates â€” enter two complete decimal numbers in latitude, longitude order, separated by a comma.' };
+  if (!match) return { error:'Coordinates — enter two complete decimal numbers in latitude, longitude order, separated by a comma.' };
   const lat=Number(match[1]),lng=Number(match[2]);
   if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat < -90||lat > 90||lng < -180||lng > 180)
-    return {error:'Coordinates â€” latitude must be from âˆ’90 to 90 and longitude from âˆ’180 to 180. Keep latitude first.'};
+    return {error:'Coordinates — latitude must be from -90 to 90 and longitude from -180 to 180. Keep latitude first.'};
   return {lat,lng};
 }
 export function createMapSearch({createSearchField,createMenu,createIcon,createEventBag,createMapMarker,markExploration,poiAllowed=()=>true,onDismiss,onDestinationActivate,onDestinationUnavailable,onSearchFocus}) {
@@ -26,7 +26,7 @@ export function createMapSearch({createSearchField,createMenu,createIcon,createE
     const metres=distance(userLocation,point);
     return metres<1000?`${Math.round(metres)} m`:`${(metres/1000).toFixed(1)} km`;
   };
-  const resultLabel=result=>`${result.name} â€” ${distanceLabel(result.point)}`;
+  const resultLabel=result=>`${result.name} — ${distanceLabel(result.point)}`;
   function setUserLocation(next){
     if(disposed||!next||!Number.isFinite(next.latitude)||!Number.isFinite(next.longitude)||Math.abs(next.latitude)>90||Math.abs(next.longitude)>180)return;
     userLocation={lat:next.latitude,lng:next.longitude};
@@ -62,7 +62,7 @@ export function createMapSearch({createSearchField,createMenu,createIcon,createE
       if(label)label.textContent=item.label;
     });
   }
-  function resultItems(){return [{id:'coverage',label:coordinateResults?'Approximate straight-line distance.':'Loaded tiles only â€” coverage may be incomplete. Approximate straight-line distances.',disabled:true},...displayedResults.map(r=>({id:r.id,label:resultLabel(r)}))];}
+  function resultItems(){return [{id:'coverage',label:coordinateResults?'Approximate straight-line distance.':'Loaded tiles only — coverage may be incomplete. Approximate straight-line distances.',disabled:true},...displayedResults.map(r=>({id:r.id,label:resultLabel(r)}))];}
   let destinationMarker=null;
   let clearDestinationEvents=null, destinationReady=false;
   function availability(ready) {
@@ -197,7 +197,7 @@ export function createMapSearch({createSearchField,createMenu,createIcon,createE
       status.textContent='Coordinates or POIs in loaded tiles only.';return;
     }
     status.textContent='Choose a suggestion, or press Enter to navigate results.';
-    if(composing||pasted){feedback(composing?'Finish composing your search to see results.':'Reading pasted searchâ€¦');return;}
+    if(composing||pasted){feedback(composing?'Finish composing your search to see results.':'Reading pasted search...');return;}
     if(live&&!composing&&!pasted)search(value,{keepFocus:true});
   }
   function search(value,{keepFocus=false}={}) {
@@ -208,13 +208,13 @@ export function createMapSearch({createSearchField,createMenu,createIcon,createE
     if(point?.error){field.input.setAttribute('aria-invalid','true');field.input.classList.add('is-invalid');feedback(point.error);return;}
     if(point)results=[{name:'Coordinate destination',label:`Coordinates: ${point.lat}, ${point.lng}`,point}];
     else {
-      status.textContent='Reading loaded local POIsâ€¦';
+      status.textContent='Reading loaded local POIs...';
       try {
         const found=new Map();
         for(const f of map.querySourceFeatures('pbb-poi',{sourceLayer:'poi'})){
           if(f.geometry?.type!=='Point'||!poiAllowed(f.properties))continue;const name=poiName(f.properties);if(!name||!String(name).toLocaleLowerCase().includes(query.toLocaleLowerCase()))continue;
           const [lng,lat]=f.geometry.coordinates;if(!Number.isFinite(lat)||!Number.isFinite(lng))continue;
-          const key=`${name}|${lng.toFixed(5)}|${lat.toFixed(5)}`;if(!found.has(key))found.set(key,{name:String(name),label:`${name} â€” ${lat.toFixed(6)}, ${lng.toFixed(6)}`,point:{lat,lng}});
+          const key=`${name}|${lng.toFixed(5)}|${lat.toFixed(5)}`;if(!found.has(key))found.set(key,{name:String(name),label:`${name} — ${lat.toFixed(6)}, ${lng.toFixed(6)}`,point:{lat,lng}});
         }
         results=[...found.values()];
       } catch {feedback('Loaded POI data is unavailable. Wait for tiles to load or retry the map, then search again.');return;}

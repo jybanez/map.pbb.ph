@@ -1,19 +1,19 @@
-import { installMapRuler } from './map-ruler.js?v=20261014-pin4';
-import { installScalePlacement } from './map-scale-placement.js?v=20261014-pin4';
-import { createPersonalLayers } from './personal-layer-ui.js?v=20261014-pin4';
-import { createAccuracyRipple } from './accuracy-ripple.js?v=20261014-pin4';
-import { createPoiFilter } from './poi-filter.js?v=20261014-pin4';
-import { createDirectionWelcome } from './direction-welcome.js?v=20261014-pin4';
+import { installMapRuler } from './map-ruler.js?v=20261018-status1';
+import { installScalePlacement } from './map-scale-placement.js?v=20261018-status1';
+import { createPersonalLayers } from './personal-layer-ui.js?v=20261018-status1';
+import { createAccuracyRipple } from './accuracy-ripple.js?v=20261018-status1';
+import { createPoiFilter } from './poi-filter.js?v=20261018-status1';
+import { createDirectionWelcome } from './direction-welcome.js?v=20261018-status1';
 import { uiLoader } from '../vendor/helpers/js/ui/ui.loader.js?v=0.21.318';
-import { createMapResourceCache } from './map-resource-cache.js?v=20261014-pin4';
-import { registerMapShell } from './map-shell.js?v=20261014-pin4';
-import { config } from './config.js?v=20261014-pin4';
-import { buildStyle, POI_LAYERS } from './map-style.js?v=20261014-pin4';
-import { createLocationController } from './location.js?v=20261014-pin4';
-import { installMapContext } from './map-context.js?v=20261014-pin4';
-import { createMapSearch } from './map-search.js?v=20261014-pin4';
-import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261014-pin4';
-import { createDirectionOptions } from './direction-options.js?v=20261014-pin4';
+import { createMapResourceCache } from './map-resource-cache.js?v=20261018-status1';
+import { registerMapShell } from './map-shell.js?v=20261018-status1';
+import { config } from './config.js?v=20261018-status1';
+import { buildStyle, POI_LAYERS } from './map-style.js?v=20261018-status1';
+import { createLocationController } from './location.js?v=20261018-status1';
+import { installMapContext } from './map-context.js?v=20261018-status1';
+import { createMapSearch } from './map-search.js?v=20261018-status1';
+import { createDirectionDiagnostics } from './direction-diagnostics.js?v=20261018-status1';
+import { createDirectionOptions } from './direction-options.js?v=20261018-status1';
 
 export async function mountApp() {
   // Canonical loader selects the covered ui bundle and rejects failures without
@@ -83,7 +83,7 @@ export async function mountApp() {
   let directionModuleState='loading';
   let direction={request(explicit){if(explicit)directionNotice('Direction is unavailable or still loading. Location remains usable; choose Locate to retry direction.');return false;},setPosition(){},invalidatePosition(){},destroy(){}};
   // Optional local sensor/model code never gates map or live location startup.
-  void import('./heading.js?v=20261014-pin4').then(({createHeadingController})=>{
+  void import('./heading.js?v=20261018-status1').then(({createHeadingController})=>{
     if(disposed)return;
     directionModuleState='ready';
     direction=createHeadingController({onHeading:(value,meta)=>{headingDegrees=value;approximateActive=meta?.approximate===true;person?.updateHeading(value);syncDirectionUI();},onState:directionNotice});
@@ -110,7 +110,7 @@ export async function mountApp() {
     // Complete person API has no label update; scope only this app's label node.
     if(approximateActive)region.querySelector('.ui-map-location-person-label')?.setAttribute('aria-label','Your location; approximate geographic direction, altitude unavailable');
   }
-  const busy = createBusyOverlay(region, { text: 'Loading mapâ€¦', fullscreen: false,
+  const busy = createBusyOverlay(region, { text: 'Loading map...', fullscreen: false,
     blockInteraction: false, backdrop: false, lockScroll: false });
   const feedback = createEmptyState(feedbackContainer, {}, { ariaLabel: 'Map status', onActionClick: () => { void initialize(); } });
 
@@ -177,7 +177,7 @@ export async function mountApp() {
     locateContainer.dataset.state = tone;
     button.disabled = status === 'requesting';
     button.setAttribute('aria-busy', String(status === 'requesting'));
-    const label = `Locate â€” ${tone === 'idle' ? 'show your location' : locationState.message}`;
+    const label = `Locate — ${tone === 'idle' ? 'show your location' : locationState.message}`;
     button.setAttribute('aria-label', label);
     button.title = label;
   }
@@ -290,7 +290,7 @@ export async function mountApp() {
     warned.clear();
     optionalNotices.splice(0).forEach(notice => notice?.close());
     feedbackContainer.hidden = true;
-    busy.show({ text: 'Loading mapâ€¦' });
+    busy.show({ text: 'Loading map...' });
     abort = new AbortController();
     const controller = abort;
     startupTimer = setTimeout(() => {
