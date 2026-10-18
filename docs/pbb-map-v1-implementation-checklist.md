@@ -1,5 +1,7 @@
 # PBB Map V1 Implementation Checklist
 
+> Current status (2026-10-13): see [current project status](current-project-status.md). Dated revisions, inventories and pending statements below describe their original review stage. The accepted local runtime is `20261013-object1` at `201445c40fd98e59ffd7cca22121c3c55668b2d1`; main Helper UI/loader/drawing CSS311, adapter/icons/game309. Undo/Redo now run without confirmation; Delete/Clear remain confirmed. Tasks239/241/243 are accepted. No deployment or physical-device validation is inferred.
+
 
 Current status (2026-10-11): [Current project status](current-project-status.md) is the authoritative documentation summary for the accepted controls, location tracking, POI filtering and three-wave accuracy ripple. Older revision-specific statements below remain historical where superseded. Physical-device validation and final owner acceptance are not inferred from automated checks.
 

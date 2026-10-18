@@ -1,14 +1,14 @@
 # PBB Map current project status
 
-Updated 2026-10-11 (Asia/Manila), following owner message 9268. This summary supersedes older design/default statements in historical verification notes.
+Updated 2026-10-18 (Asia/Manila), including the owner-requested GitHub development handoff. Current sections below supersede historical defaults and reports, whose original evidence remains preserved.
 
-Public application: https://map.pbb.ph/ · Current application revision: `20261011-location-ripple4`.
+Public application: https://map.pbb.ph/. Latest independently accepted app implementation, task271: `6038639abdf75265a429166503e6cba37323c364`, tree `fc80e1b6fdddc595cb9803491e544517af03424d`, runtime `20261014-pin4`, Helper main/adapter/Pin 318. The upright Pin appears circular from above and tapered at 85 degrees, with its largest projected dimension approximately 32 CSS pixels. Independent desktop/mobile emulation, save/reload and offline checks passed; owner confirmation is recorded in message 10697. This GitHub development handoff does not establish deployment.
 
-Official repository: https://github.com/jybanez/map.pbb.ph (owner message 9275). The existing project directory is the primary Git checkout, initialized on `main` with this repository as `origin`. The remote was empty at setup; existing application files are preserved and await an initial commit/push.
+Official repository: https://github.com/jybanez/map.pbb.ph (owner message 9275). The existing project directory is the primary Git checkout on `main`, tracking `origin/main`. Developer completed the owner-authorized initial commit/push, reported in message 9277: `3990cea93e62da1373692e35159a25eb36abe9eb`. Alfred independently verified local HEAD and remote main at that exact commit, upstream tracking and a clean working tree before this documentation update. Initial publication is complete; Developer reports 37/37 tests passed. This status update is a subsequent documentation change.
 
 ## Current experience
 
-- Fixed, square-edged Helper navbar with project identity, north reset, 2D/3D and menu; zoom floats at the map's upper left and the state-colored icon-only Locate control at the lower right.
+- Fixed, square-edged Helper navbar with project identity, signal indicator before the compass, north reset, 2D/3D and menu; zoom floats at the map's upper left and the state-colored icon-only Locate control at the lower right. The signal component is an indicator; caching operates independently.
 - Hotline-style dark MapLibre map, terrain and 3D buildings. Camera zoom 0–24, maximum pitch 85°, initial Cebu camera zoom 12/pitch 35°, Locate zoom 15. Native vector/POI zoom 14 and terrain zoom 12 remain unchanged.
 - Latest valid browser location updates the procedural 3D person, direction cue and search distances without moving an explored camera. Initial location and explicit Locate may recenter. One location watcher pauses while hidden and clears on teardown; fallback one-shot operation remains available where watch support is absent. Location and sensor data stay in memory.
 - The person responds to map perspective, tilt and bearing, with a 12 m visual height bounded to 8–64 CSS pixels. Dot fallback remains available when the renderer is unavailable.
@@ -20,7 +20,27 @@ Official repository: https://github.com/jybanez/map.pbb.ph (owner message 9275).
 
 ## Dependencies and review
 
-MapLibre JS/CSS 4.6.0. Helper uses locally pinned canonical bundle/loader artifacts, with accepted incremental person perspective, mixed checkbox and checkbox containment updates. The latest checkbox containment adoption uses UI bundle/CSS revision 0.21.284; checkbox JavaScript remains 0.21.283. Exact artifact provenance is recorded in `vendor/manifest.json` and the runtime evidence manifests; do not interpret the historical base snapshot as the sole current Helper revision.
+Task255 adopts the canonical draggable-endpoint ruler: UI JavaScript/loader/ruler314, with actual CSS/icons/game312 bytes unchanged. Task253 was independently accepted at `09a6b8a5cb7b1c0dbf47e62266d3362fb191f994`, tree `fc5544734ffc493a6bd00a489aad6153f05633f3`; PR177 merge `1ecbf98167830d23feabb7e5d8cf463794fdc1b3` was independently verified with the identical tree. Either completed endpoint can be dragged, updating the line and distance continuously; release retains the pair, and normal map navigation remains available away from handles. The component restores gesture ownership on termination and suppresses the release click. Measurements remain transient.
+
+Independent task255 raw archive passed 55/55 tests and shell `f4ad76fdf86d70bc5f54`: 44 assets, 4,273,039 bytes and 33 bundled Helper dependencies. Adopted source/loader/bundle/CSS were independently compared with the reviewed canonical merge. Native desktop1200/mobile375 editor, clipboard, storage and lifecycle guards passed. Sequential localhost SW-controlled archive checks passed both endpoint drags using mouse and CDP emulated touch, mid/final native distance and rendered geometry, unchanged opposite endpoint/storage, capture/release navigation and Copy states, off-target canvas pan, camera/terrain/full-diff style changes and offline reload with rendered fresh-location ripples. Exactly three Helper resources/current314 and zero page errors; own mobile screenshots inspected. Developer's HTTPS-root evidence is separately attributed. Fixture failures/corrections remain documented; physical-device and original-owner-session limits remain unchanged.
+
+The following task247 and task243 details preserve earlier accepted evidence and inventories.
+
+Task247 submission adopts Helper UI JavaScript/loader/ruler313; CSS/icons/game retain their actual312 bytes. Canonical readiness fix task248 was independently accepted at `fdeeaab1dda5f004fcc22de2348cf3c9d3a35c21`, tree `20c4e834a261847d8cc5796ebe1f759a26e21105`; PR176 merge `6ae9acd20bd6411a14811fae678f6ffd3114c196` was independently verified with the identical tree. The fix installs ruler geometry when the style exists even while live ripple rendering prevents full style-idle readiness. It guards reentrant installation and restores missing owned geometry after style changes without redundant writes.
+
+Independent task247 raw-archive checks passed 55/55 tests and shell `ca439a8b8ca3bb4417ca`: 44 assets, 4,270,898 bytes, 33 bundled Helper dependencies. Native desktop1200/mobile375 checks passed with fresh synthetic location and visible active ripples, line and both endpoints, desktop preview, distance, clipboard success/failure and editor guards. Sequential independent localhost service-worker-controlled archive checks passed at both widths through camera zoom/pitch/bearing, terrain off/on, full/diff style replacement and offline reload, retaining current313 and exactly three Helper resources with zero page errors. Own mobile screenshots were inspected; owned contexts/browser were closed. Developer's actual HTTPS-root report is separate evidence. Original owner session/cache was unavailable and untouched; controlled reproduction establishes a readiness defect without diagnosing that original session. Failed fixture assumptions and their corrections remain in the ruler integration evidence.
+
+The following centered-toolbar dependency and shell details describe the earlier task243 acceptance, superseded by the submitted task247 inventory above.
+
+Current accepted state: MapLibre JS/CSS 4.6.0; main Helper UI bundle/loader and drawing CSS 0.21.311, drawing adapter/icons/game 309 and color picker 294. Canonical centered-row head `81ea4ef5e39de6dbfcfbcc39f5def9b555ddd96d` and merge `c569706f48e8c18bb03b2c13ea2bd94c2a6cfcc8` were independently reviewed/verified before adoption. Exact provenance is in `vendor/manifest.json` and runtime manifests. Exactly three Helper resources load: loader, UI bundle JavaScript and UI bundle CSS; selected bundle/factory failures reject without modular fallback.
+
+Current shell `4577b3c2223ad323117e` includes 43 integrity-checked assets, 4,258,777 bytes and 32 used Helper roots/dependencies. Roots are bundled exports, not separate network files. Task243 acceptance in message10132 includes independent isolated raw-archive55/55 tests and shell verification, desktop1200/mobile375 tilted native browser checks for centering, transparent outer host, button styling, placement, rotation/history/cancellation, holes/numericID0/metadata, Point/Circle omission, Rectangle conversion, color Cancel and Save/reload. Exactly3Helper requests/zero pageerrors; mobile screenshot inspected. Additional six-mode construction, scale, offline and fresh-clone checks remain Developer-reported.
+
+Tasks239/241 were independently accepted at reproducible base `b4ac63308b0e634b04abeb22671836e1b0ac64a1` in10109: archive55/55,208vendor+15scientific hashes, shell and compact/rotation/scale browser sequences passed. Earlier archive byte mismatches and mixed-checkout evidence are disclosed in [committed-byte reproducibility](committed-byte-reproducibility.md). Line/Path task218 acceptance9764 covers corrected renderer-readiness evidence, not a production vertex fix.
+
+### Historical October11 baseline
+
+The October11 baseline used Helper UI/CSS284 and checkbox283, with incremental person/mixed-checkbox updates. These historical versions are superseded by the current accepted state above.
 
 Alfred independently passed 37/37 Node tests during POI filter acceptance and reviewed subsequent bounded UI/ripple changes. Developer reports desktop/mobile browser verification for three-wave phase spacing, shared source/layers, reduced-motion pause/resume, style reload and detach cleanup without page errors. Earlier camera-interaction evidence covers zoom/pan/tilt/bearing with the one-wave implementation; it is not a separate three-wave physical-device certification. Alfred reviewed source, scripts and screenshots; no independent app browser rerun is claimed for the latest ripple changes.
 
@@ -28,6 +48,26 @@ Implementation milestones 17–19 are complete; review/handoff milestone 20 and 
 
 Physical touch/safe-area, real-phone direction calibration/reference behavior, and final owner acceptance remain explicit follow-ups. Emulated viewports and synthetic locations do not certify physical hardware.
 
+## Future feature notes
+
+Owner message10150 records interactive polygon holes as a future enhancement, following explanation10148 and Helper confirmation10149. A possible Add hole action would let users draw an interior ring within a selected polygon. Existing GeoJSON holes are already preserved by rendering/editing; drawing a separate polygon does not subtract it. This note records an idea without starting implementation or promising a delivery date. Future design should cover valid containment and nonintersecting rings, Finish/Cancel, Undo/Redo, persistence and canonical component support before application adoption.
+
 ## Documentation map
+
+Current integration reports: [Automatic resource caching](map-resource-cache-implementation.md) · [Personal layers](personal-layers-status.md) · [Line/Path](line-path-integration.md) · [Selected objects](selected-object-ui.md) · [Compact toolbar](compact-drawing-toolbar.md) · [Move/Rotate](object-rotation-integration.md) · [Scale](map-scale-integration.md) · [Centered toolbar](object-toolbar-integration.md).
+
+## Current caching and editing behavior
+
+Automatic map-resource caching is page-owned and has no Offline maps menu or user-managed downloads. Cache Storage holds responses and IndexedDB indexes them; MapLibre protocol loading is independent of service workers. The browser shell worker supports cold startup. Refresh age never expires usable cached tiles; failed refresh retains prior bytes. Quota/LRU pruning and browser eviction still limit coverage. Ripple/location freshness is a visual/sensor guard, not map expiration. Authored drawings use separate storage.
+
+Personal layers use complete canonical management modals, declarative forms and drawing controls. Modals open busy before reads; validation precedes busy/writes. Explicit Save persists committed geometry with revision-conflict and recovery protections. Delete/Clear retain confirmation; Undo/Redo act directly. The layer control exits editing, with confirmation when changes would be discarded.
+
+Line previews from the first click and completes two vertices on the second. Path adds connected segments until Finish/double-click. Segment dragging translates the entire object; vertex handles reshape individual vertices. Changed/unfinished objects retain explicit Finish/Cancel guards; clean selection switches directly.
+
+The selected-object toolbar centers Move/Rotate above Fill/Stroke/Delete, with transparent borderless host/component and individually styled buttons. Point/Circle omit the interaction row with implicit Move. Canonical rotation preserves holes, metadata and atomic history. Compact rails omit mode-transition status while retaining rejection safeguards and errors.
+
+The canonical metric scale at lower left clears visible overlays using supported measurements. It is a geographic local reference at the viewport's left edge halfway down; tilted/terrain views have nonuniform metres per pixel and it does not measure terrain-surface distance.
+
+Physical touch, actual device safe areas, real-phone direction calibration, Safari/native wrappers and assistive technology remain unvalidated. Later controlled cache/shell evidence does not certify every actual outage or indefinite coverage. Owner feedback does not automatically close every approved-plan milestone. Launcher integration remains separate work.
 
 [Proposal](pbb-map-v1-development-proposal.md) · [Checklist](pbb-map-v1-implementation-checklist.md) · [Historical verification](v1-verification.md) · [POI filter](poi-category-filter.md) · [Accuracy ripple](accuracy-ripple.md) · [Perspective scaling](person-perspective-scaling.md) · [Direction visibility](direction-tools-visibility.md) · [Runtime foundation](runtime-foundation.md).

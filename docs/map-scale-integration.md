@@ -1,5 +1,7 @@
 # Canonical map scale integration
 
+> Current status (2026-10-13): see [current project status](current-project-status.md). Dated revisions, inventories and pending statements below describe their original review stage. The accepted local runtime is `20261013-object1` at `201445c40fd98e59ffd7cca22121c3c55668b2d1`; main Helper UI/loader/drawing CSS311, adapter/icons/game309. Undo/Redo now run without confirmation; Delete/Clear remain confirmed. Tasks239/241/243 are accepted. No deployment or physical-device validation is inferred.
+
 Task241 adopts reviewed PR173 head420336da54c8509f55dfe3b4ed2992a443f1946e, merge3455301436218e66e89486d8d6eb0ab1121e8a09 (parents4ced742 +420336da), identical tree6c587de9e1d570184a88bb21b26672f58289f412. Independent fresh origin/main fetch confirmed reachability and empty accepted-tree diff. Canonical manifests verify normalized bytes; main UI/loader310, drawing/icon/game309, MapLibre4.6.0 unchanged.
 
 Complete ui.map.scale owns metric distance, rounding, labels, native controls and public setUnit resize refresh. App activation creates one instance; replacement/removal destroys it before removing the old map. Overlay placement uses supported getElement/getSize/update offset and reserves visible drawing/toast/Locate rectangles, without geometry or scale math. Observer/listener/frame cleanup also runs on map removal. Safe-area presentation remains canonical CSS. No geolocation or additional network is required.

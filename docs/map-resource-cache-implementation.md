@@ -1,5 +1,7 @@
 # Automatic device map resources
 
+> Current status (2026-10-13): see [current project status](current-project-status.md). Dated revisions, inventories and pending statements below describe their original review stage. The accepted local runtime is `20261013-object1` at `201445c40fd98e59ffd7cca22121c3c55668b2d1`; main Helper UI/loader/drawing CSS311, adapter/icons/game309. Undo/Redo now run without confirmation; Delete/Clear remain confirmed. Tasks239/241/243 are accepted. No deployment or physical-device validation is inferred.
+
 Task 201 implementation for Alfred review, 2026-10-11. Application revision `20261011-map-cache6`; provider generation `pbb-mapserver-20261011-v1`.
 
 The page owns the MapLibre 4.6.0 `pbbcache` protocol, response Cache Storage and IndexedDB index. Service workers are optional for this loader. Only the shell worker supplies cold browser startup. No offline-map workflow, cache settings, saving prompts, geographic downloads, Account dependency or location-history storage was added.

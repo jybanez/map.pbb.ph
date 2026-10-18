@@ -1,5 +1,7 @@
 # Selected-object interaction controls
 
+> Current status (2026-10-13): see [current project status](current-project-status.md). Dated revisions, inventories and pending statements below describe their original review stage. The accepted local runtime is `20261013-object1` at `201445c40fd98e59ffd7cca22121c3c55668b2d1`; main Helper UI/loader/drawing CSS311, adapter/icons/game309. Undo/Redo now run without confirmation; Delete/Clear remain confirmed. Tasks239/241/243 are accepted. No deployment or physical-device validation is inferred.
+
 PBB Map adopts the accepted canonical PR172 merge `4ced7421768aaa374a639f633229555e384e08c6`, reviewed head `32d99cb02e15dce4fd8a3edc66f9a982306db9a5`, identical tree `fc4724b4418d6c12e3dfd7ff6fb1d4158db4804f`. Merge parents are previous `dc7fcc27` and reviewed head. Scoped runtime manifests verify normalized canonical bytes before copying; loader/adapter/main/CSS/icon/game revision309.
 
 The complete `ui.map.drawing.object` factory receives the existing adapter. It owns exclusive Move/Rotate state, applicable rows and actions. Fill/Stroke delegate to the existing canonical form/color transaction; Delete uses the adapter's existing confirmation/context gate. Construction Finish/Cancel remains a separate complete controls group. Object controls are destroyed before the adapter. The app uses supported getSize measurements and existing viewport/card/rail collision placement, and disables the component during writes/unavailable data. No application rotation mathematics or vendor patch.
